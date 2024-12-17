@@ -1,6 +1,14 @@
 {
   "maps": [
     {
+      "id": 837,
+      "path": "asset/floor/p9s.png",
+      "offset": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
       "id": 924,
       "path": "asset/floor/m4s.png",
       "offset": {
