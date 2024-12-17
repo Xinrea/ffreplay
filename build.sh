@@ -17,4 +17,4 @@ cp index.html ./public/index.html
 cp ffreplay.html ./public/ffreplay.html
 
 # Replace $WASM_RELEASE in ffreplay.html with the current commit hash
-sed -i '' "s/\$WASM_RELEASE/$COMMIT_HASH/g" ./public/ffreplay.html
+sed -i "s/\$WASM_RELEASE/$COMMIT_HASH/g" ./public/ffreplay.html
