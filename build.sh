@@ -17,4 +17,15 @@ cp index.html ./public/index.html
 cp ffreplay.html ./public/ffreplay.html
 
 # Replace $WASM_RELEASE in ffreplay.html with the current commit hash
-sed -i "s/\$WASM_RELEASE/$COMMIT_HASH/g" ./public/ffreplay.html
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  # Require gnu-sed.
+  if ! [ -x "$(command -v gsed)" ]; then
+    echo "Error: 'gsed' is not istalled." >&2
+    echo "If you are using Homebrew, install with 'brew install gnu-sed'." >&2
+    exit 1
+  fi
+  SED_CMD=gsed
+else
+  SED_CMD=sed
+fi
+${SED_CMD} -i "s/\$WASM_RELEASE/$COMMIT_HASH/g" ./public/ffreplay.html
