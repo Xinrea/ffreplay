@@ -11,4 +11,5 @@ type GlobalData struct {
 	FightDuration atomic.Int64
 	Loaded        atomic.Bool
 	LoadCount     atomic.Int32
+	Debug         bool
 }

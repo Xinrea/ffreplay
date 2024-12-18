@@ -6,7 +6,6 @@ import (
 )
 
 var Camera = donburi.NewComponentType[model.CameraData]()
-var Skill = donburi.NewComponentType[model.SkillData]()
 var Status = donburi.NewComponentType[model.StatusData]()
 var Marker = donburi.NewComponentType[model.MarkerData]()
 var Sprite = donburi.NewComponentType[model.SpriteData]()

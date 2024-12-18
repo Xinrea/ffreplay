@@ -44,30 +44,16 @@ const (
 var Status = donburi.NewComponentType[StatusData]()
 
 type StatusData struct {
-	GameID     int64
-	ID         int64
-	Name       string
-	Role       RoleType
-	HP         int
-	MaxHP      int
-	Mana       int
-	MaxMana    int
-	IsBoss     bool
-	BuffList   *BuffList
-	Casting    *Cast
-	LastActive int64
-}
-
-type Ability struct {
-	Guid        int64
-	Name        string
-	AbilityIcon string
-}
-
-type Cast struct {
-	ApplyTick int64
-	Ability   Ability
-	Duration  int64
+	GameID   int64
+	ID       int64
+	Name     string
+	Role     RoleType
+	HP       int
+	MaxHP    int
+	Mana     int
+	MaxMana  int
+	IsBoss   bool
+	BuffList *BuffList
 }
 
 func (r *StatusData) Reset() {

@@ -78,7 +78,11 @@ func main() {
 		report = parsedUrl.Path[len("/reports/"):]
 		fight, err = strconv.Atoi(parsedUrl.Query().Get("fight"))
 		if err != nil {
-			log.Fatal("Inavlid fight id:", err)
+			if parsedUrl.Query().Get("fight") == "last" {
+				fight = -1
+			} else {
+				log.Fatal("Invalid fight id")
+			}
 		}
 	}
 	if report == "" {

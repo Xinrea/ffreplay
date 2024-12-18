@@ -34,10 +34,11 @@ func (r *Renderer) renderPlayer(tick int64, camera *model.CameraData, screen *eb
 		c.ChangeHSV(0, 0, 1)
 	}
 	// render target ring
-	pos := sprite.Object.Position()
+	// player only has one instance
+	pos := sprite.Instances[0].Object.Position()
 	geoM := sprite.Texture.GetGeoM()
 	geoM.Scale(sprite.Scale, sprite.Scale)
-	geoM.Rotate(sprite.Face)
+	geoM.Rotate(sprite.Instances[0].Face)
 	geoM.Translate(pos[0], pos[1])
 	geoM.Concat(wordM)
 	op := &colorm.DrawImageOptions{}

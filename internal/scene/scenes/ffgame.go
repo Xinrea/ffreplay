@@ -104,8 +104,9 @@ func init() {
 }
 
 func NewFFScene(client *fflogs.FFLogsClient, code string, fight int) *FFScene {
+	ecs := ecs.NewECS(donburi.NewWorld())
 	ms := &FFScene{
-		ecs:    ecs.NewECS(donburi.NewWorld()),
+		ecs:    ecs,
 		client: client,
 		code:   code,
 		fight:  fight,
@@ -130,12 +131,18 @@ func (ms *FFScene) init() {
 	go func() {
 		fights := ms.client.QueryReportFights(ms.code)
 		fightIndex := -1
-		for i := range fights {
-			if fights[i].ID == ms.fight {
-				fightIndex = i
-				break
+		if ms.fight == -1 {
+			ms.fight = fights[len(fights)-1].ID
+			fightIndex = len(fights) - 1
+		} else {
+			for i := range fights {
+				if fights[i].ID == ms.fight {
+					fightIndex = i
+					break
+				}
 			}
 		}
+
 		if fightIndex == -1 {
 			log.Fatal("Invalid fight id")
 		}
@@ -252,11 +259,18 @@ func (ms *FFScene) init() {
 			ms.system.AddEntry(d.ID, entry.NewPlayer(ms.ecs, d.Type, posPreset[playerCnt], &d))
 			playerCnt++
 		}
-
+		getInstanceCount := func(id int64) int {
+			for _, e := range fight.EnemyNPCs {
+				if e.ID == id {
+					return e.InstanceCount
+				}
+			}
+			return 1
+		}
 		// create enemies
 		for _, e := range fight.EnemyNPCs {
 			info := actorInfo(e.ID)
-			ms.system.AddEntry(e.ID, entry.NewEnemy(ms.ecs, f64.Vec2{0, 0}, 5, info.GameID, e.ID, info.Name, info.SubType == "Boss"))
+			ms.system.AddEntry(e.ID, entry.NewEnemy(ms.ecs, f64.Vec2{0, 0}, 5, info.GameID, e.ID, info.Name, info.SubType == "Boss", getInstanceCount(e.ID)))
 		}
 
 		// create a timeline

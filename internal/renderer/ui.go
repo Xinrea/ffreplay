@@ -24,7 +24,7 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 	x, y := ebiten.CursorPosition()
 	wx, wy := camera.ScreenToWorld(float64(x), float64(y))
 	ebitenutil.DebugPrintAt(screen, fmt.Sprintf("Cursor: %f, %f", wx, wy), 0, 0)
-	ebitenutil.DebugPrintAt(screen, fmt.Sprintf("Tick: %d, TPS: %.2f, FPS: %.2f", entry.GetTick(ecs), ebiten.ActualTPS(), ebiten.ActualFPS()), 0, 15)
+	ebitenutil.DebugPrintAt(screen, fmt.Sprintf("Tick: %d, Time: %d, TPS: %.2f, FPS: %.2f", entry.GetTick(ecs), util.TickToMS(entry.GetTick(ecs)), ebiten.ActualTPS(), ebiten.ActualFPS()), 0, 15)
 
 	memberList := []*model.StatusData{}
 	tag.PartyMember.Each(ecs.World, func(e *donburi.Entry) {
@@ -41,7 +41,12 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 	cnt := 0
 	w, h := camera.WindowSize()
 	for e := range tag.Enemy.Iter(ecs.World) {
+		sprite := component.Sprite.Get(e)
+		if !sprite.Initialized {
+			continue
+		}
 		enemy := component.Status.Get(e)
+		mainInstance := sprite.Instances[0]
 		if !enemy.IsBoss {
 			continue
 		}
@@ -50,9 +55,13 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 		healthLeft := w - float64(r.EnemyHealthBar.w) - 50
 		healthRight := healthLeft + float64(r.EnemyHealthBar.w)
 		r.EnemyHealthBar.Render(screen, healthLeft, float64(40+cnt*gap), percent)
-		if enemy.Casting != nil {
-			p := float64(util.TickToMS(entry.GetTick(ecs)-enemy.Casting.ApplyTick)) / float64(enemy.Casting.Duration)
-			DrawText(screen, fmt.Sprintf("[%d]%s", enemy.Casting.Ability.Guid, enemy.Casting.Ability.Name), 7, healthRight, float64(10+cnt*gap), r.EnemyHealthBar.Color, AlignRight)
+		if mainInstance.Casting != nil && mainInstance.Casting.StartTick != -1 {
+			castName := mainInstance.Casting.Name
+			if global.Debug {
+				castName = fmt.Sprintf("[%d]%s", mainInstance.Casting.ID, mainInstance.Casting.Name)
+			}
+			p := float64(util.TickToMS(entry.GetTick(ecs)-mainInstance.Casting.StartTick)) / float64(mainInstance.Casting.Cast)
+			DrawText(screen, castName, 7, healthRight, float64(10+cnt*gap), r.EnemyHealthBar.Color, AlignRight)
 			r.EnemyCasting.Render(screen, healthRight-float64(r.EnemyCasting.w), float64(30+cnt*gap), p)
 		}
 		DrawText(screen, enemy.Name, 7, healthLeft, float64(20+cnt*gap), r.EnemyHealthBar.Color, AlignLeft)
@@ -78,7 +87,7 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 	// Draw shortkey prompt
 	DrawText(screen, fmt.Sprintf("当前播放速度: %.1f", float64(entry.GetSpeed(ecs))/10.0), 7, w-30, h-90, color.White, AlignRight)
 	DrawText(screen, "快退: 方向键左 | 快进: 方向键右", 7, w-30, h-70, color.White, AlignRight)
-	DrawText(screen, "移动视角 W/A/S/D | 旋转视角: E/Q", 7, w-30, h-50, color.White, AlignRight)
+	DrawText(screen, "移动视角 W/A/S/D | 旋转视角: E/Q | 调试模式：`", 7, w-30, h-50, color.White, AlignRight)
 	DrawText(screen, "暂停: SPACE | 播放速度: 方向键（上下）| 回到开始: R", 7, w-30, h-30, color.White, AlignRight)
 }
 

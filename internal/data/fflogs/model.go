@@ -45,7 +45,8 @@ type ReportFight struct {
 }
 
 type ReportFightNPC struct {
-	ID int64
+	ID            int64
+	InstanceCount int
 }
 
 func (t *BearerAuthTransport) RoundTrip(req *http.Request) (*http.Response, error) {

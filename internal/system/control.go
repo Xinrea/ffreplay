@@ -22,7 +22,9 @@ func (s *System) ControlUpdate(ecs *ecs.ECS) {
 	camera.Update(s.ViewPort)
 
 	vel := vector.Vector{}
-
+	if inpututil.IsKeyJustPressed(ebiten.KeyBackquote) {
+		globalData.Debug = !globalData.Debug
+	}
 	if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
 		s.Pause = !s.Pause
 		globalData.Speed = 10
@@ -58,7 +60,7 @@ func (s *System) ControlUpdate(ecs *ecs.ECS) {
 			log.Fatal("Player not found")
 		}
 		status := component.Status.Get(player)
-		obj := component.Sprite.Get(player)
+		obj := component.Sprite.Get(player).Instances[0]
 		if !status.IsDead() {
 			// remember that face is relative to north
 			if ebiten.IsKeyPressed(ebiten.KeyW) {

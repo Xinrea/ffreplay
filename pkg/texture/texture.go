@@ -1,15 +1,10 @@
 package texture
 
 import (
-	"bytes"
-	"io"
 	"log"
-	"net/http"
 	"net/url"
-	"os"
 	"sync"
 
-	"github.com/Xinrea/ffreplay/util"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
@@ -33,49 +28,10 @@ func NewBuffTexture(iconName string) *Texture {
 	}
 	finalUrl := u.ResolveReference(u).String()
 	// not using local buff icon files
-	if util.IsWasm() {
-		img, err := ebitenutil.NewImageFromURL(finalUrl)
-		if err != nil {
-			log.Println("Load icon from fflogs failed")
-			return nil
-		}
-		texture := &Texture{
-			asset: img,
-		}
-		textureCache.Store(iconName, texture)
-		return texture
-	}
-	img, _, err := ebitenutil.NewImageFromFile("asset/buff/" + iconName)
+	img, err := ebitenutil.NewImageFromURL(finalUrl)
 	if err != nil {
-		// if not in wasm, save icon file
-		log.Println("Buff icon not found, downloading from fflogs", iconName)
-		// download image from fflogs
-		resp, err := http.Get(finalUrl)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer resp.Body.Close()
-		data, err := io.ReadAll(resp.Body)
-		if err != nil {
-			log.Fatal(err)
-		}
-		img, _, err = ebitenutil.NewImageFromReader(bytes.NewReader(data))
-		if err != nil {
-			log.Fatal("Create image from url failed:", finalUrl)
-		}
-		// save image to file
-		filePath := "asset/buff/" + iconName
-		file, err := os.Create(filePath)
-		if err != nil {
-			// it's ok to failed caching, for example: ../../warcraft/abilities/ability_hunter_assassinate2.jpg icon should not cached
-			log.Println(err)
-		} else {
-			defer file.Close()
-			_, err = file.Write(data)
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
+		log.Println("Load icon from fflogs failed")
+		return nil
 	}
 	texture := &Texture{
 		asset: img,

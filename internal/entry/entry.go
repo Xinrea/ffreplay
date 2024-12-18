@@ -21,7 +21,6 @@ var Player = newArchetype(tag.GameObject, tag.Player, tag.PartyMember, tag.Buffa
 var Enemy = newArchetype(tag.GameObject, tag.Enemy, tag.Buffable, component.Velocity, component.Sprite, component.Status)
 var Background = newArchetype(tag.Background, component.Map)
 var Camera = newArchetype(tag.Camera, component.Camera)
-var Skill = newArchetype(tag.Skill, component.Skill)
 var Timeline = newArchetype(tag.Timeline, component.Timeline)
 var Marker = newArchetype(tag.Marker, component.Marker)
 var Global = newArchetype(tag.Global, component.Global)
@@ -45,21 +44,25 @@ func (a *archetype) Spawn(ecs *ecs.ECS, cs ...donburi.IComponentType) *donburi.E
 }
 
 // boss gameID is unique in ffxiv, id is used in events
-func NewEnemy(ecs *ecs.ECS, pos f64.Vec2, ringSize float64, gameID int64, id int64, name string, isBoss bool) *donburi.Entry {
+func NewEnemy(ecs *ecs.ECS, pos f64.Vec2, ringSize float64, gameID int64, id int64, name string, isBoss bool, instanceCount int) *donburi.Entry {
 	enemy := Enemy.Spawn(ecs)
-
-	obj := object.NewPointObject(vector.NewVector(pos[0], pos[1]))
 	textureRing := texture.NewTextureFromFile("asset/target_enemy.png")
 	role := model.Boss
 	if !isBoss {
 		role = model.NPC
-		textureRing = nil
+	}
+	instances := []*model.Instance{}
+	for i := 0; i < instanceCount; i++ {
+		instances = append(instances, &model.Instance{
+			Face:       0,
+			Object:     object.NewPointObject(vector.NewVector(pos[0], pos[1])),
+			LastActive: -600,
+		})
 	}
 	component.Sprite.Set(enemy, &model.SpriteData{
 		Texture:     textureRing,
 		Scale:       ringSize,
-		Face:        0,
-		Object:      obj,
+		Instances:   instances,
 		Initialized: true,
 	})
 	component.Status.Set(enemy, &model.StatusData{
@@ -74,7 +77,6 @@ func NewEnemy(ecs *ecs.ECS, pos f64.Vec2, ringSize float64, gameID int64, id int
 		BuffList: model.NewBuffList(),
 		IsBoss:   isBoss,
 	})
-
 	return enemy
 }
 
@@ -90,10 +92,14 @@ func NewPlayer(ecs *ecs.ECS, role model.RoleType, pos f64.Vec2, detail *fflogs.P
 	obj := object.NewPointObject(vector.NewVector(pos[0], pos[1]))
 	// this scales target ring into size 50pixel, which means 1m in game
 	component.Sprite.Set(player, &model.SpriteData{
-		Texture:     texture.NewTextureFromFile("asset/target_normal.png"),
-		Scale:       0.1842,
-		Face:        0,
-		Object:      obj,
+		Texture: texture.NewTextureFromFile("asset/target_normal.png"),
+		Scale:   0.1842,
+		Instances: []*model.Instance{
+			{
+				Face:   0,
+				Object: obj,
+			},
+		},
 		Initialized: true,
 	})
 	component.Status.Set(player, &model.StatusData{
@@ -136,19 +142,6 @@ func NewCamera(ecs *ecs.ECS) *donburi.Entry {
 		Rotation:   0,
 	})
 	return camera
-}
-
-func CastSkill(ecs *ecs.ECS, castTime int64, displayTime int64, gameSkill model.GameSkill) *donburi.Entry {
-	newSkill := Skill.Spawn(ecs)
-	component.Skill.Set(newSkill, &model.SkillData{
-		Time: model.SkillTimeOption{
-			StartTick:   GetTick(ecs),
-			CastTime:    castTime,
-			DisplayTime: displayTime,
-		},
-		GameSkill: gameSkill,
-	})
-	return newSkill
 }
 
 func NewTimeline(ecs *ecs.ECS, data *model.TimelineData) *donburi.Entry {

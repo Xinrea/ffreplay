@@ -17,6 +17,7 @@ import (
 // Remember that system is updated in TPS (Ticks Per Second) rate, in ebiten, it's 60 TPS.
 type System struct {
 	lock           sync.Mutex
+	ECS            *ecs.ECS
 	ViewPort       f64.Vec2
 	MainPlayerRole model.RoleType
 	EventLines     map[int64]*EventLine
@@ -29,7 +30,7 @@ type System struct {
 type EventLine struct {
 	Cursor int
 	Events []fflogs.FFLogsEvent
-	Status []StatusEvent
+	Status map[int][]StatusEvent
 }
 
 type StatusEvent struct {
@@ -74,12 +75,16 @@ func (s *System) AddEntry(id int64, player *donburi.Entry) {
 func (s *System) AddEventLine(id int64, events []fflogs.FFLogsEvent) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	status := []StatusEvent{}
+	status := make(map[int][]StatusEvent)
 	for _, e := range events {
 		// make sure every tick has at most one status event
 		if e.SourceID != nil && *e.SourceID == id && e.SourceResources != nil {
-			if len(status) == 0 || status[len(status)-1].Tick != e.LocalTick {
-				status = append(status, StatusEvent{
+			instanceID := 1
+			if e.SourceInstance != nil {
+				instanceID = int(*e.SourceInstance)
+			}
+			if len(status[instanceID]) == 0 || status[instanceID][len(status[instanceID])-1].Tick != e.LocalTick {
+				status[instanceID] = append(status[instanceID], StatusEvent{
 					Tick:     e.LocalTick,
 					Face:     float64(e.SourceResources.Facing) / 100,
 					HP:       int(e.SourceResources.HitPoints),
@@ -89,7 +94,7 @@ func (s *System) AddEventLine(id int64, events []fflogs.FFLogsEvent) {
 					Position: vector.Vector{float64(e.SourceResources.X-10000) / 100 * 25, float64(e.SourceResources.Y-10000) / 100 * 25},
 				})
 			} else {
-				status[len(status)-1] = StatusEvent{
+				status[instanceID][len(status[instanceID])-1] = StatusEvent{
 					Tick:     e.LocalTick,
 					Face:     float64(e.SourceResources.Facing) / 100,
 					HP:       int(e.SourceResources.HitPoints),
@@ -101,8 +106,12 @@ func (s *System) AddEventLine(id int64, events []fflogs.FFLogsEvent) {
 			}
 		}
 		if e.TargetID != nil && *e.TargetID == id && e.TargetResources != nil {
-			if len(status) == 0 || status[len(status)-1].Tick != e.LocalTick {
-				status = append(status, StatusEvent{
+			instanceID := 1
+			if e.TargetInstance != nil {
+				instanceID = int(*e.TargetInstance)
+			}
+			if len(status[instanceID]) == 0 || status[instanceID][len(status[instanceID])-1].Tick != e.LocalTick {
+				status[instanceID] = append(status[instanceID], StatusEvent{
 					Tick:     e.LocalTick,
 					Face:     float64(e.TargetResources.Facing) / 100,
 					HP:       int(e.TargetResources.HitPoints),
@@ -112,7 +121,7 @@ func (s *System) AddEventLine(id int64, events []fflogs.FFLogsEvent) {
 					Position: vector.Vector{float64(e.TargetResources.X-10000) / 100 * 25, float64(e.TargetResources.Y-10000) / 100 * 25},
 				})
 			} else {
-				status[len(status)-1] = StatusEvent{
+				status[instanceID][len(status[instanceID])-1] = StatusEvent{
 					Tick:     e.LocalTick,
 					Face:     float64(e.TargetResources.Facing) / 100,
 					HP:       int(e.TargetResources.HitPoints),
@@ -124,9 +133,15 @@ func (s *System) AddEventLine(id int64, events []fflogs.FFLogsEvent) {
 			}
 		}
 	}
+	filteredEvents := make([]fflogs.FFLogsEvent, 0)
+	for _, e := range events {
+		if e.SourceID != nil && *e.SourceID == id {
+			filteredEvents = append(filteredEvents, e)
+		}
+	}
 	s.EventLines[id] = &EventLine{
 		Cursor: 0,
-		Events: events,
+		Events: filteredEvents,
 		Status: status,
 	}
 }
@@ -158,7 +173,9 @@ func (s *System) doReset(ecs *ecs.ECS) {
 	// clean all buffs and casting
 	for e := range component.Status.Iter(ecs.World) {
 		status := component.Status.Get(e)
-		status.Casting = nil
 		status.BuffList.Clear()
+		for _, instance := range component.Sprite.Get(e).Instances {
+			instance.Casting = nil
+		}
 	}
 }

@@ -131,6 +131,7 @@ func (c *FFLogsClient) QueryReportFights(reportCode string) []ReportFight {
 							endTime
 							enemyNPCs {
 								id
+								instanceCount
 							}
 							maps {
 								id
@@ -263,23 +264,20 @@ type Ability struct {
 	AbilityIcon string `json:"abilityIcon"`
 }
 
-func (a Ability) ToCast(tick, duration int64) model.Cast {
-	return model.Cast{
-		ApplyTick: tick,
-		Ability: model.Ability{
-			Guid:        a.Guid,
-			Name:        a.Name,
-			AbilityIcon: a.AbilityIcon,
-		},
-		Duration: duration,
-	}
-}
-
 func (a Ability) ToBuff() model.Buff {
 	return model.Buff{
 		ID:   a.Guid,
 		Name: a.Name,
 		Icon: a.AbilityIcon,
+	}
+}
+
+func (a Ability) ToSkill(duration int64) model.Skill {
+	return model.Skill{
+		ID:     a.Guid,
+		Name:   a.Name,
+		Cast:   duration,
+		Recast: 0,
 	}
 }
 

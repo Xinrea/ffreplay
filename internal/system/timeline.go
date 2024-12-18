@@ -8,15 +8,26 @@ import (
 )
 
 func (s *System) TimelineUpdate(ecs *ecs.ECS) {
+	tick := entry.GetTick(ecs)
 	for e := range tag.Timeline.Iter(ecs.World) {
 		timeline := component.Timeline.Get(e)
-		for _, event := range timeline.Events {
-			if event.Done {
+		if timeline.IsDone(tick) {
+			e.Remove()
+			continue
+		}
+		p := tick - timeline.StartTick
+		for i := range timeline.Events {
+			if timeline.Events[i].OffsetTick()-timeline.Events[i].DisplayTick()/2 == p {
+				timeline.Begin(ecs, i)
 				continue
 			}
-			if event.Offset <= entry.GetTick(ecs) {
-				event.Action(ecs)
-				event.Done = true
+			if timeline.Events[i].OffsetTick()-timeline.Events[i].DisplayTick()/2 < p && p < timeline.Events[i].OffsetTick() {
+				timeline.Update(ecs, i)
+				continue
+			}
+			if timeline.Events[i].OffsetTick() == p {
+				timeline.Finish(ecs, i)
+				continue
 			}
 		}
 	}
