@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sort"
 	"sync"
 
 	"github.com/Xinrea/ffreplay/internal/component"
@@ -15,6 +16,7 @@ import (
 	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/internal/renderer"
 	"github.com/Xinrea/ffreplay/internal/system"
+	"github.com/Xinrea/ffreplay/pkg/texture"
 	"github.com/Xinrea/ffreplay/util"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/yohamta/donburi"
@@ -30,20 +32,43 @@ type FFScene struct {
 	system *system.System
 }
 
-type MapConfig struct {
-	Maps []MapItem
+type MapPreset struct {
+	Maps []MapPresetItem
 }
 
-type MapItem struct {
+type MapPresetItem struct {
 	ID     int
 	Path   string
 	Offset struct {
 		X float64
 		Y float64
 	}
+	Phases []struct {
+		Path   string
+		Offset struct {
+			X float64
+			Y float64
+		}
+	}
 }
 
-var MapCache = map[int]MapItem{}
+func (m MapPresetItem) Load() *model.MapConfig {
+	config := &model.MapConfig{}
+	config.ID = m.ID
+	config.DefaultMap.Texture = texture.NewTextureFromFile(m.Path)
+	config.DefaultMap.Offset.X = m.Offset.X
+	config.DefaultMap.Offset.Y = m.Offset.Y
+	for _, p := range m.Phases {
+		item := model.MapItem{}
+		item.Texture = texture.NewTextureFromFile(p.Path)
+		item.Offset.X = p.Offset.X
+		item.Offset.Y = p.Offset.Y
+		config.Phases = append(config.Phases, item)
+	}
+	return config
+}
+
+var MapCache = map[int]MapPresetItem{}
 
 func init() {
 	if util.IsWasm() {
@@ -52,7 +77,7 @@ func init() {
 			log.Fatal(err)
 		}
 		defer resp.Body.Close()
-		var config MapConfig
+		var config MapPreset
 		err = json.NewDecoder(resp.Body).Decode(&config)
 		if err != nil {
 			log.Fatal(err)
@@ -68,7 +93,7 @@ func init() {
 	}
 	defer f.Close()
 
-	var config MapConfig
+	var config MapPreset
 	err = json.NewDecoder(f).Decode(&config)
 	if err != nil {
 		log.Fatal(err)
@@ -118,13 +143,21 @@ func (ms *FFScene) init() {
 		fight := fights[fightIndex]
 		log.Println("Fight name:", fight.Name)
 		global.FightDuration.Store(int64(fight.EndTime - fight.StartTime))
+		phases := []int64{}
+		for _, p := range fight.PhaseTransitions {
+			phases = append(phases, util.MSToTick(p.StartTime-int64(fight.StartTime)))
+		}
+		sort.Slice(phases, func(i, j int) bool {
+			return phases[i] < phases[j]
+		})
+		global.Phases = phases
 		// create a background base on mapID
 		if m, ok := MapCache[fight.Maps[0].ID]; ok {
-			entry.NewMap(ms.ecs, m.Path, f64.Vec2{float64(m.Offset.X), float64(m.Offset.Y)})
+			entry.NewMap(ms.ecs, m.Load())
 		} else {
-			// get first map in cache as default
+			// get first map in cache as default, which is random
 			for _, m := range MapCache {
-				entry.NewMap(ms.ecs, m.Path, f64.Vec2{float64(m.Offset.X), float64(m.Offset.Y)})
+				entry.NewMap(ms.ecs, m.Load())
 				break
 			}
 		}

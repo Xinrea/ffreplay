@@ -66,11 +66,48 @@
     },
     {
       "id": 77,
-      "path": "asset/floor/afr.png",
+      "path": "asset/floor/futures_rewritten_1.png",
       "offset": {
         "x": 0,
         "y": 0
-      }
+      },
+      "phases": [
+        {
+          "path": "asset/floor/futures_rewritten_1.png",
+          "offset": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "path": "asset/floor/futures_rewritten_2.jpg",
+          "offset": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "path": "asset/floor/futures_rewritten_3.png",
+          "offset": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "path": "asset/floor/futures_rewritten_3.png",
+          "offset": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "path": "asset/floor/futures_rewritten_4.png",
+          "offset": {
+            "x": 0,
+            "y": 0
+          }
+        }
+      ]
     }
   ]
 }

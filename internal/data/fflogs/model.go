@@ -38,6 +38,10 @@ type ReportFight struct {
 	Maps      []struct {
 		ID int
 	}
+	PhaseTransitions []struct {
+		ID        int
+		StartTime int64
+	}
 }
 
 type ReportFightNPC struct {

@@ -19,7 +19,7 @@ import (
 
 var Player = newArchetype(tag.GameObject, tag.Player, tag.PartyMember, tag.Buffable, component.Velocity, component.Sprite, component.Status)
 var Enemy = newArchetype(tag.GameObject, tag.Enemy, tag.Buffable, component.Velocity, component.Sprite, component.Status)
-var Background = newArchetype(tag.Background, component.Sprite)
+var Background = newArchetype(tag.Background, component.Map)
 var Camera = newArchetype(tag.Camera, component.Camera)
 var Skill = newArchetype(tag.Skill, component.Skill)
 var Timeline = newArchetype(tag.Timeline, component.Timeline)
@@ -111,15 +111,10 @@ func NewPlayer(ecs *ecs.ECS, role model.RoleType, pos f64.Vec2, detail *fflogs.P
 	return player
 }
 
-func NewMap(ecs *ecs.ECS, path string, offset f64.Vec2) *donburi.Entry {
+func NewMap(ecs *ecs.ECS, m *model.MapConfig) *donburi.Entry {
 	bg := Background.Spawn(ecs)
-	obj := object.NewPointObject(vector.Vector(offset))
-	component.Sprite.Set(bg, &model.SpriteData{
-		Texture:     texture.NewTextureFromFile(path),
-		Scale:       1,
-		Face:        0,
-		Object:      obj,
-		Initialized: true,
+	component.Map.Set(bg, &model.MapData{
+		Config: m,
 	})
 
 	return bg
@@ -177,4 +172,19 @@ func GetTick(ecs *ecs.ECS) int64 {
 
 func GetSpeed(ecs *ecs.ECS) int64 {
 	return component.Global.Get(tag.Global.MustFirst(ecs.World)).Speed
+}
+
+func GetPhase(ecs *ecs.ECS) int {
+	global := component.Global.Get(tag.Global.MustFirst(ecs.World))
+	if global.Phases == nil {
+		return 0
+	}
+	// find phase by current tick
+	tick := global.Tick / 10
+	for i, p := range global.Phases {
+		if p > tick {
+			return i - 1
+		}
+	}
+	return len(global.Phases) - 1
 }

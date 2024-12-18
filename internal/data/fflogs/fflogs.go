@@ -135,6 +135,10 @@ func (c *FFLogsClient) QueryReportFights(reportCode string) []ReportFight {
 							maps {
 								id
 							}
+							phaseTransitions {
+								id
+								startTime
+							}
 						}
 					}
 				}
