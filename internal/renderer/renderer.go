@@ -40,10 +40,9 @@ type Renderer struct {
 	EnemyCasting   *ProgressBar
 	PartyList      *PartyList
 	PlayProgress   *ProgressBar
-	FightDuration  float64
 }
 
-func NewRenderer(fightDuration float64) *Renderer {
+func NewRenderer() *Renderer {
 	pcolor := color.NRGBA{255, 181, 176, 255}
 	healthBar := NewProgressBar(400, 6, pcolor)
 	return &Renderer{
@@ -51,7 +50,6 @@ func NewRenderer(fightDuration float64) *Renderer {
 		EnemyCasting:   NewProgressBar(100, 4, pcolor),
 		PartyList:      NewPartyList(40, 40),
 		PlayProgress:   NewProgressBar(300, 6, color.NRGBA{230, 255, 255, 255}),
-		FightDuration:  fightDuration,
 	}
 }
 

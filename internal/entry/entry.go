@@ -56,10 +56,11 @@ func NewEnemy(ecs *ecs.ECS, pos f64.Vec2, ringSize float64, gameID int64, id int
 		textureRing = nil
 	}
 	component.Sprite.Set(enemy, &model.SpriteData{
-		Texture: textureRing,
-		Scale:   ringSize,
-		Face:    0,
-		Object:  obj,
+		Texture:     textureRing,
+		Scale:       ringSize,
+		Face:        0,
+		Object:      obj,
+		Initialized: true,
 	})
 	component.Status.Set(enemy, &model.StatusData{
 		GameID:   gameID,
@@ -89,10 +90,11 @@ func NewPlayer(ecs *ecs.ECS, role model.RoleType, pos f64.Vec2, detail *fflogs.P
 	obj := object.NewPointObject(vector.NewVector(pos[0], pos[1]))
 	// this scales target ring into size 50pixel, which means 1m in game
 	component.Sprite.Set(player, &model.SpriteData{
-		Texture: texture.NewTextureFromFile("asset/target_normal.png"),
-		Scale:   0.1842,
-		Face:    0,
-		Object:  obj,
+		Texture:     texture.NewTextureFromFile("asset/target_normal.png"),
+		Scale:       0.1842,
+		Face:        0,
+		Object:      obj,
+		Initialized: true,
 	})
 	component.Status.Set(player, &model.StatusData{
 		GameID:   -1,
@@ -113,10 +115,11 @@ func NewMap(ecs *ecs.ECS, path string, offset f64.Vec2) *donburi.Entry {
 	bg := Background.Spawn(ecs)
 	obj := object.NewPointObject(vector.Vector(offset))
 	component.Sprite.Set(bg, &model.SpriteData{
-		Texture: texture.NewTextureFromFile(path),
-		Scale:   1,
-		Face:    0,
-		Object:  obj,
+		Texture:     texture.NewTextureFromFile(path),
+		Scale:       1,
+		Face:        0,
+		Object:      obj,
+		Initialized: true,
 	})
 
 	return bg

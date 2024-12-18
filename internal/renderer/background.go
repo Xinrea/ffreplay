@@ -9,6 +9,8 @@ import (
 
 func (r *Renderer) BackgroundRender(ecs *ecs.ECS, screen *ebiten.Image) {
 	camera := component.Camera.Get(tag.Camera.MustFirst(ecs.World))
-	ground := component.Sprite.Get(tag.Background.MustFirst(ecs.World))
-	ground.Render(camera, screen)
+	for g := range tag.Background.Iter(ecs.World) {
+		ground := component.Sprite.Get(g)
+		ground.Render(camera, screen)
+	}
 }

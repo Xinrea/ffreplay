@@ -143,7 +143,7 @@ func (s *System) Update(ecs *ecs.ECS) {
 	s.BuffUpdate(ecs, globalData.Tick/10)
 	s.SkillUpdate(ecs)
 	s.MarkerUpdate(ecs)
-	if !s.Pause {
+	if globalData.Loaded.Load() && !s.Pause {
 		globalData.Tick += globalData.Speed
 	}
 }

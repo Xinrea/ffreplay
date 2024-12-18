@@ -18,6 +18,7 @@ import (
 func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 	// render debug info
 	camera := component.Camera.Get(tag.Camera.MustFirst(ecs.World))
+	global := component.Global.Get(tag.Global.MustFirst(ecs.World))
 	x, y := ebiten.CursorPosition()
 	wx, wy := camera.ScreenToWorld(float64(x), float64(y))
 	ebitenutil.DebugPrintAt(screen, fmt.Sprintf("Cursor: %f, %f", wx, wy), 0, 0)
@@ -25,6 +26,10 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 
 	memberList := []*model.StatusData{}
 	tag.PartyMember.Each(ecs.World, func(e *donburi.Entry) {
+		sprite := component.Sprite.Get(e)
+		if !sprite.Initialized {
+			return
+		}
 		member := component.Status.Get(e)
 		memberList = append(memberList, member)
 	})
@@ -54,10 +59,19 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 		cnt++
 	}
 
+	if !global.Loaded.Load() {
+		DrawFilledRect(screen, 0, 0, w, h, color.RGBA{0, 0, 0, 128})
+		DrawText(screen, fmt.Sprintf("预处理中: %d", global.LoadCount.Load()), 14, w/2, h/2, color.White, AlignCenter)
+	}
+
 	// render play progress
 	current := float64(entry.GetTick(ecs)) / 60
-	DrawText(screen, fmt.Sprintf("%.1fs / %.1fs", current, r.FightDuration), 7, w-30, h-120, color.White, AlignRight)
-	r.PlayProgress.Render(screen, w-float64(r.PlayProgress.w)-30, h-100, current/r.FightDuration)
+	p := 0.0
+	if global.FightDuration.Load() > 0 {
+		p = current / float64(global.FightDuration.Load())
+	}
+	DrawText(screen, fmt.Sprintf("%.1fs / %.1fs", current, float64(global.FightDuration.Load())/1000), 7, w-30, h-120, color.White, AlignRight)
+	r.PlayProgress.Render(screen, w-float64(r.PlayProgress.w)-30, h-100, p)
 
 	// Draw shortkey prompt
 	DrawText(screen, fmt.Sprintf("当前播放速度: %.1f", float64(entry.GetSpeed(ecs))/10.0), 7, w-30, h-90, color.White, AlignRight)

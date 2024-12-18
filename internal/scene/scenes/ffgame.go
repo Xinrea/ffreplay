@@ -8,6 +8,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/data"
 	"github.com/Xinrea/ffreplay/internal/data/fflogs"
 	"github.com/Xinrea/ffreplay/internal/entry"
@@ -90,165 +91,177 @@ func NewFFScene(client *fflogs.FFLogsClient, code string, fight int) *FFScene {
 }
 
 func (ms *FFScene) init() {
-	fights := ms.client.QueryReportFights(ms.code)
-	fightIndex := -1
-	for i := range fights {
-		if fights[i].ID == ms.fight {
-			fightIndex = i
-			break
-		}
-	}
-	if fightIndex == -1 {
-		log.Fatal("Invalid fight id")
-	}
-
-	fight := fights[fightIndex]
-	log.Println("Fight name:", fight.Name)
-	// create a background base on mapID
-	if m, ok := MapCache[fight.Maps[0].ID]; ok {
-		entry.NewMap(ms.ecs, m.Path, f64.Vec2{float64(m.Offset.X), float64(m.Offset.Y)})
-	} else {
-		// get first map in cache as default
-		for _, m := range MapCache {
-			entry.NewMap(ms.ecs, m.Path, f64.Vec2{float64(m.Offset.X), float64(m.Offset.Y)})
-			break
-		}
-	}
-	// query worldMarkers
-	markers := ms.client.QueryWorldMarkers(ms.code, fight.ID)
-	// create markers
-	for _, m := range markers {
-		if m.MapID != fight.Maps[0].ID {
-			continue
-		}
-		entry.NewMarker(ms.ecs, model.MarkerA+model.MarkerType(m.Icon-1), f64.Vec2{float64(m.X-10000) / 100 * 25, float64(m.Y-10000) / 100 * 25})
-	}
-	// initialize player events
-	players := ms.client.QueryFightPlayers(ms.code, fight.ID)
-	actors := ms.client.QueryActors(ms.code)
-	log.Println("Actors:", actors)
-	if len(actors) == 0 {
-		log.Fatal("No actor found")
-		return
-	}
-	actorInfo := func(id int64) fflogs.Actor {
-		for _, b := range actors {
-			if b.ID == id {
-				return b
-			}
-		}
-		return fflogs.Actor{}
-	}
-
-	var wg sync.WaitGroup
-	for _, p := range players.Tanks {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			events := data.FetchLogEvents(ms.client, ms.code, fight, p.ID)
-			ms.system.AddEventLine(p.ID, events)
-		}()
-	}
-	for _, p := range players.Healers {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			events := data.FetchLogEvents(ms.client, ms.code, fight, p.ID)
-			ms.system.AddEventLine(p.ID, events)
-		}()
-	}
-	for _, p := range players.DPS {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			events := data.FetchLogEvents(ms.client, ms.code, fight, p.ID)
-			ms.system.AddEventLine(p.ID, events)
-		}()
-	}
-	ms.ecs.AddSystem(ms.system.Update)
-
-	// initialize enemy events
-	for _, e := range fight.EnemyNPCs {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			events := data.FetchLogEvents(ms.client, ms.code, fight, e.ID)
-			ms.system.AddEventLine(e.ID, events)
-		}()
-	}
-	wg.Wait()
-
-	renderer := renderer.NewRenderer((fight.EndTime - fight.StartTime) / 1000)
-	renderer.Init(ms.ecs)
-
-	entry.NewGlobal(ms.ecs)
+	// create a global config entry
+	g := entry.NewGlobal(ms.ecs)
 	// create basic camera
 	entry.NewCamera(ms.ecs)
+	global := component.Global.Get(g)
 
-	// create players
-	posPreset := []f64.Vec2{
-		{0, -200},
-		{0, 200},
-		{200, 0},
-		{-200, 0},
-		{-200, 200},
-		{200, 200},
-		{-200, -200},
-		{200, -200},
-	}
+	ms.ecs.AddSystem(ms.system.Update)
 
-	playerCnt := 0
-	for _, t := range players.Tanks {
-		ms.system.AddEntry(t.ID, entry.NewPlayer(ms.ecs, t.Type, posPreset[playerCnt], &t))
-		playerCnt++
-	}
-	for _, h := range players.Healers {
-		ms.system.AddEntry(h.ID, entry.NewPlayer(ms.ecs, h.Type, posPreset[playerCnt], &h))
-		playerCnt++
-	}
-	for _, d := range players.DPS {
-		ms.system.AddEntry(d.ID, entry.NewPlayer(ms.ecs, d.Type, posPreset[playerCnt], &d))
-		playerCnt++
-	}
+	renderer := renderer.NewRenderer()
+	renderer.Init(ms.ecs)
 
-	// create enemies
-	for _, e := range fight.EnemyNPCs {
-		info := actorInfo(e.ID)
-		ms.system.AddEntry(e.ID, entry.NewEnemy(ms.ecs, f64.Vec2{0, 0}, 5, info.GameID, e.ID, info.Name, info.SubType == "Boss"))
-	}
+	go func() {
+		fights := ms.client.QueryReportFights(ms.code)
+		fightIndex := -1
+		for i := range fights {
+			if fights[i].ID == ms.fight {
+				fightIndex = i
+				break
+			}
+		}
+		if fightIndex == -1 {
+			log.Fatal("Invalid fight id")
+		}
 
-	// create a timeline
-	// entry.NewTimeline(ms.ecs, &model.TimelineData{
-	// 	Name:      "example",
-	// 	BeginTime: util.Time(),
-	// 	Events: []*model.Event{
-	// 		{
-	// 			Offset: 0,
-	// 			Action: func(ecs *ecs.ECS) {
-	// 				for e := range tag.PartyMember.Iter(ecs.World) {
-	// 					entry.CastSkill(ecs, 2000, 1000, skills.NewSkillTestFan(ecs, enemy, e, 30))
-	// 				}
-	// 			},
-	// 		},
-	// 		{
-	// 			Offset: 2000,
-	// 			Action: func(ecs *ecs.ECS) {
-	// 				for e := range tag.PartyMember.Iter(ecs.World) {
-	// 					entry.CastSkill(ecs, 5000, 5000, skills.NewSkillTestRectLocked(ecs, enemy, e, 200))
-	// 				}
-	// 			},
-	// 		},
-	// 		{
-	// 			Offset: 7500,
-	// 			Action: func(ecs *ecs.ECS) {
-	// 				for e := range tag.PartyMember.Iter(ecs.World) {
-	// 					entry.CastSkill(ecs, 2000, 1000, skills.NewSkillTestRect(ecs, enemy, e, 200))
-	// 				}
-	// 			},
-	// 		},
-	// 	},
-	// })
-	log.Println("Game scene initialized")
+		fight := fights[fightIndex]
+		log.Println("Fight name:", fight.Name)
+		global.FightDuration.Store(int64(fight.EndTime - fight.StartTime))
+		// create a background base on mapID
+		if m, ok := MapCache[fight.Maps[0].ID]; ok {
+			entry.NewMap(ms.ecs, m.Path, f64.Vec2{float64(m.Offset.X), float64(m.Offset.Y)})
+		} else {
+			// get first map in cache as default
+			for _, m := range MapCache {
+				entry.NewMap(ms.ecs, m.Path, f64.Vec2{float64(m.Offset.X), float64(m.Offset.Y)})
+				break
+			}
+		}
+		// query worldMarkers
+		markers := ms.client.QueryWorldMarkers(ms.code, fight.ID)
+		// create markers
+		for _, m := range markers {
+			if m.MapID != fight.Maps[0].ID {
+				continue
+			}
+			entry.NewMarker(ms.ecs, model.MarkerA+model.MarkerType(m.Icon-1), f64.Vec2{float64(m.X-10000) / 100 * 25, float64(m.Y-10000) / 100 * 25})
+		}
+		// initialize player events
+		players := ms.client.QueryFightPlayers(ms.code, fight.ID)
+		actors := ms.client.QueryActors(ms.code)
+		log.Println("Actors:", actors)
+		if len(actors) == 0 {
+			log.Fatal("No actor found")
+			return
+		}
+		actorInfo := func(id int64) fflogs.Actor {
+			for _, b := range actors {
+				if b.ID == id {
+					return b
+				}
+			}
+			return fflogs.Actor{}
+		}
+
+		var wg sync.WaitGroup
+		for _, p := range players.Tanks {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				events := data.FetchLogEvents(ms.client, ms.code, fight, p.ID)
+				data.PreloadIcons(events, &global.LoadCount)
+				ms.system.AddEventLine(p.ID, events)
+			}()
+		}
+		for _, p := range players.Healers {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				events := data.FetchLogEvents(ms.client, ms.code, fight, p.ID)
+				data.PreloadIcons(events, &global.LoadCount)
+				ms.system.AddEventLine(p.ID, events)
+			}()
+		}
+		for _, p := range players.DPS {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				events := data.FetchLogEvents(ms.client, ms.code, fight, p.ID)
+				data.PreloadIcons(events, &global.LoadCount)
+				ms.system.AddEventLine(p.ID, events)
+			}()
+		}
+
+		// initialize enemy events
+		for _, e := range fight.EnemyNPCs {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				events := data.FetchLogEvents(ms.client, ms.code, fight, e.ID)
+				data.PreloadIcons(events, &global.LoadCount)
+				ms.system.AddEventLine(e.ID, events)
+			}()
+		}
+
+		// create players
+		posPreset := []f64.Vec2{
+			{0, -200},
+			{0, 200},
+			{200, 0},
+			{-200, 0},
+			{-200, 200},
+			{200, 200},
+			{-200, -200},
+			{200, -200},
+		}
+
+		playerCnt := 0
+		for _, t := range players.Tanks {
+			ms.system.AddEntry(t.ID, entry.NewPlayer(ms.ecs, t.Type, posPreset[playerCnt], &t))
+			playerCnt++
+		}
+		for _, h := range players.Healers {
+			ms.system.AddEntry(h.ID, entry.NewPlayer(ms.ecs, h.Type, posPreset[playerCnt], &h))
+			playerCnt++
+		}
+		for _, d := range players.DPS {
+			ms.system.AddEntry(d.ID, entry.NewPlayer(ms.ecs, d.Type, posPreset[playerCnt], &d))
+			playerCnt++
+		}
+
+		// create enemies
+		for _, e := range fight.EnemyNPCs {
+			info := actorInfo(e.ID)
+			ms.system.AddEntry(e.ID, entry.NewEnemy(ms.ecs, f64.Vec2{0, 0}, 5, info.GameID, e.ID, info.Name, info.SubType == "Boss"))
+		}
+
+		// create a timeline
+		// entry.NewTimeline(ms.ecs, &model.TimelineData{
+		// 	Name:      "example",
+		// 	BeginTime: util.Time(),
+		// 	Events: []*model.Event{
+		// 		{
+		// 			Offset: 0,
+		// 			Action: func(ecs *ecs.ECS) {
+		// 				for e := range tag.PartyMember.Iter(ecs.World) {
+		// 					entry.CastSkill(ecs, 2000, 1000, skills.NewSkillTestFan(ecs, enemy, e, 30))
+		// 				}
+		// 			},
+		// 		},
+		// 		{
+		// 			Offset: 2000,
+		// 			Action: func(ecs *ecs.ECS) {
+		// 				for e := range tag.PartyMember.Iter(ecs.World) {
+		// 					entry.CastSkill(ecs, 5000, 5000, skills.NewSkillTestRectLocked(ecs, enemy, e, 200))
+		// 				}
+		// 			},
+		// 		},
+		// 		{
+		// 			Offset: 7500,
+		// 			Action: func(ecs *ecs.ECS) {
+		// 				for e := range tag.PartyMember.Iter(ecs.World) {
+		// 					entry.CastSkill(ecs, 2000, 1000, skills.NewSkillTestRect(ecs, enemy, e, 200))
+		// 				}
+		// 			},
+		// 		},
+		// 	},
+		// })
+
+		wg.Wait()
+		global.Loaded.Store(true)
+		log.Println("Game scene initialized")
+	}()
 }
 
 func (ms *FFScene) Reset() {

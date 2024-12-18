@@ -22,6 +22,9 @@ func (r *Renderer) PlayerRender(ecs *ecs.ECS, screen *ebiten.Image) {
 
 func (r *Renderer) renderPlayer(tick int64, camera *model.CameraData, screen *ebiten.Image, player *donburi.Entry) {
 	sprite := component.Sprite.Get(player)
+	if !sprite.Initialized {
+		return
+	}
 	status := component.Status.Get(player)
 	wordM := camera.WorldMatrix()
 	wordM.Invert()

@@ -44,6 +44,9 @@ func (p *PartyList) renderOne(tick int64, canvas *ebiten.Image, member *model.St
 	RenderBuffList(canvas, tick, member.BuffList.Buffs(), pos[0]+200, pos[1], s)
 	// render HP bar
 	progress := float64(member.HP) / float64(member.MaxHP)
+	if progress > 1 {
+		progress = 1
+	}
 	p.progress.Render(canvas, pos[0]+25, pos[1]+5, progress)
 	DrawText(canvas, fmt.Sprintf("%d", member.HP), 7, pos[0]+175, pos[1]+10, color.White, AlignRight)
 }

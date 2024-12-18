@@ -2,6 +2,7 @@ package data
 
 import (
 	"sort"
+	"sync/atomic"
 
 	"github.com/Xinrea/ffreplay/internal/data/fflogs"
 	"github.com/Xinrea/ffreplay/pkg/texture"
@@ -15,14 +16,19 @@ func FetchLogEvents(c *fflogs.FFLogsClient, code string, fight fflogs.ReportFigh
 	// preprocess events, convert timestamp to tick
 	for i := range events {
 		events[i].LocalTick = int64(events[i].Timestamp-startTime) / 1000 * 60
-		// preload buff icons
-		if events[i].Ability != nil {
-			_ = texture.NewBuffTexture(events[i].Ability.AbilityIcon)
-		}
 	}
 	// sort events by tick
 	sort.Slice(events, func(i, j int) bool {
 		return events[i].LocalTick < events[j].LocalTick
 	})
 	return events
+}
+
+func PreloadIcons(events []fflogs.FFLogsEvent, counter *atomic.Int32) {
+	for i := range events {
+		counter.Add(1)
+		if events[i].Ability != nil {
+			_ = texture.NewBuffTexture(events[i].Ability.AbilityIcon)
+		}
+	}
 }
