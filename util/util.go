@@ -59,3 +59,7 @@ func LerpRadians(a, b, t float64) float64 {
 func TickToMS(ticks int64) int64 {
 	return int64(float64(ticks) / ebiten.DefaultTPS * 1000)
 }
+
+func MSToTick(ms int64) int64 {
+	return int64(float64(ms) / 1000 * ebiten.DefaultTPS)
+}

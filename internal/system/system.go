@@ -8,6 +8,7 @@ import (
 	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/internal/tag"
 	"github.com/Xinrea/ffreplay/pkg/vector"
+	"github.com/Xinrea/ffreplay/util"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"
 	"golang.org/x/image/math/f64"
@@ -143,8 +144,9 @@ func (s *System) Update(ecs *ecs.ECS) {
 	s.BuffUpdate(ecs, globalData.Tick/10)
 	s.SkillUpdate(ecs)
 	s.MarkerUpdate(ecs)
-	if globalData.Loaded.Load() && !s.Pause {
+	if globalData.Loaded.Load() && !s.Pause && util.MSToTick(globalData.FightDuration.Load())*10 > globalData.Tick {
 		globalData.Tick += globalData.Speed
+		globalData.Tick = min(globalData.Tick, util.MSToTick(globalData.FightDuration.Load())*10)
 	}
 }
 

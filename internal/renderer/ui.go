@@ -70,7 +70,7 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 	current := float64(entry.GetTick(ecs)) / 60
 	p := 0.0
 	if global.FightDuration.Load() > 0 {
-		p = current / float64(global.FightDuration.Load())
+		p = current / (float64(global.FightDuration.Load()) / 1000)
 	}
 	DrawText(screen, fmt.Sprintf("%s / %s", formatDuration(current), formatDuration(float64(global.FightDuration.Load())/1000)), 7, w-30, h-120, color.White, AlignRight)
 	r.PlayProgress.Render(screen, w-float64(r.PlayProgress.w)-30, h-100, p)

@@ -43,6 +43,7 @@ func (s *System) ControlUpdate(ecs *ecs.ECS) {
 	}
 	if inpututil.IsKeyJustPressed(ebiten.KeyArrowRight) {
 		globalData.Tick += 60 * 10 * 10 // 10s tick
+		globalData.Tick = min(globalData.Tick, util.MSToTick(globalData.FightDuration.Load())*10)
 	}
 
 	if !s.InReplay {
