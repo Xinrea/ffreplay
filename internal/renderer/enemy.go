@@ -70,7 +70,7 @@ func (r *Renderer) renderEnemy(ecs *ecs.ECS, screen *ebiten.Image, enemy *donbur
 		renderObject(instance.Face, instance.Object)
 	}
 	// render buffs on boss
-	if status.Role == model.Boss {
+	if status.Role == model.Boss && util.TickToMS(tick-sprite.Instances[0].LastActive) <= 2500 {
 		_, h := camera.WindowSize()
 		RenderBuffList(screen, tick, status.BuffList.Buffs(), 40, h-40, ebiten.Monitor().DeviceScaleFactor())
 	}
