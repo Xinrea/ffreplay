@@ -36,7 +36,7 @@ func (c *CameraData) Update(v f64.Vec2) {
 func (c *CameraData) WorldMatrix() ebiten.GeoM {
 	s := ebiten.Monitor().DeviceScaleFactor()
 	m := ebiten.GeoM{}
-	m.Translate(-c.viewportCenter()[0], -c.viewportCenter()[1]*1.2)
+	m.Translate(-c.viewportCenter()[0], -c.viewportCenter()[1])
 	m.Scale(
 		math.Pow(1.01, float64(c.ZoomFactor))/s,
 		math.Pow(1.01, float64(c.ZoomFactor))/s,
