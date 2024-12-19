@@ -92,6 +92,7 @@ func (s *System) replayUpdate(ecs *ecs.ECS, tick int64) {
 			component.Status.Get(e).BuffList.Clear()
 			for _, instance := range component.Sprite.Get(e).Instances {
 				instance.Casting = nil
+				instance.LastActive = 0
 			}
 		}
 

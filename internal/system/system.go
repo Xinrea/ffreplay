@@ -153,7 +153,9 @@ func (s *System) Update(ecs *ecs.ECS) {
 		globalData.Tick = 0
 		s.reset = false
 	}
-	s.LogUpdate(ecs, globalData.Tick/10)
+	if globalData.Loaded.Load() {
+		s.LogUpdate(ecs, globalData.Tick/10)
+	}
 	s.ControlUpdate(ecs)
 	s.TimelineUpdate(ecs)
 	s.BuffUpdate(ecs, globalData.Tick/10)
@@ -176,6 +178,7 @@ func (s *System) doReset(ecs *ecs.ECS) {
 		status.BuffList.Clear()
 		for _, instance := range component.Sprite.Get(e).Instances {
 			instance.Casting = nil
+			instance.LastActive = 0
 		}
 	}
 }
