@@ -5,29 +5,29 @@ name: Release
 
 on:
   push:
-    branches: [ "release" ]
+    branches: ["release"]
   pull_request:
-    branches: [ "release" ]
+    branches: ["release"]
 
 jobs:
-
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.23.1'
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.23.1"
 
-    - name: Build
-      env: 
-        CREDENTIAL: ${{ secrets.CREDENTIAL }}
-      run: sh build.sh
+      - name: Build
+        env:
+          CREDENTIAL: ${{ secrets.CREDENTIAL }}
+        run: sh build.sh
 
-    - name: Deploy
-      uses: peaceiris/actions-gh-pages@v4
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./public
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
+          cname: ffreplay.xinrea.cn
