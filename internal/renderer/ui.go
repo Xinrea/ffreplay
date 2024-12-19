@@ -21,6 +21,7 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 	// render debug info
 	camera := component.Camera.Get(tag.Camera.MustFirst(ecs.World))
 	global := component.Global.Get(tag.Global.MustFirst(ecs.World))
+	tick := global.Tick / 10
 	x, y := ebiten.CursorPosition()
 	wx, wy := camera.ScreenToWorld(float64(x), float64(y))
 	ebitenutil.DebugPrintAt(screen, fmt.Sprintf("Cursor: %f, %f", wx, wy), 0, 0)
@@ -47,10 +48,10 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 		}
 		enemy := component.Status.Get(e)
 		mainInstance := sprite.Instances[0]
-		if !enemy.IsBoss {
+		if !enemy.IsBoss || util.TickToMS(tick-mainInstance.LastActive) > 2500 {
 			continue
 		}
-		gap := 60
+		gap := 100
 		percent := float64(enemy.HP) / float64(enemy.MaxHP)
 		healthLeft := w - float64(r.EnemyHealthBar.w) - 50
 		healthRight := healthLeft + float64(r.EnemyHealthBar.w)
@@ -67,6 +68,8 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 		DrawText(screen, enemy.Name, 7, healthLeft, float64(20+cnt*gap), r.EnemyHealthBar.Color, AlignLeft)
 		DrawText(screen, fmt.Sprintf("HP: %s / %s", formatInt(enemy.HP), formatInt(enemy.MaxHP)), 7, healthLeft, float64(50+cnt*gap), r.EnemyHealthBar.Color, AlignLeft)
 		DrawText(screen, fmt.Sprintf("%.2f%%", percent*100), 7, healthRight, float64(50+cnt*gap), r.EnemyHealthBar.Color, AlignRight)
+		// render buffs on boss
+		RenderBuffList(screen, tick, enemy.BuffList.Buffs(), healthLeft+10, float64(80+cnt*gap), ebiten.Monitor().DeviceScaleFactor())
 		cnt++
 	}
 
