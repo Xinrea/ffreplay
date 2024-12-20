@@ -16,16 +16,15 @@ import (
 
 // Remember that system is updated in TPS (Ticks Per Second) rate, in ebiten, it's 60 TPS.
 type System struct {
-	lock         sync.Mutex
-	ECS          *ecs.ECS
-	ViewPort     f64.Vec2
-	TargetPlayer int
-	PlayerList   []*donburi.Entry
-	EventLines   map[int64]*EventLine
-	EntryMap     map[int64]*donburi.Entry
-	InReplay     bool
-	reset        bool
-	Pause        bool
+	lock       sync.Mutex
+	ECS        *ecs.ECS
+	ViewPort   f64.Vec2
+	PlayerList []*donburi.Entry
+	EventLines map[int64]*EventLine
+	EntryMap   map[int64]*donburi.Entry
+	InReplay   bool
+	reset      bool
+	Pause      bool
 }
 
 type EventLine struct {
@@ -179,6 +178,7 @@ func (s *System) doReset(ecs *ecs.ECS) {
 		for _, instance := range component.Sprite.Get(e).Instances {
 			instance.Casting = nil
 			instance.LastActive = -1
+			instance.HistoryCasting = nil
 		}
 	}
 }

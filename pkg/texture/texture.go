@@ -1,7 +1,6 @@
 package texture
 
 import (
-	"image"
 	"log"
 	"net/url"
 	"sync"
@@ -16,7 +15,7 @@ type Texture struct {
 
 var textureCache = sync.Map{}
 
-func NewBuffTexture(iconName string) *Texture {
+func NewAbilityTexture(iconName string) *Texture {
 	if texture, ok := textureCache.Load(iconName); ok {
 		if value, ok := texture.(*Texture); ok {
 			return value
@@ -33,10 +32,6 @@ func NewBuffTexture(iconName string) *Texture {
 	if err != nil {
 		log.Println("Load icon from fflogs failed")
 		return nil
-	}
-	if img.Bounds().Dx() > 30 {
-		// resize to 40x40
-		img, _ = ebiten.NewImageFromImage(img).SubImage(image.Rect(0, 0, 24, 32)).(*ebiten.Image)
 	}
 	texture := &Texture{
 		asset: img,

@@ -25,7 +25,7 @@ func (s *System) SkillUpdate(ecs *ecs.ECS) {
 			}
 			if util.TickToMS(entry.GetTick(ecs)-instance.Casting.StartTick) >= instance.Casting.Cast {
 				// remove skill
-				instance.Casting = nil
+				instance.ClearCast()
 			}
 		}
 	}

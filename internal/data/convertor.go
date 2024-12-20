@@ -5,6 +5,7 @@ import (
 	"sync/atomic"
 
 	"github.com/Xinrea/ffreplay/internal/data/fflogs"
+	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/pkg/texture"
 )
 
@@ -24,11 +25,12 @@ func FetchLogEvents(c *fflogs.FFLogsClient, code string, fight fflogs.ReportFigh
 	return events
 }
 
-func PreloadIcons(events []fflogs.FFLogsEvent, counter *atomic.Int32) {
+func PreloadAbilityInfo(events []fflogs.FFLogsEvent, counter *atomic.Int32) {
 	for i := range events {
 		counter.Add(1)
 		if events[i].Ability != nil {
-			_ = texture.NewBuffTexture(events[i].Ability.AbilityIcon)
+			_ = texture.NewAbilityTexture(events[i].Ability.AbilityIcon)
+			_ = model.IsGCD(events[i].Ability.Guid)
 		}
 	}
 }

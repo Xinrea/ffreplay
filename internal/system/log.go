@@ -93,6 +93,7 @@ func (s *System) replayUpdate(ecs *ecs.ECS, tick int64) {
 			for _, instance := range component.Sprite.Get(e).Instances {
 				instance.Casting = nil
 				instance.LastActive = -1
+				instance.HistoryCasting = nil
 			}
 		}
 
@@ -275,6 +276,7 @@ func (s *System) applyLog(ecs *ecs.ECS, tick int64, target *donburi.Entry, event
 		}
 		target := s.EntryMap[*event.TargetID]
 		skill := skills.QuerySkill(event.Ability.ToSkill(0))
+		skill.StartTick = event.LocalTick
 		if caster.HasComponent(tag.Enemy) {
 			log.Printf("[%d]%s[%d] cast [%d]%s on [%d]%s\n", component.Status.Get(caster).ID, component.Status.Get(caster).Name, instanceID+1, skill.ID, event.Ability.Name, component.Status.Get(target).ID, component.Status.Get(target).Name)
 		}

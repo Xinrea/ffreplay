@@ -200,7 +200,7 @@ func (ms *FFScene) init() {
 			go func() {
 				defer wg.Done()
 				events := data.FetchLogEvents(ms.client, ms.code, fight, p.ID)
-				data.PreloadIcons(events, &global.LoadCount)
+				data.PreloadAbilityInfo(events, &global.LoadCount)
 				ms.system.AddEventLine(p.ID, events)
 			}()
 		}
@@ -209,7 +209,7 @@ func (ms *FFScene) init() {
 			go func() {
 				defer wg.Done()
 				events := data.FetchLogEvents(ms.client, ms.code, fight, p.ID)
-				data.PreloadIcons(events, &global.LoadCount)
+				data.PreloadAbilityInfo(events, &global.LoadCount)
 				ms.system.AddEventLine(p.ID, events)
 			}()
 		}
@@ -218,7 +218,7 @@ func (ms *FFScene) init() {
 			go func() {
 				defer wg.Done()
 				events := data.FetchLogEvents(ms.client, ms.code, fight, p.ID)
-				data.PreloadIcons(events, &global.LoadCount)
+				data.PreloadAbilityInfo(events, &global.LoadCount)
 				ms.system.AddEventLine(p.ID, events)
 			}()
 		}
@@ -229,7 +229,7 @@ func (ms *FFScene) init() {
 			go func() {
 				defer wg.Done()
 				events := data.FetchLogEvents(ms.client, ms.code, fight, e.ID)
-				data.PreloadIcons(events, &global.LoadCount)
+				data.PreloadAbilityInfo(events, &global.LoadCount)
 				ms.system.AddEventLine(e.ID, events)
 			}()
 		}

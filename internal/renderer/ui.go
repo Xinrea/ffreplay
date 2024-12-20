@@ -91,6 +91,35 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 		DrawFilledRect(screen, w-30-(1-seperator)*float64(r.PlayProgress.w), h-100, 4, float64(r.PlayProgress.h), color.NRGBA{188, 61, 136, 255})
 	}
 
+	// render target player casting history
+	if global.TargetPlayer != nil {
+		player := component.Sprite.Get(global.TargetPlayer)
+		// using a area on middle bottom of screen, 600x40
+		cx := w/2 + 300
+		cy := h - 100
+		DrawFilledRect(screen, w/2-350, h-200, 700, 150, color.NRGBA{0, 0, 0, 100})
+		casts := player.Instances[0].GetHistoryCast(tick)
+		currentCasting := player.Instances[0].Casting
+		if currentCasting != nil {
+			casts = append(casts, currentCasting)
+		}
+		for _, c := range casts {
+			if c.ID == 7 {
+				continue
+			}
+			if model.LongCast[c.ID] && c.Cast == 0 {
+				// it's the final effect of previous long cast
+				continue
+			}
+			delta := tick - c.StartTick
+			if c.Cast > 0 {
+				// render casting background
+				DrawFilledRect(screen, cx-float64(delta), cy, float64(min(delta, util.MSToTick(c.Cast))), 10, color.NRGBA{230, 255, 255, 128})
+			}
+			RenderCasting(screen, tick, c, cx-float64(delta), cy)
+		}
+	}
+
 	// Draw shortkey prompt
 	DrawText(screen, fmt.Sprintf("当前播放速度: %.1f", float64(entry.GetSpeed(ecs))/10.0), 7, w-30, h-90, color.White, AlignRight)
 	DrawText(screen, "快退: 方向键左 | 快进: 方向键右", 7, w-30, h-70, color.White, AlignRight)

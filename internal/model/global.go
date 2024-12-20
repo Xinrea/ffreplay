@@ -1,6 +1,10 @@
 package model
 
-import "sync/atomic"
+import (
+	"sync/atomic"
+
+	"github.com/yohamta/donburi"
+)
 
 type GlobalData struct {
 	// Real tick * 10 for fine speed control
@@ -9,6 +13,7 @@ type GlobalData struct {
 	// Phases is a tick array for phase change
 	Phases        []int64
 	FightDuration atomic.Int64
+	TargetPlayer  *donburi.Entry
 	Loaded        atomic.Bool
 	LoadCount     atomic.Int32
 	Debug         bool

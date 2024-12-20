@@ -99,32 +99,47 @@ func (s *System) ControlUpdate(ecs *ecs.ECS) {
 		}
 
 		// lock view of player
+		newTarget := -1
 		if inpututil.IsKeyJustPressed(ebiten.Key1) {
-			s.TargetPlayer = 1
+			newTarget = 1
 		}
 		if inpututil.IsKeyJustPressed(ebiten.Key2) {
-			s.TargetPlayer = 2
+			newTarget = 2
 		}
 		if inpututil.IsKeyJustPressed(ebiten.Key3) {
-			s.TargetPlayer = 3
+			newTarget = 3
 		}
 		if inpututil.IsKeyJustPressed(ebiten.Key4) {
-			s.TargetPlayer = 4
+			newTarget = 4
 		}
 		if inpututil.IsKeyJustPressed(ebiten.Key5) {
-			s.TargetPlayer = 5
+			newTarget = 5
 		}
 		if inpututil.IsKeyJustPressed(ebiten.Key6) {
-			s.TargetPlayer = 6
+			newTarget = 6
 		}
 		if inpututil.IsKeyJustPressed(ebiten.Key7) {
-			s.TargetPlayer = 7
+			newTarget = 7
 		}
 		if inpututil.IsKeyJustPressed(ebiten.Key8) {
-			s.TargetPlayer = 8
+			newTarget = 8
 		}
 		if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
-			s.TargetPlayer = 0
+			newTarget = 0
+		}
+
+		// did selection
+		if newTarget != -1 {
+			if newTarget == 0 {
+				globalData.TargetPlayer = nil
+			} else {
+				newTarget -= 1
+				if newTarget < len(s.PlayerList) {
+					globalData.TargetPlayer = s.PlayerList[newTarget]
+				} else {
+					globalData.TargetPlayer = nil
+				}
+			}
 		}
 
 		// camera control
@@ -135,12 +150,8 @@ func (s *System) ControlUpdate(ecs *ecs.ECS) {
 			camera.Rotation -= 0.05
 		}
 
-		var targetPlayer *donburi.Entry = nil
-		if s.TargetPlayer != 0 && s.TargetPlayer-1 < len(s.PlayerList) {
-			targetPlayer = s.PlayerList[s.TargetPlayer-1]
-		}
 		// if view not locked
-		if targetPlayer == nil {
+		if globalData.TargetPlayer == nil {
 			if ebiten.IsKeyPressed(ebiten.KeyW) {
 				vel[1] = -MaxVelocity * math.Cos(camera.Rotation) * 2
 				vel[0] = MaxVelocity * math.Sin(camera.Rotation) * 2
@@ -160,7 +171,7 @@ func (s *System) ControlUpdate(ecs *ecs.ECS) {
 			camera.Position = camera.Position.Add(vel.Scale(math.Pow(1.01, float64(camera.ZoomFactor))))
 		} else {
 			// bind camera on target player
-			camera.Position = component.Sprite.Get(targetPlayer).Instances[0].Object.Position()
+			camera.Position = component.Sprite.Get(globalData.TargetPlayer).Instances[0].Object.Position()
 		}
 	}
 

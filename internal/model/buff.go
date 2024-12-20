@@ -153,7 +153,7 @@ func (b Buff) Expired(now int64) bool {
 }
 
 func (b Buff) Texture() *texture.Texture {
-	return texture.NewBuffTexture(b.Icon)
+	return texture.NewAbilityTexture(b.Icon)
 }
 
 func (b *Buff) Remove() {

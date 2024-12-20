@@ -102,6 +102,24 @@ func RenderBuffList(canvas *ebiten.Image, tick int64, buffs []model.Buff, x, y, 
 	}
 }
 
+func RenderCasting(canvas *ebiten.Image, tick int64, cast *model.Skill, x, y float64) {
+	s := ebiten.Monitor().DeviceScaleFactor()
+	textSize := 7.0
+	textY := y + 20
+	iconTexture := cast.Texture()
+	geoM := iconTexture.GetGeoM()
+	if !model.IsGCD(cast.ID) {
+		geoM.Scale(0.8, 0.8)
+		geoM.Translate(0, -40)
+		textSize = 5
+		textY -= 100
+	}
+	geoM.Translate(x, y)
+	geoM.Scale(s, s)
+	canvas.DrawImage(iconTexture.Img(), &ebiten.DrawImageOptions{GeoM: geoM})
+	DrawText(canvas, cast.Name, textSize, x, textY, color.White, AlignCenter)
+}
+
 func (r *Renderer) Init(ecs *ecs.ECS) {
 	ecs.AddRenderer(layer.Background, r.BackgroundRender)
 	ecs.AddRenderer(layer.SkillRange, r.RangeRender)

@@ -16,11 +16,13 @@ import (
 func (r *Renderer) PlayerRender(ecs *ecs.ECS, screen *ebiten.Image) {
 	camera := component.Camera.Get(tag.Camera.MustFirst(ecs.World))
 	for e := range tag.Player.Iter(ecs.World) {
-		r.renderPlayer(entry.GetTick(ecs), camera, screen, e)
+		r.renderPlayer(ecs, camera, screen, e)
 	}
 }
 
-func (r *Renderer) renderPlayer(tick int64, camera *model.CameraData, screen *ebiten.Image, player *donburi.Entry) {
+func (r *Renderer) renderPlayer(ecs *ecs.ECS, camera *model.CameraData, screen *ebiten.Image, player *donburi.Entry) {
+	tick := entry.GetTick(ecs)
+	global := component.Global.Get(component.Global.MustFirst(ecs.World))
 	sprite := component.Sprite.Get(player)
 	if !sprite.Initialized {
 		return
@@ -29,11 +31,11 @@ func (r *Renderer) renderPlayer(tick int64, camera *model.CameraData, screen *eb
 	wordM := camera.WorldMatrix()
 	wordM.Invert()
 
-	var c colorm.ColorM
-	if status.IsDead() {
-		c.ChangeHSV(0, 0, 1)
-	}
 	// render target ring
+	c := colorm.ColorM{}
+	if global.TargetPlayer != nil && global.TargetPlayer == player {
+		c.ChangeHSV(135.0/180.0*3.14, 1, 1.2)
+	}
 	// player only has one instance
 	pos := sprite.Instances[0].Object.Position()
 	geoM := sprite.Texture.GetGeoM()
@@ -45,6 +47,10 @@ func (r *Renderer) renderPlayer(tick int64, camera *model.CameraData, screen *eb
 	op.GeoM = geoM
 	colorm.DrawImage(screen, sprite.Texture.Img(), c, op)
 
+	c = colorm.ColorM{}
+	if status.IsDead() {
+		c.ChangeHSV(0, 0, 1)
+	}
 	// render icon
 	geoM = status.RoleTexture().GetGeoM()
 	geoM.Scale(0.5, 0.5)

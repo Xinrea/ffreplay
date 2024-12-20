@@ -16,10 +16,11 @@ type SpriteData struct {
 }
 
 type Instance struct {
-	Face       float64
-	Object     object.Object
-	LastActive int64
-	Casting    *Skill
+	Face           float64
+	Object         object.Object
+	LastActive     int64
+	Casting        *Skill
+	HistoryCasting []*Skill
 }
 
 func (s SpriteData) Render(camera *CameraData, screen *ebiten.Image) {
@@ -40,5 +41,25 @@ func (s SpriteData) Render(camera *CameraData, screen *ebiten.Image) {
 }
 
 func (i *Instance) Cast(gameSkill Skill) {
+	if i.Casting != nil {
+		i.ClearCast()
+	}
 	i.Casting = &gameSkill
+}
+
+func (i *Instance) ClearCast() {
+	i.HistoryCasting = append(i.HistoryCasting, i.Casting)
+	i.Casting = nil
+}
+
+func (i *Instance) GetHistoryCast(tick int64) []*Skill {
+	ret := []*Skill{}
+	for _, c := range i.HistoryCasting {
+		if tick-c.StartTick > 10*60 /*10s*/ {
+			continue
+		}
+		ret = append(ret, c)
+	}
+	i.HistoryCasting = ret
+	return ret
 }
