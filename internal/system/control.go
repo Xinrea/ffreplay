@@ -30,6 +30,10 @@ func (s *System) ControlUpdate(ecs *ecs.ECS) {
 		globalData.Speed = 10
 	}
 	if inpututil.IsKeyJustPressed(ebiten.KeyArrowUp) {
+		if globalData.Speed == 5 {
+			globalData.Speed = 10
+			return
+		}
 		globalData.Speed = min(globalData.Speed+10, 50)
 	}
 	if inpututil.IsKeyJustPressed(ebiten.KeyArrowDown) {

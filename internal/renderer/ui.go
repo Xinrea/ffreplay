@@ -86,6 +86,10 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 	}
 	DrawText(screen, fmt.Sprintf("%s / %s", formatDuration(current), formatDuration(float64(global.FightDuration.Load())/1000)), 7, w-30, h-120, color.White, AlignRight)
 	r.PlayProgress.Render(screen, w-float64(r.PlayProgress.w)-30, h-100, p)
+	for _, p := range global.Phases {
+		seperator := float64(p) / float64(util.MSToTick(global.FightDuration.Load()))
+		DrawFilledRect(screen, w-30-(1-seperator)*float64(r.PlayProgress.w), h-100, 4, float64(r.PlayProgress.h), color.NRGBA{188, 61, 136, 255})
+	}
 
 	// Draw shortkey prompt
 	DrawText(screen, fmt.Sprintf("当前播放速度: %.1f", float64(entry.GetSpeed(ecs))/10.0), 7, w-30, h-90, color.White, AlignRight)
