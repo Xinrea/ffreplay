@@ -96,6 +96,9 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 	DrawText(screen, "快退: 方向键左 | 快进: 方向键右", 7, w-30, h-70, color.White, AlignRight)
 	DrawText(screen, "移动视角 W/A/S/D | 旋转视角: E/Q | 调试模式：`", 7, w-30, h-50, color.White, AlignRight)
 	DrawText(screen, "暂停: SPACE | 播放速度: 方向键（上下）| 回到开始: R", 7, w-30, h-30, color.White, AlignRight)
+
+	// Draw player selection prompt
+	DrawText(screen, "锁定玩家: 1-8 | 解除锁定: ESC", 7, 30, h-30, color.White, AlignLeft)
 }
 
 func formatDuration(s float64) string {

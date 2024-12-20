@@ -16,15 +16,16 @@ import (
 
 // Remember that system is updated in TPS (Ticks Per Second) rate, in ebiten, it's 60 TPS.
 type System struct {
-	lock           sync.Mutex
-	ECS            *ecs.ECS
-	ViewPort       f64.Vec2
-	MainPlayerRole model.RoleType
-	EventLines     map[int64]*EventLine
-	EntryMap       map[int64]*donburi.Entry
-	InReplay       bool
-	reset          bool
-	Pause          bool
+	lock         sync.Mutex
+	ECS          *ecs.ECS
+	ViewPort     f64.Vec2
+	TargetPlayer int
+	PlayerList   []*donburi.Entry
+	EventLines   map[int64]*EventLine
+	EntryMap     map[int64]*donburi.Entry
+	InReplay     bool
+	reset        bool
+	Pause        bool
 }
 
 type EventLine struct {
@@ -47,12 +48,11 @@ type StatusEvent struct {
 // if replay is true, all skill and buff status are disabled, player status only change by fflogs event
 func NewSystem(replay bool) *System {
 	return &System{
-		lock:           sync.Mutex{},
-		MainPlayerRole: model.MT,
-		InReplay:       replay,
-		EntryMap:       make(map[int64]*donburi.Entry),
-		EventLines:     make(map[int64]*EventLine),
-		reset:          false,
+		lock:       sync.Mutex{},
+		InReplay:   replay,
+		EntryMap:   make(map[int64]*donburi.Entry),
+		EventLines: make(map[int64]*EventLine),
+		reset:      false,
 	}
 }
 
@@ -68,7 +68,7 @@ func (s *System) AddEntry(id int64, player *donburi.Entry) {
 	s.EntryMap[id] = player
 	role := component.Status.Get(player).Role
 	if role != model.Boss && role != model.NPC {
-		s.MainPlayerRole = role
+		s.PlayerList = append(s.PlayerList, player)
 	}
 }
 

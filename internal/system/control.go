@@ -1,7 +1,6 @@
 package system
 
 import (
-	"log"
 	"math"
 
 	"github.com/Xinrea/ffreplay/internal/component"
@@ -25,44 +24,9 @@ func (s *System) ControlUpdate(ecs *ecs.ECS) {
 	if inpututil.IsKeyJustPressed(ebiten.KeyBackquote) {
 		globalData.Debug = !globalData.Debug
 	}
-	if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
-		s.Pause = !s.Pause
-		globalData.Speed = 10
-	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyArrowUp) {
-		if globalData.Speed == 5 {
-			globalData.Speed = 10
-			return
-		}
-		globalData.Speed = min(globalData.Speed+10, 50)
-	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyArrowDown) {
-		if globalData.Speed > 10 {
-			globalData.Speed -= 10
-		} else {
-			globalData.Speed = 5
-		}
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) {
-		globalData.Tick -= 60 * 10 // 1s tick
-		globalData.Tick = max(0, globalData.Tick)
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyArrowRight) {
-		globalData.Tick += 60 * 10 // 1s tick
-		globalData.Tick = min(globalData.Tick, util.MSToTick(globalData.FightDuration.Load())*10)
-	}
 
 	if !s.InReplay {
-		var player *donburi.Entry = nil
-		for e := range tag.Player.Iter(ecs.World) {
-			if component.Status.Get(e).Role == s.MainPlayerRole {
-				player = e
-				break
-			}
-		}
-		if player == nil {
-			log.Fatal("Player not found")
-		}
+		var player *donburi.Entry = tag.Player.MustFirst(ecs.World)
 		status := component.Status.Get(player)
 		obj := component.Sprite.Get(player).Instances[0]
 		if !status.IsDead() {
@@ -106,29 +70,98 @@ func (s *System) ControlUpdate(ecs *ecs.ECS) {
 	}
 
 	if s.InReplay {
+		// replaying control
+		if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
+			s.Pause = !s.Pause
+			globalData.Speed = 10
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyArrowUp) {
+			if globalData.Speed == 5 {
+				globalData.Speed = 10
+				return
+			}
+			globalData.Speed = min(globalData.Speed+10, 50)
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyArrowDown) {
+			if globalData.Speed > 10 {
+				globalData.Speed -= 10
+			} else {
+				globalData.Speed = 5
+			}
+		}
+		if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) {
+			globalData.Tick -= 60 * 10 // 1s tick
+			globalData.Tick = max(0, globalData.Tick)
+		}
+		if ebiten.IsKeyPressed(ebiten.KeyArrowRight) {
+			globalData.Tick += 60 * 10 // 1s tick
+			globalData.Tick = min(globalData.Tick, util.MSToTick(globalData.FightDuration.Load())*10)
+		}
+
+		// lock view of player
+		if inpututil.IsKeyJustPressed(ebiten.Key1) {
+			s.TargetPlayer = 1
+		}
+		if inpututil.IsKeyJustPressed(ebiten.Key2) {
+			s.TargetPlayer = 2
+		}
+		if inpututil.IsKeyJustPressed(ebiten.Key3) {
+			s.TargetPlayer = 3
+		}
+		if inpututil.IsKeyJustPressed(ebiten.Key4) {
+			s.TargetPlayer = 4
+		}
+		if inpututil.IsKeyJustPressed(ebiten.Key5) {
+			s.TargetPlayer = 5
+		}
+		if inpututil.IsKeyJustPressed(ebiten.Key6) {
+			s.TargetPlayer = 6
+		}
+		if inpututil.IsKeyJustPressed(ebiten.Key7) {
+			s.TargetPlayer = 7
+		}
+		if inpututil.IsKeyJustPressed(ebiten.Key8) {
+			s.TargetPlayer = 8
+		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+			s.TargetPlayer = 0
+		}
+
+		// camera control
 		if ebiten.IsKeyPressed(ebiten.KeyE) {
 			camera.Rotation += 0.05
 		}
 		if ebiten.IsKeyPressed(ebiten.KeyQ) {
 			camera.Rotation -= 0.05
 		}
-		if ebiten.IsKeyPressed(ebiten.KeyW) {
-			vel[1] = -MaxVelocity * math.Cos(camera.Rotation) * 2
-			vel[0] = MaxVelocity * math.Sin(camera.Rotation) * 2
+
+		var targetPlayer *donburi.Entry = nil
+		if s.TargetPlayer != 0 && s.TargetPlayer-1 < len(s.PlayerList) {
+			targetPlayer = s.PlayerList[s.TargetPlayer-1]
 		}
-		if ebiten.IsKeyPressed(ebiten.KeyS) {
-			vel[1] = MaxVelocity * math.Cos(camera.Rotation) * 2
-			vel[0] = -MaxVelocity * math.Sin(camera.Rotation) * 2
+		// if view not locked
+		if targetPlayer == nil {
+			if ebiten.IsKeyPressed(ebiten.KeyW) {
+				vel[1] = -MaxVelocity * math.Cos(camera.Rotation) * 2
+				vel[0] = MaxVelocity * math.Sin(camera.Rotation) * 2
+			}
+			if ebiten.IsKeyPressed(ebiten.KeyS) {
+				vel[1] = MaxVelocity * math.Cos(camera.Rotation) * 2
+				vel[0] = -MaxVelocity * math.Sin(camera.Rotation) * 2
+			}
+			if ebiten.IsKeyPressed(ebiten.KeyD) {
+				vel[1] = MaxVelocity * math.Sin(camera.Rotation) * 2
+				vel[0] = MaxVelocity * math.Cos(camera.Rotation) * 2
+			}
+			if ebiten.IsKeyPressed(ebiten.KeyA) {
+				vel[1] = -MaxVelocity * math.Sin(camera.Rotation) * 2
+				vel[0] = -MaxVelocity * math.Cos(camera.Rotation) * 2
+			}
+			camera.Position = camera.Position.Add(vel.Scale(math.Pow(1.01, float64(camera.ZoomFactor))))
+		} else {
+			// bind camera on target player
+			camera.Position = component.Sprite.Get(targetPlayer).Instances[0].Object.Position()
 		}
-		if ebiten.IsKeyPressed(ebiten.KeyD) {
-			vel[1] = MaxVelocity * math.Sin(camera.Rotation) * 2
-			vel[0] = MaxVelocity * math.Cos(camera.Rotation) * 2
-		}
-		if ebiten.IsKeyPressed(ebiten.KeyA) {
-			vel[1] = -MaxVelocity * math.Sin(camera.Rotation) * 2
-			vel[0] = -MaxVelocity * math.Cos(camera.Rotation) * 2
-		}
-		camera.Position = camera.Position.Add(vel.Scale(math.Pow(1.01, float64(camera.ZoomFactor))))
 	}
 
 	_, dy := ebiten.Wheel()
