@@ -43,12 +43,12 @@ func (s *System) ControlUpdate(ecs *ecs.ECS) {
 			globalData.Speed = 5
 		}
 	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyArrowLeft) {
-		globalData.Tick -= 60 * 10 * 10 // 10s tick
+	if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) {
+		globalData.Tick -= 60 * 10 // 1s tick
 		globalData.Tick = max(0, globalData.Tick)
 	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyArrowRight) {
-		globalData.Tick += 60 * 10 * 10 // 10s tick
+	if ebiten.IsKeyPressed(ebiten.KeyArrowRight) {
+		globalData.Tick += 60 * 10 // 1s tick
 		globalData.Tick = min(globalData.Tick, util.MSToTick(globalData.FightDuration.Load())*10)
 	}
 
