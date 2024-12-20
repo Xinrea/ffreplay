@@ -92,7 +92,7 @@ func (s *System) replayUpdate(ecs *ecs.ECS, tick int64) {
 			component.Status.Get(e).BuffList.Clear()
 			for _, instance := range component.Sprite.Get(e).Instances {
 				instance.Casting = nil
-				instance.LastActive = 0
+				instance.LastActive = -1
 			}
 		}
 
@@ -112,7 +112,7 @@ func (s *System) applyLog(ecs *ecs.ECS, tick int64, target *donburi.Entry, event
 			instanceID = int(*event.TargetInstance) - 1
 		}
 		target := component.Sprite.Get(s.EntryMap[*event.TargetID])
-		target.Instances[instanceID].LastActive = tick
+		target.Instances[instanceID].LastActive = event.LocalTick
 	}
 
 	if event.SourceID != nil && s.EntryMap[*event.SourceID] != nil {
@@ -121,7 +121,7 @@ func (s *System) applyLog(ecs *ecs.ECS, tick int64, target *donburi.Entry, event
 			instanceID = int(*event.SourceInstance) - 1
 		}
 		source := component.Sprite.Get(s.EntryMap[*event.SourceID])
-		source.Instances[instanceID].LastActive = tick
+		source.Instances[instanceID].LastActive = event.LocalTick
 	}
 	// {
 	// "timestamp": 4134160,

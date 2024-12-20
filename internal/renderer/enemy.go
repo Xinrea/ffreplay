@@ -64,7 +64,7 @@ func (r *Renderer) renderEnemy(ecs *ecs.ECS, screen *ebiten.Image, enemy *donbur
 	}
 
 	for _, instance := range sprite.Instances {
-		if util.TickToMS(tick-instance.LastActive) > 2500 && instance.Casting == nil {
+		if instance.LastActive == -1 || (util.TickToMS(tick-instance.LastActive) > 2500 && instance.Casting == nil) {
 			continue
 		}
 		renderObject(instance.Face, instance.Object)

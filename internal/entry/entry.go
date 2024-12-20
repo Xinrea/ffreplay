@@ -56,7 +56,7 @@ func NewEnemy(ecs *ecs.ECS, pos f64.Vec2, ringSize float64, gameID int64, id int
 		instances = append(instances, &model.Instance{
 			Face:       0,
 			Object:     object.NewPointObject(vector.NewVector(pos[0], pos[1])),
-			LastActive: -600,
+			LastActive: -1,
 		})
 	}
 	component.Sprite.Set(enemy, &model.SpriteData{
