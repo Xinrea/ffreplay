@@ -3,6 +3,7 @@ package model
 import (
 	"github.com/Xinrea/ffreplay/pkg/object"
 	"github.com/Xinrea/ffreplay/pkg/texture"
+	"github.com/Xinrea/ffreplay/util"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -38,6 +39,13 @@ func (s SpriteData) Render(camera *CameraData, screen *ebiten.Image) {
 			GeoM: geoM,
 		})
 	}
+}
+
+func (i *Instance) IsActive(tick int64) bool {
+	if i.LastActive == -1 {
+		return false
+	}
+	return util.TickToMS(tick-i.LastActive) <= 2500
 }
 
 func (i *Instance) Cast(gameSkill Skill) {
