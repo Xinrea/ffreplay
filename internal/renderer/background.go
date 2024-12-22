@@ -31,11 +31,15 @@ func (r *Renderer) BackgroundRender(ecs *ecs.ECS, screen *ebiten.Image) {
 
 func (r *Renderer) mapRender(camera *model.CameraData, screen *ebiten.Image, m model.MapItem) {
 	geoM := m.Texture.GetGeoM()
+	if m.Scale > 0 {
+		geoM.Scale(m.Scale, m.Scale)
+	}
 	geoM.Translate(m.Offset.X, m.Offset.Y)
 	wordM := camera.WorldMatrix()
 	wordM.Invert()
 	geoM.Concat(wordM)
 	screen.DrawImage(m.Texture.Img(), &ebiten.DrawImageOptions{
-		GeoM: geoM,
+		Filter: ebiten.FilterLinear,
+		GeoM:   geoM,
 	})
 }

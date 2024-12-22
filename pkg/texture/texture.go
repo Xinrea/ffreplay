@@ -40,6 +40,31 @@ func NewAbilityTexture(iconName string) *Texture {
 	return texture
 }
 
+func NewMapTexture(mapName string) *Texture {
+	if texture, ok := textureCache.Load(mapName); ok {
+		if value, ok := texture.(*Texture); ok {
+			return value
+		}
+		return nil
+	}
+	u, err := url.Parse("https://assets.rpglogs.com/img/ff/maps/" + mapName)
+	if err != nil {
+		log.Fatal(err)
+	}
+	finalUrl := u.ResolveReference(u).String()
+	// not using local buff icon files
+	img, err := ebitenutil.NewImageFromURL(finalUrl)
+	if err != nil {
+		log.Println("Load map from fflogs failed", finalUrl)
+		return nil
+	}
+	texture := &Texture{
+		asset: img,
+	}
+	textureCache.Store(mapName, texture)
+	return texture
+}
+
 func NewTextureFromFile(filepath string) *Texture {
 	if texture, ok := textureCache.Load(filepath); ok {
 		if value, ok := texture.(*Texture); ok {

@@ -14,6 +14,7 @@ type MapConfig struct {
 
 type MapItem struct {
 	Texture *texture.Texture
+	Scale   float64
 	Offset  struct {
 		X float64
 		Y float64

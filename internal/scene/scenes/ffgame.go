@@ -159,15 +159,39 @@ func (ms *FFScene) init() {
 			return phases[i] < phases[j]
 		})
 		global.Phases = phases
+		log.Println(fight.Maps)
 		// create a background base on mapID
 		if m, ok := MapCache[fight.Maps[0].ID]; ok {
 			entry.NewMap(ms.ecs, m.Load())
 		} else {
-			// get first map in cache as default, which is random
-			for _, m := range MapCache {
-				entry.NewMap(ms.ecs, m.Load())
-				break
+			// get default map from fflogs
+			gameMap := ms.client.QueryMapInfo(fight.Maps[0].ID)
+			// fflogs map offset is based on top-left corner
+			texture := texture.NewMapTexture(gameMap.FileName)
+			// TODO refactor to remove scale/offset compensation
+			// 地图的偏移确实没有问题，但是一开始在实现 m1s-m4s 以及绝伊甸时忽略了这个，直接在 player 的位置
+			// 坐标计算时进行了固定的偏移，相当于得到的地图偏移是(-100, -100)，单位实际上都是游戏内的 m
+			// 如果某些地图偏移不是 (-100, -100)，那么需要下面的计算，进行偏移补偿
+			// SizeFactor 显然最开始也是先入为主忽略了，都是按照 400 来计算的，因此也要进行补偿
+			scale := 6.25 * 400 / gameMap.SizeFactor
+			oX := (gameMap.OffsetX + 100) * 25
+			oY := (gameMap.OffsetY + 100) * 25
+			mapItem := model.MapItem{
+				Texture: texture,
+				Scale:   scale,
+				Offset: struct {
+					X float64
+					Y float64
+				}{
+					-float64(oX),
+					-float64(oY),
+				},
 			}
+			log.Println(mapItem)
+			entry.NewMap(ms.ecs, &model.MapConfig{
+				ID:         fight.Maps[0].ID,
+				DefaultMap: mapItem,
+			})
 		}
 		// query worldMarkers
 		markers := ms.client.QueryWorldMarkers(ms.code, fight.ID)

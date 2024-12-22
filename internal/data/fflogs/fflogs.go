@@ -70,6 +70,37 @@ func (c *FFLogsClient) RawQuery(query string, variables map[string]any, result a
 	return err
 }
 
+func (c *FFLogsClient) QueryMapInfo(mapCode int) GameMap {
+	var Query struct {
+		Data struct {
+			GameData struct {
+				Map GameMap
+			}
+		}
+	}
+	variables := map[string]interface{}{
+		"id": mapCode,
+	}
+	err := c.RawQuery(`
+			query {
+				gameData {
+					map(id: $id) {
+						id
+						filename
+						sizeFactor
+						offsetX
+						offsetY
+					}
+				}
+			}
+		`, variables, &Query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println(mapCode, Query)
+	return Query.Data.GameData.Map
+}
+
 func (c *FFLogsClient) QueryActors(reportCode string) []Actor {
 	var Query struct {
 		Data struct {

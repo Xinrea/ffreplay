@@ -49,6 +49,14 @@ type ReportFightNPC struct {
 	InstanceCount int
 }
 
+type GameMap struct {
+	ID         int64   `json:"id"`
+	FileName   string  `json:"filename"`
+	SizeFactor float64 `json:"sizeFactor"`
+	OffsetX    int     `json:"offsetX"`
+	OffsetY    int     `json:"offsetY"`
+}
+
 func (t *BearerAuthTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req.Header.Set("Authorization", "Bearer "+t.Token)
 	return http.DefaultTransport.RoundTrip(req)
