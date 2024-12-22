@@ -30,6 +30,10 @@ var gcdDB = sync.Map{}
 var LongCast = map[int64]bool{}
 
 func IsGCD(id int64) bool {
+	// not normal ability
+	if id > 1000000 {
+		return false
+	}
 	if g, ok := gcdDB.Load(id); ok {
 		return g.(bool)
 	}
