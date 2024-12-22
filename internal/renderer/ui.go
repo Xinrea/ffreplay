@@ -75,7 +75,7 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 
 	if !global.Loaded.Load() {
 		DrawFilledRect(screen, 0, 0, w, h, color.RGBA{0, 0, 0, 128})
-		DrawText(screen, fmt.Sprintf("预处理中: %d", global.LoadCount.Load()), 14, w/2, h/2, color.White, AlignCenter)
+		DrawText(screen, fmt.Sprintf("预处理中: %d/%d", global.LoadCount.Load(), global.LoadTotal), 14, w/2, h/2, color.White, AlignCenter)
 	}
 
 	// render play progress

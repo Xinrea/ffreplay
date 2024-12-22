@@ -132,15 +132,9 @@ func (s *System) AddEventLine(id int64, events []fflogs.FFLogsEvent) {
 			}
 		}
 	}
-	filteredEvents := make([]fflogs.FFLogsEvent, 0)
-	for _, e := range events {
-		if e.SourceID != nil && *e.SourceID == id {
-			filteredEvents = append(filteredEvents, e)
-		}
-	}
 	s.EventLines[id] = &EventLine{
 		Cursor: 0,
-		Events: filteredEvents,
+		Events: events,
 		Status: status,
 	}
 }

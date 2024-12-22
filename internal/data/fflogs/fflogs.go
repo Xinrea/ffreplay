@@ -197,7 +197,7 @@ type ReportEventPaginator struct {
 	NextPageTimestamp float64
 }
 
-func (c *FFLogsClient) QueryFightEventsByTarget(reportCode string, fight ReportFight, target int64) (ret []FFLogsEvent) {
+func (c *FFLogsClient) QueryFightEvents(reportCode string, fight ReportFight) (ret []FFLogsEvent) {
 	var Query struct {
 		Data struct {
 			ReportData struct {
@@ -211,7 +211,7 @@ func (c *FFLogsClient) QueryFightEventsByTarget(reportCode string, fight ReportF
 			query {
 				reportData {
 					report(code: "$code") {
-						events(fightIDs: $fightIDs, sourceID: $sourceID, startTime: $startTime, endTime: $endTime, limit: 10000, includeResources: true, useAbilityIDs: false) {
+						events(fightIDs: $fightIDs, startTime: $startTime, endTime: $endTime, limit: 10000, includeResources: true, useAbilityIDs: false) {
 							data
 							nextPageTimestamp
 						}
@@ -222,7 +222,6 @@ func (c *FFLogsClient) QueryFightEventsByTarget(reportCode string, fight ReportF
 	variables := map[string]interface{}{
 		"code":      reportCode,
 		"fightIDs":  []int{fight.ID},
-		"sourceID":  target,
 		"startTime": fight.StartTime,
 		"endTime":   fight.EndTime,
 	}

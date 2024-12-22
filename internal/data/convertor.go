@@ -9,10 +9,9 @@ import (
 	"github.com/Xinrea/ffreplay/pkg/texture"
 )
 
-// FetchLogEvents fetch events from fflogs by report code with target id and fight id.
-// The fetched events are all about target id (target id is source or target in events)
-func FetchLogEvents(c *fflogs.FFLogsClient, code string, fight fflogs.ReportFight, target int64) []fflogs.FFLogsEvent {
-	events := c.QueryFightEventsByTarget(code, fight, target)
+// FetchLogEvents fetch events from fflogs by report code with fight id.
+func FetchLogEvents(c *fflogs.FFLogsClient, code string, fight fflogs.ReportFight) []fflogs.FFLogsEvent {
+	events := c.QueryFightEvents(code, fight)
 	startTime := int64(fight.StartTime)
 	// preprocess events, convert timestamp to tick
 	for i := range events {

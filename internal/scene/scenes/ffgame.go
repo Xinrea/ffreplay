@@ -8,6 +8,7 @@ import (
 	"os"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/data"
@@ -194,12 +195,24 @@ func (ms *FFScene) init() {
 			return fflogs.Actor{}
 		}
 
+		pBeforeLoad := time.Now()
+		events := data.FetchLogEvents(ms.client, ms.code, fight)
+		filterTarget := func(targetID int64) []fflogs.FFLogsEvent {
+			ret := []fflogs.FFLogsEvent{}
+			for _, e := range events {
+				if e.SourceID != nil && *e.SourceID == targetID {
+					ret = append(ret, e)
+				}
+			}
+			return ret
+		}
+		global.LoadTotal = len(events)
 		var wg sync.WaitGroup
 		for _, p := range players.Tanks {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				events := data.FetchLogEvents(ms.client, ms.code, fight, p.ID)
+				events := filterTarget(p.ID)
 				data.PreloadAbilityInfo(events, &global.LoadCount)
 				ms.system.AddEventLine(p.ID, events)
 			}()
@@ -208,7 +221,7 @@ func (ms *FFScene) init() {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				events := data.FetchLogEvents(ms.client, ms.code, fight, p.ID)
+				events := filterTarget(p.ID)
 				data.PreloadAbilityInfo(events, &global.LoadCount)
 				ms.system.AddEventLine(p.ID, events)
 			}()
@@ -217,7 +230,7 @@ func (ms *FFScene) init() {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				events := data.FetchLogEvents(ms.client, ms.code, fight, p.ID)
+				events := filterTarget(p.ID)
 				data.PreloadAbilityInfo(events, &global.LoadCount)
 				ms.system.AddEventLine(p.ID, events)
 			}()
@@ -228,7 +241,7 @@ func (ms *FFScene) init() {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				events := data.FetchLogEvents(ms.client, ms.code, fight, e.ID)
+				events := filterTarget(e.ID)
 				data.PreloadAbilityInfo(events, &global.LoadCount)
 				ms.system.AddEventLine(e.ID, events)
 			}()
@@ -306,6 +319,7 @@ func (ms *FFScene) init() {
 		// })
 
 		wg.Wait()
+		log.Println("Loading cost", time.Since(pBeforeLoad))
 		global.Loaded.Store(true)
 		log.Println("Game scene initialized")
 	}()

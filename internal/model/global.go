@@ -16,5 +16,6 @@ type GlobalData struct {
 	TargetPlayer  *donburi.Entry
 	Loaded        atomic.Bool
 	LoadCount     atomic.Int32
+	LoadTotal     int
 	Debug         bool
 }
