@@ -45,12 +45,12 @@ func (m *MarkerConfig) preprocess() {
 		mainColor.A = 128
 		m.Background.Fill(mainColor)
 		mainColor.A = 230
-		vector.StrokeRect(m.Background, 0, 0, w, h, 8, mainColor, true)
+		vector.StrokeRect(m.Background, 0, 0, w, h, 16, mainColor, true)
 	} else {
 		mainColor.A = 128
 		vector.DrawFilledCircle(m.Background, float32(m.Background.Bounds().Dx()/2), float32(m.Background.Bounds().Dy()/2), float32(m.Background.Bounds().Dx()/2), mainColor, true)
 		mainColor.A = 230
-		vector.StrokeCircle(m.Background, float32(m.Background.Bounds().Dx()/2), float32(m.Background.Bounds().Dy()/2), float32(m.Background.Bounds().Dx()/2-4), 4, mainColor, true)
+		vector.StrokeCircle(m.Background, float32(m.Background.Bounds().Dx()/2), float32(m.Background.Bounds().Dy()/2), float32(m.Background.Bounds().Dx()/2-4), 8, mainColor, true)
 	}
 }
 

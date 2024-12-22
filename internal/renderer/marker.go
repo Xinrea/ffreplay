@@ -14,11 +14,16 @@ func (r *Renderer) MarkerRender(ecs *ecs.ECS, screen *ebiten.Image) {
 		marker := component.Marker.Get(e)
 		config := model.MarkerConfigs[marker.Type]
 		geoM := config.Texture.GetGeoM()
+		geoM.Scale(0.5, 0.5)
+		if marker.Type <= model.MarkerD {
+			geoM.Scale(1.1, 1.1)
+		}
 		geoM.Translate(marker.Position[0], marker.Position[1])
 		geoM.Concat(camera.WorldMatrixInverted())
 		screen.DrawImage(config.Background, &ebiten.DrawImageOptions{GeoM: geoM})
 
 		geoM = config.Texture.GetGeoM()
+		geoM.Scale(0.5, 0.5)
 		geoM.Rotate(camera.Rotation)
 		geoM.Translate(marker.Position[0], marker.Position[1])
 		geoM.Concat(camera.WorldMatrixInverted())
