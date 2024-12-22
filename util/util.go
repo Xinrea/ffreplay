@@ -42,18 +42,22 @@ func NormalizeAngle(angle float64) float64 {
 	return normalized
 }
 
-func NormalizeRadians(angle float64) float64 {
-	normalized := math.Mod(angle, 2*3.14159265)
-	if normalized < 0 {
-		normalized += 2 * 3.14159265
+func NormalizeRadians(radian float64) float64 {
+	for radian < 0 {
+		radian += 2 * math.Pi
 	}
-	return normalized
+	for radian > 2*math.Pi {
+		radian -= 2 * math.Pi
+	}
+	return radian
 }
 
 func LerpRadians(a, b, t float64) float64 {
 	a = NormalizeRadians(a)
 	b = NormalizeRadians(b)
-	return Lerpf(a, b, t)
+	// make diff into [-pi, pi]
+	diff := math.Mod(((b-a)+math.Pi), (2*math.Pi)) - math.Pi
+	return Lerpf(a, a+diff, t)
 }
 
 func TickToMS(ticks int64) int64 {
