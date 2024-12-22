@@ -20,8 +20,8 @@ type Instance struct {
 	Face           float64
 	Object         object.Object
 	LastActive     int64
-	Casting        *Skill
-	HistoryCasting []*Skill
+	casting        *Skill
+	historyCasting []*Skill
 }
 
 func (s SpriteData) Render(camera *CameraData, screen *ebiten.Image) {
@@ -49,25 +49,44 @@ func (i *Instance) IsActive(tick int64) bool {
 }
 
 func (i *Instance) Cast(gameSkill Skill) {
-	if i.Casting != nil {
+	// maybe the skill to cast is the effect of previous long casting skill
+	if i.casting != nil && i.casting.ID == gameSkill.ID && i.casting.Cast > 0 {
+		return
+	}
+	// no need to spell, just move into historyCasting
+	if gameSkill.Cast == 0 {
+		i.historyCasting = append(i.historyCasting, &gameSkill)
+		return
+	}
+	if i.casting != nil {
 		i.ClearCast()
 	}
-	i.Casting = &gameSkill
+	i.casting = &gameSkill
+}
+
+func (i *Instance) GetCast() *Skill {
+	return i.casting
 }
 
 func (i *Instance) ClearCast() {
-	i.HistoryCasting = append(i.HistoryCasting, i.Casting)
-	i.Casting = nil
+	i.historyCasting = append(i.historyCasting, i.casting)
+	i.casting = nil
 }
 
 func (i *Instance) GetHistoryCast(tick int64) []*Skill {
 	ret := []*Skill{}
-	for _, c := range i.HistoryCasting {
+	for _, c := range i.historyCasting {
 		if tick-c.StartTick > 10*60 /*10s*/ {
 			continue
 		}
 		ret = append(ret, c)
 	}
-	i.HistoryCasting = ret
+	i.historyCasting = ret
 	return ret
+}
+
+func (i *Instance) Reset() {
+	i.LastActive = -1
+	i.casting = nil
+	i.historyCasting = nil
 }

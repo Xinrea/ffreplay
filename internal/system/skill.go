@@ -1,6 +1,8 @@
 package system
 
 import (
+	"log"
+
 	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/entry"
 	"github.com/Xinrea/ffreplay/internal/model"
@@ -17,13 +19,14 @@ func (s *System) SkillUpdate(ecs *ecs.ECS) {
 			continue
 		}
 		for _, instance := range sprite.Instances {
-			if instance.Casting == nil {
+			casting := instance.GetCast()
+			if casting == nil {
 				continue
 			}
-			if instance.Casting.StartTick == -1 {
-				instance.Casting.StartTick = entry.GetTick(ecs)
+			if casting.StartTick == -1 {
+				casting.StartTick = entry.GetTick(ecs)
 			}
-			if util.TickToMS(entry.GetTick(ecs)-instance.Casting.StartTick) >= instance.Casting.Cast {
+			if util.TickToMS(entry.GetTick(ecs)-casting.StartTick) > casting.Cast {
 				// remove skill
 				instance.ClearCast()
 			}
@@ -35,9 +38,11 @@ func (s *System) Cast(ecs *ecs.ECS, caster *donburi.Entry, casterInstance int, t
 	global := component.Global.Get(tag.Global.MustFirst(ecs.World))
 	casterSprite := component.Sprite.Get(caster)
 	if casterSprite == nil {
+		log.Println("Cast with nil caster")
 		return
 	}
 	if casterInstance >= len(casterSprite.Instances) {
+		log.Println("Cast with invalid caster instance id")
 		return
 	}
 	casterSprite.Instances[casterInstance].Cast(skill)

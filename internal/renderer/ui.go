@@ -56,12 +56,13 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 		healthLeft := w - float64(r.EnemyHealthBar.w) - 50
 		healthRight := healthLeft + float64(r.EnemyHealthBar.w)
 		r.EnemyHealthBar.Render(screen, healthLeft, float64(40+cnt*gap), percent)
-		if mainInstance.Casting != nil && mainInstance.Casting.StartTick != -1 {
-			castName := mainInstance.Casting.Name
+		casting := mainInstance.GetCast()
+		if casting != nil && casting.StartTick != -1 {
+			castName := casting.Name
 			if global.Debug {
-				castName = fmt.Sprintf("[%d]%s", mainInstance.Casting.ID, mainInstance.Casting.Name)
+				castName = fmt.Sprintf("[%d]%s", casting.ID, casting.Name)
 			}
-			p := float64(util.TickToMS(entry.GetTick(ecs)-mainInstance.Casting.StartTick)) / float64(mainInstance.Casting.Cast)
+			p := float64(util.TickToMS(entry.GetTick(ecs)-casting.StartTick)) / float64(casting.Cast)
 			DrawText(screen, castName, 7, healthRight, float64(10+cnt*gap), r.EnemyHealthBar.Color, AlignRight)
 			r.EnemyCasting.Render(screen, healthRight-float64(r.EnemyCasting.w), float64(30+cnt*gap), p)
 		}
@@ -99,16 +100,12 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 		cy := h - 100
 		DrawFilledRect(screen, w/2-350, h-200, 700, 150, color.NRGBA{0, 0, 0, 100})
 		casts := player.Instances[0].GetHistoryCast(tick)
-		currentCasting := player.Instances[0].Casting
+		currentCasting := player.Instances[0].GetCast()
 		if currentCasting != nil {
 			casts = append(casts, currentCasting)
 		}
 		for _, c := range casts {
 			if c.ID == 7 {
-				continue
-			}
-			if model.LongCast[c.ID] && c.Cast == 0 {
-				// it's the final effect of previous long cast
 				continue
 			}
 			delta := tick - c.StartTick

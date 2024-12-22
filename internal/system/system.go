@@ -170,9 +170,7 @@ func (s *System) doReset(ecs *ecs.ECS) {
 		status := component.Status.Get(e)
 		status.BuffList.Clear()
 		for _, instance := range component.Sprite.Get(e).Instances {
-			instance.Casting = nil
-			instance.LastActive = -1
-			instance.HistoryCasting = nil
+			instance.Reset()
 		}
 	}
 }

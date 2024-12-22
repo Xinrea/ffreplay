@@ -27,7 +27,6 @@ func (s Skill) Texture() *texture.Texture {
 }
 
 var gcdDB = sync.Map{}
-var LongCast = map[int64]bool{}
 
 func IsGCD(id int64) bool {
 	// not normal ability

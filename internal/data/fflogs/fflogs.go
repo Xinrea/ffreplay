@@ -303,9 +303,6 @@ func (a Ability) ToBuff() model.Buff {
 }
 
 func (a Ability) ToSkill(duration int64) model.Skill {
-	if duration > 0 {
-		model.LongCast[a.Guid] = true
-	}
 	return model.Skill{
 		ID:     a.Guid,
 		Name:   a.Name,
