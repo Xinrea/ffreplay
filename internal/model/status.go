@@ -54,6 +54,7 @@ type StatusData struct {
 	MaxMana  int
 	IsBoss   bool
 	BuffList *BuffList
+	death    bool
 }
 
 func (r *StatusData) Reset() {
@@ -70,8 +71,12 @@ func (r *StatusData) TakeDamage(d Damage) {
 	}
 }
 
+func (r *StatusData) SetDeath(b bool) {
+	r.death = b
+}
+
 func (r *StatusData) IsDead() bool {
-	return r.HP <= 0
+	return r.death
 }
 
 func (r *StatusData) TakeHeal(h Heal) {

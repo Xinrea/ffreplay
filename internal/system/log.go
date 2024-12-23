@@ -105,15 +105,6 @@ func (s *System) replayUpdate(ecs *ecs.ECS, tick int64) {
 }
 
 func (s *System) applyLog(ecs *ecs.ECS, tick int64, target *donburi.Entry, event fflogs.FFLogsEvent) {
-	if event.TargetID != nil && s.EntryMap[*event.TargetID] != nil {
-		instanceID := 0
-		if event.TargetInstance != nil {
-			instanceID = int(*event.TargetInstance) - 1
-		}
-		target := component.Sprite.Get(s.EntryMap[*event.TargetID])
-		target.Instances[instanceID].LastActive = event.LocalTick
-	}
-
 	if event.SourceID != nil && s.EntryMap[*event.SourceID] != nil {
 		instanceID := 0
 		if event.SourceInstance != nil {
@@ -165,6 +156,10 @@ func (s *System) applyLog(ecs *ecs.ECS, tick int64, target *donburi.Entry, event
 		ability.ApplyTick = event.LocalTick
 		ability.Duration = *event.Duration
 		status.BuffList.Add(ability)
+		// TODO implement buff effect(removeCallback) to do this work
+		if ability.ID == 1000418 {
+			status.SetDeath(false)
+		}
 		return
 	}
 
@@ -280,6 +275,18 @@ func (s *System) applyLog(ecs *ecs.ECS, tick int64, target *donburi.Entry, event
 		}
 		s.Cast(ecs, caster, instanceID, target, 0, skill)
 		return
+	}
+
+	if event.Type == fflogs.Death {
+		if event.TargetID == nil {
+			return
+		}
+		target := s.EntryMap[*event.TargetID]
+		if target == nil {
+			return
+		}
+		status := component.Status.Get(target)
+		status.SetDeath(true)
 	}
 }
 

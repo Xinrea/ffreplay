@@ -271,6 +271,13 @@ func (ms *FFScene) init() {
 			}()
 		}
 
+		// create environment NPC events
+		{
+			events := filterTarget(-1)
+			data.PreloadAbilityInfo(events, &global.LoadCount)
+			ms.system.AddEventLine(-1, events)
+		}
+
 		// create players
 		posPreset := []f64.Vec2{
 			{0, -200},
@@ -309,6 +316,9 @@ func (ms *FFScene) init() {
 			info := actorInfo(e.ID)
 			ms.system.AddEntry(e.ID, entry.NewEnemy(ms.ecs, f64.Vec2{0, 0}, 5, info.GameID, e.ID, info.Name, info.SubType == "Boss", getInstanceCount(e.ID)))
 		}
+
+		// create environment NPC
+		ms.system.AddEntry(-1, entry.NewEnemy(ms.ecs, f64.Vec2{}, 1, 0, -1, "environment", false, 1))
 
 		// create a timeline
 		// entry.NewTimeline(ms.ecs, &model.TimelineData{
