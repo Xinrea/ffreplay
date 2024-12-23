@@ -55,6 +55,8 @@ func NewRenderer() *Renderer {
 
 func DrawText(dst *ebiten.Image, str string, fontSize float64, x, y float64, clr color.Color, align TextAlign) {
 	s := ebiten.Monitor().DeviceScaleFactor()
+	x *= s
+	y *= s
 	f := &text.GoTextFace{
 		Source:    fontSource,
 		Direction: text.DirectionLeftToRight,
@@ -73,7 +75,6 @@ func DrawText(dst *ebiten.Image, str string, fontSize float64, x, y float64, clr
 		w, _ := text.Measure(str, f, 0)
 		op.GeoM.Translate(x-w/2, y)
 	}
-	op.GeoM.Scale(s, s)
 	text.Draw(dst, str, f, op)
 }
 
@@ -97,14 +98,14 @@ func RenderBuffList(canvas *ebiten.Image, tick int64, buffs []model.Buff, x, y, 
 		canvas.DrawImage(iconTexture.Img(), &ebiten.DrawImageOptions{GeoM: geoM})
 		remain := buff.Remain(tick)
 		if remain > 0 {
-			DrawText(canvas, formatSeconds(remain), 7, x+float64(i*25), y+5, color.White, AlignCenter)
+			DrawText(canvas, formatSeconds(remain), 14, x+float64(i*25), y+5, color.White, AlignCenter)
 		}
 	}
 }
 
 func RenderCasting(canvas *ebiten.Image, tick int64, cast *model.Skill, x, y float64) {
 	s := ebiten.Monitor().DeviceScaleFactor()
-	textSize := 7.0
+	textSize := 14.0
 	textY := y + 20
 	iconTexture := cast.Texture()
 	geoM := iconTexture.GetGeoM()
@@ -114,7 +115,7 @@ func RenderCasting(canvas *ebiten.Image, tick int64, cast *model.Skill, x, y flo
 		borderGeoM.Scale(0.8, 0.8)
 		geoM.Translate(0, -50)
 		borderGeoM.Translate(0, -50)
-		textSize = 5
+		textSize = 10.0
 		textY -= 100
 	}
 	geoM.Translate(x, y)

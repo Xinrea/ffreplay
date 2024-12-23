@@ -63,12 +63,12 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 				castName = fmt.Sprintf("[%d]%s", casting.ID, casting.Name)
 			}
 			p := float64(util.TickToMS(entry.GetTick(ecs)-casting.StartTick)) / float64(casting.Cast)
-			DrawText(screen, castName, 7, healthRight, float64(10+cnt*gap), r.EnemyHealthBar.Color, AlignRight)
+			DrawText(screen, castName, 14, healthRight, float64(10+cnt*gap), r.EnemyHealthBar.Color, AlignRight)
 			r.EnemyCasting.Render(screen, healthRight-float64(r.EnemyCasting.w), float64(30+cnt*gap), p)
 		}
-		DrawText(screen, enemy.Name, 7, healthLeft, float64(20+cnt*gap), r.EnemyHealthBar.Color, AlignLeft)
-		DrawText(screen, fmt.Sprintf("HP: %s / %s", formatInt(enemy.HP), formatInt(enemy.MaxHP)), 7, healthLeft, float64(50+cnt*gap), r.EnemyHealthBar.Color, AlignLeft)
-		DrawText(screen, fmt.Sprintf("%.2f%%", percent*100), 7, healthRight, float64(50+cnt*gap), r.EnemyHealthBar.Color, AlignRight)
+		DrawText(screen, enemy.Name, 14, healthLeft, float64(20+cnt*gap), r.EnemyHealthBar.Color, AlignLeft)
+		DrawText(screen, fmt.Sprintf("HP: %s / %s", formatInt(enemy.HP), formatInt(enemy.MaxHP)), 14, healthLeft, float64(50+cnt*gap), r.EnemyHealthBar.Color, AlignLeft)
+		DrawText(screen, fmt.Sprintf("%.2f%%", percent*100), 14, healthRight, float64(50+cnt*gap), r.EnemyHealthBar.Color, AlignRight)
 		// render buffs on boss
 		RenderBuffList(screen, tick, enemy.BuffList.Buffs(), healthLeft+10, float64(80+cnt*gap), ebiten.Monitor().DeviceScaleFactor())
 		cnt++
@@ -76,7 +76,7 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 
 	if !global.Loaded.Load() {
 		DrawFilledRect(screen, 0, 0, w, h, color.RGBA{0, 0, 0, 128})
-		DrawText(screen, fmt.Sprintf("预处理中: %d/%d", global.LoadCount.Load(), global.LoadTotal), 14, w/2, h/2, color.White, AlignCenter)
+		DrawText(screen, fmt.Sprintf("预处理中: %d/%d", global.LoadCount.Load(), global.LoadTotal), 28, w/2, h/2, color.White, AlignCenter)
 	}
 
 	// render play progress
@@ -85,7 +85,7 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 	if global.FightDuration.Load() > 0 {
 		p = current / (float64(global.FightDuration.Load()) / 1000)
 	}
-	DrawText(screen, fmt.Sprintf("%s / %s", formatDuration(current), formatDuration(float64(global.FightDuration.Load())/1000)), 7, w-30, h-120, color.White, AlignRight)
+	DrawText(screen, fmt.Sprintf("%s / %s", formatDuration(current), formatDuration(float64(global.FightDuration.Load())/1000)), 14, w-30, h-120, color.White, AlignRight)
 	r.PlayProgress.Render(screen, w-float64(r.PlayProgress.w)-30, h-100, p)
 	for _, p := range global.Phases {
 		seperator := float64(p) / float64(util.MSToTick(global.FightDuration.Load()))
@@ -118,13 +118,13 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 	}
 
 	// Draw shortkey prompt
-	DrawText(screen, fmt.Sprintf("当前播放速度: %.1f", float64(entry.GetSpeed(ecs))/10.0), 7, w-30, h-90, color.White, AlignRight)
-	DrawText(screen, "快退: 方向键左 | 快进: 方向键右", 7, w-30, h-70, color.White, AlignRight)
-	DrawText(screen, "移动视角 W/A/S/D | 旋转视角: E/Q | 调试模式：`", 7, w-30, h-50, color.White, AlignRight)
-	DrawText(screen, "暂停: SPACE | 播放速度: 方向键（上下）| 回到开始: R", 7, w-30, h-30, color.White, AlignRight)
+	DrawText(screen, fmt.Sprintf("当前播放速度: %.1f", float64(entry.GetSpeed(ecs))/10.0), 14, w-30, h-90, color.White, AlignRight)
+	DrawText(screen, "快退: 方向键左 | 快进: 方向键右", 14, w-30, h-70, color.White, AlignRight)
+	DrawText(screen, "移动视角 W/A/S/D | 旋转视角: E/Q | 调试模式：`", 14, w-30, h-50, color.White, AlignRight)
+	DrawText(screen, "暂停: SPACE | 播放速度: 方向键（上下）| 回到开始: R", 14, w-30, h-30, color.White, AlignRight)
 
 	// Draw player selection prompt
-	DrawText(screen, "锁定玩家: 1-8 | 解除锁定: ESC", 7, 30, h-30, color.White, AlignLeft)
+	DrawText(screen, "锁定玩家: 1-8 | 解除锁定: ESC", 14, 30, h-30, color.White, AlignLeft)
 }
 
 func formatDuration(s float64) string {

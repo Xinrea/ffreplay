@@ -43,7 +43,7 @@ func (p *PartyList) renderOne(tick int64, canvas *ebiten.Image, member *model.St
 	m.Translate(pos[0], pos[1])
 	m.Scale(s, s)
 	canvas.DrawImage(iconTexture.Img(), &ebiten.DrawImageOptions{GeoM: m})
-	DrawText(canvas, member.Name, 7, pos[0]+25, pos[1]-15, color.White, AlignLeft)
+	DrawText(canvas, member.Name, 14, pos[0]+25, pos[1]-15, color.White, AlignLeft)
 	RenderBuffList(canvas, tick, member.BuffList.Buffs(), pos[0]+200, pos[1], s)
 	hp := member.HP
 	if member.IsDead() {
@@ -55,7 +55,7 @@ func (p *PartyList) renderOne(tick int64, canvas *ebiten.Image, member *model.St
 		progress = 1
 	}
 	p.progress.Render(canvas, pos[0]+25, pos[1]+5, progress)
-	DrawText(canvas, fmt.Sprintf("%d", hp), 7, pos[0]+175, pos[1]+10, color.White, AlignRight)
+	DrawText(canvas, fmt.Sprintf("%d", hp), 14, pos[0]+175, pos[1]+10, color.White, AlignRight)
 }
 
 func formatSeconds(seconds int64) string {
