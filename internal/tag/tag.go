@@ -3,6 +3,7 @@ package tag
 import "github.com/yohamta/donburi"
 
 var Player = donburi.NewTag().SetName("Player")
+var Pet = donburi.NewTag().SetName("Pet")
 var PartyMember = donburi.NewTag().SetName("PartyMember")
 var GameObject = donburi.NewTag().SetName("GameObject")
 var Wall = donburi.NewTag().SetName("Wall")

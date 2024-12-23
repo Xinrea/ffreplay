@@ -30,12 +30,13 @@ type BearerAuthTransport struct {
 }
 
 type ReportFight struct {
-	ID        int
-	Name      string
-	StartTime float64
-	EndTime   float64
-	EnemyNPCs []ReportFightNPC `graphql:"enemyNPCs"`
-	Maps      []struct {
+	ID           int
+	Name         string
+	StartTime    float64
+	EndTime      float64
+	EnemyNPCs    []ReportFightNPC `json:"enemyNPCs"`
+	FriendlyPets []ReportFightNPC `json:"friendlyPets"`
+	Maps         []struct {
 		ID int
 	}
 	PhaseTransitions []struct {
@@ -45,6 +46,7 @@ type ReportFight struct {
 }
 
 type ReportFightNPC struct {
+	GameID        int64
 	ID            int64
 	InstanceCount int
 }

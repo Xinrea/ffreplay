@@ -161,6 +161,12 @@ func (c *FFLogsClient) QueryReportFights(reportCode string) []ReportFight {
 							startTime
 							endTime
 							enemyNPCs {
+								gameID
+								id
+								instanceCount
+							}
+							friendlyPets {
+								gameID
 								id
 								instanceCount
 							}

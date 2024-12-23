@@ -260,6 +260,17 @@ func (ms *FFScene) init() {
 			}()
 		}
 
+		// initialize pet events
+		for _, e := range fight.FriendlyPets {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				events := filterTarget(e.ID)
+				data.PreloadAbilityInfo(events, &global.LoadCount)
+				ms.system.AddEventLine(e.ID, events)
+			}()
+		}
+
 		// initialize enemy events
 		for _, e := range fight.EnemyNPCs {
 			wg.Add(1)
@@ -310,6 +321,10 @@ func (ms *FFScene) init() {
 				}
 			}
 			return 1
+		}
+		// create pets
+		for _, p := range fight.FriendlyPets {
+			ms.system.AddEntry(p.ID, entry.NewPet(ms.ecs, p.GameID, p.ID, "", p.InstanceCount))
 		}
 		// create enemies
 		for _, e := range fight.EnemyNPCs {

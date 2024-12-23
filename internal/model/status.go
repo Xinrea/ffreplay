@@ -39,6 +39,7 @@ const (
 	Pictomancer RoleType = "Pictomancer"
 	Boss        RoleType = "Boss"
 	NPC         RoleType = "NPC"
+	Pet         RoleType = "Pet"
 )
 
 var Status = donburi.NewComponentType[StatusData]()

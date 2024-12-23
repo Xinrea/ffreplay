@@ -27,6 +27,9 @@ func NewPartyList(x, y float64) *PartyList {
 
 func (p *PartyList) Render(tick int64, canvas *ebiten.Image, members []*model.StatusData) {
 	for i, member := range members {
+		if member.Role == model.Pet {
+			continue
+		}
 		p.renderOne(tick, canvas, member, f64.Vec2{p.x, p.y + float64(i*PARTY_MEMBER_GAP)})
 	}
 }

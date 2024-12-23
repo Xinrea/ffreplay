@@ -18,6 +18,7 @@ import (
 )
 
 var Player = newArchetype(tag.GameObject, tag.Player, tag.PartyMember, tag.Buffable, component.Velocity, component.Sprite, component.Status)
+var Pet = newArchetype(tag.GameObject, tag.Pet, tag.PartyMember, tag.Buffable, component.Velocity, component.Sprite, component.Status)
 var Enemy = newArchetype(tag.GameObject, tag.Enemy, tag.Buffable, component.Velocity, component.Sprite, component.Status)
 var Background = newArchetype(tag.Background, component.Map)
 var Camera = newArchetype(tag.Camera, component.Camera)
@@ -78,6 +79,37 @@ func NewEnemy(ecs *ecs.ECS, pos f64.Vec2, ringSize float64, gameID int64, id int
 		IsBoss:   isBoss,
 	})
 	return enemy
+}
+
+func NewPet(ecs *ecs.ECS, gameID int64, id int64, name string, instanceCount int) *donburi.Entry {
+	pet := Pet.Spawn(ecs)
+	instances := []*model.Instance{}
+	for i := 0; i < instanceCount; i++ {
+		instances = append(instances, &model.Instance{
+			Face:       0,
+			Object:     object.NewPointObject(vector.NewVector(0, 0)),
+			LastActive: -1,
+		})
+	}
+	component.Sprite.Set(pet, &model.SpriteData{
+		Texture:     nil,
+		Scale:       0,
+		Instances:   instances,
+		Initialized: true,
+	})
+	component.Status.Set(pet, &model.StatusData{
+		GameID:   gameID,
+		ID:       id,
+		Name:     name,
+		Role:     model.Pet,
+		HP:       1,
+		MaxHP:    1,
+		Mana:     10000,
+		MaxMana:  10000,
+		BuffList: model.NewBuffList(),
+		IsBoss:   false,
+	})
+	return pet
 }
 
 func NewPlayer(ecs *ecs.ECS, role model.RoleType, pos f64.Vec2, detail *fflogs.PlayerDetail) *donburi.Entry {
