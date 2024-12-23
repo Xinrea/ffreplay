@@ -167,8 +167,7 @@ func (s *System) doReset(ecs *ecs.ECS) {
 	}
 	// clean all buffs and casting
 	for e := range component.Status.Iter(ecs.World) {
-		status := component.Status.Get(e)
-		status.BuffList.Clear()
+		component.Status.Get(e).Reset()
 		for _, instance := range component.Sprite.Get(e).Instances {
 			instance.Reset()
 		}

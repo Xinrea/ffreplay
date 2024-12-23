@@ -86,15 +86,6 @@ func (s *System) replayUpdate(ecs *ecs.ECS, tick int64) {
 			}
 		}
 
-		// tick is adjusted backward, reset line, and consume progress will handle this
-		if line.Cursor > 0 && line.Events[line.Cursor-1].LocalTick > tick {
-			line.Cursor = 0
-			component.Status.Get(e).BuffList.Clear()
-			for _, instance := range component.Sprite.Get(e).Instances {
-				instance.Reset()
-			}
-		}
-
 		// consume all events until event that should not happen at this tick
 		for line.Cursor < len(line.Events) && line.Events[line.Cursor].LocalTick <= tick {
 			event := line.Events[line.Cursor]

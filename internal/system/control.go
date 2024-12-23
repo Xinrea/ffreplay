@@ -92,6 +92,7 @@ func (s *System) ControlUpdate(ecs *ecs.ECS) {
 		if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) {
 			globalData.Tick -= 60 * 10 // 1s tick
 			globalData.Tick = max(0, globalData.Tick)
+			s.doReset(ecs)
 		}
 		if ebiten.IsKeyPressed(ebiten.KeyArrowRight) {
 			globalData.Tick += 60 * 10 // 1s tick

@@ -60,6 +60,7 @@ type StatusData struct {
 func (r *StatusData) Reset() {
 	r.HP = r.MaxHP
 	r.Mana = r.MaxMana
+	r.death = false
 	r.BuffList = NewBuffList()
 }
 
