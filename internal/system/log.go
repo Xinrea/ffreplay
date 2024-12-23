@@ -7,6 +7,7 @@ import (
 
 	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/data/fflogs"
+	"github.com/Xinrea/ffreplay/internal/entry"
 	"github.com/Xinrea/ffreplay/internal/game/skills"
 	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/internal/tag"
@@ -96,6 +97,7 @@ func (s *System) replayUpdate(ecs *ecs.ECS, tick int64) {
 }
 
 func (s *System) applyLog(ecs *ecs.ECS, tick int64, target *donburi.Entry, event fflogs.FFLogsEvent) {
+	debug := entry.IsDebug(ecs)
 	if event.SourceID != nil && s.EntryMap[*event.SourceID] != nil {
 		instanceID := 0
 		if event.SourceInstance != nil {
@@ -237,7 +239,7 @@ func (s *System) applyLog(ecs *ecs.ECS, tick int64, target *donburi.Entry, event
 		skill.StartTick = event.LocalTick
 
 		component.Sprite.Get(caster).Instances[instanceID].Cast(skill)
-		if caster.HasComponent(tag.Enemy) {
+		if debug && caster.HasComponent(tag.Enemy) {
 			log.Printf("[%d]%s[%d] begin cast [%d]%s on [%d]%s\n", component.Status.Get(caster).ID, component.Status.Get(caster).Name, instanceID+1, event.Ability.Guid, event.Ability.Name, component.Status.Get(target).ID, component.Status.Get(target).Name)
 		}
 		return
@@ -261,7 +263,7 @@ func (s *System) applyLog(ecs *ecs.ECS, tick int64, target *donburi.Entry, event
 		target := s.EntryMap[*event.TargetID]
 		skill := skills.QuerySkill(event.Ability.ToSkill(0))
 		skill.StartTick = event.LocalTick
-		if caster.HasComponent(tag.Enemy) {
+		if debug && caster.HasComponent(tag.Enemy) {
 			log.Printf("[%d]%s[%d] cast [%d]%s on [%d]%s\n", component.Status.Get(caster).ID, component.Status.Get(caster).Name, instanceID+1, skill.ID, event.Ability.Name, component.Status.Get(target).ID, component.Status.Get(target).Name)
 		}
 		s.Cast(ecs, caster, instanceID, target, 0, skill)

@@ -159,6 +159,10 @@ func NewMarker(ecs *ecs.ECS, markerType model.MarkerType, pos f64.Vec2) *donburi
 	return marker
 }
 
+func IsDebug(ecs *ecs.ECS) bool {
+	return component.Global.Get(tag.Global.MustFirst(ecs.World)).Debug
+}
+
 func GetTick(ecs *ecs.ECS) int64 {
 	return component.Global.Get(tag.Global.MustFirst(ecs.World)).Tick / 10
 }
