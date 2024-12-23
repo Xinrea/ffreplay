@@ -108,15 +108,21 @@ func RenderCasting(canvas *ebiten.Image, tick int64, cast *model.Skill, x, y flo
 	textY := y + 20
 	iconTexture := cast.Texture()
 	geoM := iconTexture.GetGeoM()
+	borderGeoM := model.BorderGeoM
 	if !model.IsGCD(cast.ID) {
 		geoM.Scale(0.8, 0.8)
-		geoM.Translate(0, -40)
+		borderGeoM.Scale(0.8, 0.8)
+		geoM.Translate(0, -50)
+		borderGeoM.Translate(0, -50)
 		textSize = 5
 		textY -= 100
 	}
 	geoM.Translate(x, y)
 	geoM.Scale(s, s)
+	borderGeoM.Translate(x, y)
+	borderGeoM.Scale(s, s)
 	canvas.DrawImage(iconTexture.Img(), &ebiten.DrawImageOptions{GeoM: geoM})
+	canvas.DrawImage(model.BorderTexture.Img(), &ebiten.DrawImageOptions{GeoM: borderGeoM})
 	DrawText(canvas, cast.Name, textSize, x, textY, color.White, AlignCenter)
 }
 

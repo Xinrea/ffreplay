@@ -9,7 +9,15 @@ import (
 	"sync"
 
 	"github.com/Xinrea/ffreplay/pkg/texture"
+	"github.com/hajimehoshi/ebiten/v2"
 )
+
+var BorderTexture = texture.NewTextureFromFile("asset/skillborder.png")
+var BorderGeoM = ebiten.GeoM{}
+
+func init() {
+	BorderGeoM.Translate(-float64(BorderTexture.Img().Bounds().Dx())/2, -float64(BorderTexture.Img().Bounds().Dy())/2)
+}
 
 type Skill struct {
 	ID        int64
