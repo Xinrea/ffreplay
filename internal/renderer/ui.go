@@ -48,7 +48,7 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 		}
 		enemy := component.Status.Get(e)
 		mainInstance := sprite.Instances[0]
-		if !enemy.IsBoss || !mainInstance.IsActive(tick) {
+		if enemy.Role != model.Boss || !mainInstance.IsActive(tick) {
 			continue
 		}
 		gap := 100

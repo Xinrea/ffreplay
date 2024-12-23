@@ -53,7 +53,6 @@ type StatusData struct {
 	MaxHP    int
 	Mana     int
 	MaxMana  int
-	IsBoss   bool
 	BuffList *BuffList
 	death    bool
 }

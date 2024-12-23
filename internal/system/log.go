@@ -98,6 +98,7 @@ func (s *System) replayUpdate(ecs *ecs.ECS, tick int64) {
 
 func (s *System) applyLog(ecs *ecs.ECS, tick int64, target *donburi.Entry, event fflogs.FFLogsEvent) {
 	debug := entry.IsDebug(ecs)
+
 	if event.SourceID != nil && s.EntryMap[*event.SourceID] != nil {
 		instanceID := 0
 		if event.SourceInstance != nil {
@@ -105,6 +106,15 @@ func (s *System) applyLog(ecs *ecs.ECS, tick int64, target *donburi.Entry, event
 		}
 		source := component.Sprite.Get(s.EntryMap[*event.SourceID])
 		source.Instances[instanceID].LastActive = event.LocalTick
+	}
+
+	if event.TargetID != nil && s.EntryMap[*event.TargetID] != nil {
+		instanceID := 0
+		if event.TargetInstance != nil {
+			instanceID = int(*event.TargetInstance) - 1
+		}
+		target := component.Sprite.Get(s.EntryMap[*event.TargetID])
+		target.Instances[instanceID].LastActive = event.LocalTick
 	}
 	// {
 	// "timestamp": 4134160,

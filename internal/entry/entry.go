@@ -76,7 +76,6 @@ func NewEnemy(ecs *ecs.ECS, pos f64.Vec2, ringSize float64, gameID int64, id int
 		Mana:     10000,
 		MaxMana:  10000,
 		BuffList: model.NewBuffList(),
-		IsBoss:   isBoss,
 	})
 	return enemy
 }
@@ -107,7 +106,6 @@ func NewPet(ecs *ecs.ECS, gameID int64, id int64, name string, instanceCount int
 		Mana:     10000,
 		MaxMana:  10000,
 		BuffList: model.NewBuffList(),
-		IsBoss:   false,
 	})
 	return pet
 }
