@@ -95,26 +95,13 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 	// render target player casting history
 	if global.TargetPlayer != nil {
 		player := component.Sprite.Get(global.TargetPlayer)
-		// using a area on middle bottom of screen, 600x40
-		cx := w/2 + 300
-		cy := h - 100
-		DrawFilledRect(screen, w/2-350, h-200, 700, 150, color.NRGBA{0, 0, 0, 100})
 		casts := player.Instances[0].GetHistoryCast(tick)
 		currentCasting := player.Instances[0].GetCast()
 		if currentCasting != nil {
 			casts = append(casts, currentCasting)
 		}
-		for _, c := range casts {
-			if c.ID == 7 {
-				continue
-			}
-			delta := tick - c.StartTick
-			if c.Cast > 0 {
-				// render casting background
-				DrawFilledRect(screen, cx-float64(delta), cy, float64(min(delta, util.MSToTick(c.Cast))), 10, color.NRGBA{230, 255, 255, 128})
-			}
-			RenderCasting(screen, tick, c, cx-float64(delta), cy)
-		}
+		sk := NewSkillTimeline(casts)
+		sk.Render(global.Debug, screen, w/2, h-200, tick)
 	}
 
 	// Draw shortkey prompt
