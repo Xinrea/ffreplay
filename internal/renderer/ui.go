@@ -24,9 +24,15 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 	tick := global.Tick / 10
 	x, y := ebiten.CursorPosition()
 	wx, wy := camera.ScreenToWorld(float64(x), float64(y))
+	w, h := camera.WindowSize()
 	ebitenutil.DebugPrintAt(screen, fmt.Sprintf("Cursor: %f, %f", wx, wy), 0, 0)
 	ebitenutil.DebugPrintAt(screen, fmt.Sprintf("Tick: %d, Time: %d, TPS: %.2f, FPS: %.2f", entry.GetTick(ecs), util.TickToMS(entry.GetTick(ecs)), ebiten.ActualTPS(), ebiten.ActualFPS()), 0, 15)
 
+	if !global.Loaded.Load() {
+		DrawFilledRect(screen, 0, 0, w, h, color.RGBA{0, 0, 0, 128})
+		DrawText(screen, fmt.Sprintf("预处理中: %d/%d", global.LoadCount.Load(), global.LoadTotal), 28, w/2, h/2, color.White, AlignCenter)
+		return
+	}
 	memberList := []*model.StatusData{}
 	tag.PartyMember.Each(ecs.World, func(e *donburi.Entry) {
 		sprite := component.Sprite.Get(e)
@@ -40,7 +46,6 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 
 	// render boss health bar
 	cnt := 0
-	w, h := camera.WindowSize()
 	for e := range tag.Enemy.Iter(ecs.World) {
 		sprite := component.Sprite.Get(e)
 		if !sprite.Initialized {
@@ -74,11 +79,6 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 		cnt++
 	}
 
-	if !global.Loaded.Load() {
-		DrawFilledRect(screen, 0, 0, w, h, color.RGBA{0, 0, 0, 128})
-		DrawText(screen, fmt.Sprintf("预处理中: %d/%d", global.LoadCount.Load(), global.LoadTotal), 28, w/2, h/2, color.White, AlignCenter)
-	}
-
 	// render play progress
 	current := float64(entry.GetTick(ecs)) / 60
 	p := 0.0
@@ -104,6 +104,8 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 		sk.Render(global.Debug, screen, w/2, h-200, tick)
 	}
 
+	// render limit break
+	r.RenderLimitbreakBar(screen, 20, 20, global.Bar, global.LimitBreak)
 	// Draw shortkey prompt
 	DrawText(screen, fmt.Sprintf("当前播放速度: %.1f", float64(entry.GetSpeed(ecs))/10.0), 14, w-30, h-90, color.White, AlignRight)
 	DrawText(screen, "快退: 方向键左 | 快进: 方向键右", 14, w-30, h-70, color.White, AlignRight)

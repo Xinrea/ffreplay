@@ -230,6 +230,15 @@ func (ms *FFScene) init() {
 			}
 			return ret
 		}
+		filterLimitbreak := func() []fflogs.FFLogsEvent {
+			ret := []fflogs.FFLogsEvent{}
+			for _, e := range events {
+				if e.Type == fflogs.Limitbreakupdate {
+					ret = append(ret, e)
+				}
+			}
+			return ret
+		}
 		global.LoadTotal = len(events)
 		var wg sync.WaitGroup
 		for _, p := range players.Tanks {
@@ -287,6 +296,11 @@ func (ms *FFScene) init() {
 			events := filterTarget(-1)
 			data.PreloadAbilityInfo(events, &global.LoadCount)
 			ms.system.AddEventLine(-1, events)
+		}
+
+		// create limitbreak events
+		{
+			ms.system.AddLimitbreakEvents(filterLimitbreak())
 		}
 
 		// create players

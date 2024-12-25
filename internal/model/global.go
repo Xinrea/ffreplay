@@ -14,6 +14,8 @@ type GlobalData struct {
 	Phases        []int64
 	FightDuration atomic.Int64
 	TargetPlayer  *donburi.Entry
+	LimitBreak    int
+	Bar           int
 	Loaded        atomic.Bool
 	LoadCount     atomic.Int32
 	LoadTotal     int

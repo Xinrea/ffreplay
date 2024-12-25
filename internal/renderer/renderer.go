@@ -48,7 +48,7 @@ func NewRenderer() *Renderer {
 	return &Renderer{
 		EnemyHealthBar: healthBar,
 		EnemyCasting:   NewProgressBar(100, 4, pcolor),
-		PartyList:      NewPartyList(40, 40),
+		PartyList:      NewPartyList(40, 70),
 		PlayProgress:   NewProgressBar(300, 6, color.NRGBA{230, 255, 255, 255}),
 	}
 }

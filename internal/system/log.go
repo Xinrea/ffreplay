@@ -25,6 +25,15 @@ func (s *System) LogUpdate(ecs *ecs.ECS, tick int64) {
 }
 
 func (s *System) replayUpdate(ecs *ecs.ECS, tick int64) {
+	global := component.Global.Get(tag.Global.MustFirst(ecs.World))
+	// limitbreak event
+	index := sort.Search(len(s.LimitbreakEvents), func(i int) bool {
+		return s.LimitbreakEvents[i].LocalTick >= tick
+	})
+	if index < len(s.LimitbreakEvents) {
+		global.Bar = int(*s.LimitbreakEvents[index].Bars)
+		global.LimitBreak = int(*s.LimitbreakEvents[index].Value)
+	}
 	for e := range tag.GameObject.Iter(ecs.World) {
 		id := component.Status.Get(e).ID
 		line := s.EventLines[id]
