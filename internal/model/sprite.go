@@ -49,12 +49,32 @@ func (i *Instance) IsActive(tick int64) bool {
 }
 
 func (i *Instance) Cast(gameSkill Skill) {
+	// just auto attack
+	if gameSkill.ID == 7 {
+		return
+	}
+	// same skill cast twice, but previous one has cast time
+	isSucceed := func(x, y *Skill) bool {
+		if x == nil || y == nil {
+			return false
+		}
+		if x.ID != y.ID {
+			return false
+		}
+		return x.Cast > 0 && y.Cast == 0
+	}
 	// maybe the skill to cast is the effect of previous long casting skill
-	if i.casting != nil && i.casting.ID == gameSkill.ID && i.casting.Cast > 0 {
+	if isSucceed(i.casting, &gameSkill) {
+		return
+	}
+	if len(i.historyCasting) > 0 && isSucceed(i.historyCasting[len(i.historyCasting)-1], &gameSkill) {
 		return
 	}
 	// no need to spell, just move into historyCasting
 	if gameSkill.Cast == 0 {
+		if i.casting != nil && i.casting.Cast > 0 {
+			i.ClearCast()
+		}
 		i.historyCasting = append(i.historyCasting, &gameSkill)
 		return
 	}
@@ -69,20 +89,26 @@ func (i *Instance) GetCast() *Skill {
 }
 
 func (i *Instance) ClearCast() {
+	if i.casting == nil {
+		return
+	}
 	i.historyCasting = append(i.historyCasting, i.casting)
 	i.casting = nil
 }
 
 func (i *Instance) GetHistoryCast(tick int64) []*Skill {
-	ret := []*Skill{}
-	for _, c := range i.historyCasting {
-		if tick-c.StartTick > 10*60 /*10s*/ {
-			continue
+	// only keep last 5 gcd of history
+	cnt := 5
+	for k := len(i.historyCasting) - 1; k >= 0; k-- {
+		if IsGCD(i.historyCasting[k].ID) {
+			cnt--
 		}
-		ret = append(ret, c)
+		if cnt == 0 {
+			i.historyCasting = i.historyCasting[k:]
+			break
+		}
 	}
-	i.historyCasting = ret
-	return ret
+	return i.historyCasting
 }
 
 func (i *Instance) Reset() {
