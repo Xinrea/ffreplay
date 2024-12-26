@@ -28,8 +28,8 @@ func (r *Renderer) renderPlayer(ecs *ecs.ECS, camera *model.CameraData, screen *
 		return
 	}
 	status := component.Status.Get(player)
-	wordM := camera.WorldMatrix()
-	wordM.Invert()
+	worldM := camera.WorldMatrix()
+	worldM.Invert()
 
 	// render target ring
 	c := colorm.ColorM{}
@@ -42,7 +42,7 @@ func (r *Renderer) renderPlayer(ecs *ecs.ECS, camera *model.CameraData, screen *
 	geoM.Scale(sprite.Scale, sprite.Scale)
 	geoM.Rotate(sprite.Instances[0].Face)
 	geoM.Translate(pos[0], pos[1])
-	geoM.Concat(wordM)
+	geoM.Concat(worldM)
 	op := &colorm.DrawImageOptions{}
 	op.GeoM = geoM
 	colorm.DrawImage(screen, sprite.Texture.Img(), c, op)
@@ -56,7 +56,7 @@ func (r *Renderer) renderPlayer(ecs *ecs.ECS, camera *model.CameraData, screen *
 	geoM.Scale(0.5, 0.5)
 	geoM.Rotate(camera.Rotation)
 	geoM.Translate(pos[0], pos[1])
-	geoM.Concat(wordM)
+	geoM.Concat(worldM)
 	op = &colorm.DrawImageOptions{}
 	op.GeoM = geoM
 	colorm.DrawImage(screen, status.RoleTexture().Img(), c, op)
@@ -65,4 +65,14 @@ func (r *Renderer) renderPlayer(ecs *ecs.ECS, camera *model.CameraData, screen *
 	s := ebiten.Monitor().DeviceScaleFactor()
 	screenX, screenY := camera.WorldToScreen(pos[0], pos[1])
 	RenderBuffList(screen, tick, status.BuffList.DeBuffs(), screenX/s+30/math.Pow(1.01, float64(camera.ZoomFactor)), screenY/s, ebiten.Monitor().DeviceScaleFactor())
+
+	// render marker on player
+	if status.Marker > 0 {
+		markerTexture := model.MarkerTextures[status.Marker-1]
+		geoM = markerTexture.GetGeoM()
+		geoM.Rotate(camera.Rotation)
+		geoM.Translate(pos[0], pos[1]-30)
+		geoM.Concat(worldM)
+		screen.DrawImage(markerTexture.Img(), &ebiten.DrawImageOptions{GeoM: geoM})
+	}
 }

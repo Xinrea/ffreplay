@@ -54,6 +54,7 @@ type StatusData struct {
 	Mana     int
 	MaxMana  int
 	BuffList *BuffList
+	Marker   int
 	death    bool
 }
 

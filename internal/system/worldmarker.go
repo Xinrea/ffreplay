@@ -13,7 +13,7 @@ import (
 	"golang.org/x/image/math/f64"
 )
 
-func (s *System) MarkerUpdate(ecs *ecs.ECS) {
+func (s *System) WorldMarkerUpdate(ecs *ecs.ECS) {
 	if s.InReplay {
 		return
 	}
@@ -24,7 +24,7 @@ func (s *System) MarkerUpdate(ecs *ecs.ECS) {
 			x, y := ebiten.CursorPosition()
 			geoM := camera.WorldMatrix()
 			wx, wy := geoM.Apply(float64(x), float64(y))
-			entry.NewMarker(ecs, model.Marker1, f64.Vec2{wx, wy})
+			entry.NewWorldMarker(ecs, model.WorldMarker1, f64.Vec2{wx, wy})
 			log.Println("Create marker at", wx, wy)
 		}
 		if inpututil.IsKeyJustPressed(ebiten.Key2) {
@@ -32,7 +32,7 @@ func (s *System) MarkerUpdate(ecs *ecs.ECS) {
 			x, y := ebiten.CursorPosition()
 			geoM := camera.WorldMatrix()
 			wx, wy := geoM.Apply(float64(x), float64(y))
-			entry.NewMarker(ecs, model.Marker2, f64.Vec2{wx, wy})
+			entry.NewWorldMarker(ecs, model.WorldMarker2, f64.Vec2{wx, wy})
 			log.Println("Create marker at", wx, wy)
 		}
 		if inpututil.IsKeyJustPressed(ebiten.Key3) {
@@ -40,7 +40,7 @@ func (s *System) MarkerUpdate(ecs *ecs.ECS) {
 			x, y := ebiten.CursorPosition()
 			geoM := camera.WorldMatrix()
 			wx, wy := geoM.Apply(float64(x), float64(y))
-			entry.NewMarker(ecs, model.Marker3, f64.Vec2{wx, wy})
+			entry.NewWorldMarker(ecs, model.WorldMarker3, f64.Vec2{wx, wy})
 			log.Println("Create marker at", wx, wy)
 		}
 		if inpututil.IsKeyJustPressed(ebiten.Key4) {
@@ -48,7 +48,7 @@ func (s *System) MarkerUpdate(ecs *ecs.ECS) {
 			x, y := ebiten.CursorPosition()
 			geoM := camera.WorldMatrix()
 			wx, wy := geoM.Apply(float64(x), float64(y))
-			entry.NewMarker(ecs, model.Marker4, f64.Vec2{wx, wy})
+			entry.NewWorldMarker(ecs, model.WorldMarker4, f64.Vec2{wx, wy})
 			log.Println("Create marker at", wx, wy)
 		}
 		if inpututil.IsKeyJustPressed(ebiten.Key5) {
@@ -56,7 +56,7 @@ func (s *System) MarkerUpdate(ecs *ecs.ECS) {
 			x, y := ebiten.CursorPosition()
 			geoM := camera.WorldMatrix()
 			wx, wy := geoM.Apply(float64(x), float64(y))
-			entry.NewMarker(ecs, model.MarkerA, f64.Vec2{wx, wy})
+			entry.NewWorldMarker(ecs, model.WorldMarkerA, f64.Vec2{wx, wy})
 			log.Println("Create marker at", wx, wy)
 		}
 		if inpututil.IsKeyJustPressed(ebiten.Key6) {
@@ -64,7 +64,7 @@ func (s *System) MarkerUpdate(ecs *ecs.ECS) {
 			x, y := ebiten.CursorPosition()
 			geoM := camera.WorldMatrix()
 			wx, wy := geoM.Apply(float64(x), float64(y))
-			entry.NewMarker(ecs, model.MarkerB, f64.Vec2{wx, wy})
+			entry.NewWorldMarker(ecs, model.WorldMarkerB, f64.Vec2{wx, wy})
 			log.Println("Create marker at", wx, wy)
 		}
 		if inpututil.IsKeyJustPressed(ebiten.Key7) {
@@ -72,7 +72,7 @@ func (s *System) MarkerUpdate(ecs *ecs.ECS) {
 			x, y := ebiten.CursorPosition()
 			geoM := camera.WorldMatrix()
 			wx, wy := geoM.Apply(float64(x), float64(y))
-			entry.NewMarker(ecs, model.MarkerC, f64.Vec2{wx, wy})
+			entry.NewWorldMarker(ecs, model.WorldMarkerC, f64.Vec2{wx, wy})
 			log.Println("Create marker at", wx, wy)
 		}
 		if inpututil.IsKeyJustPressed(ebiten.Key8) {
@@ -80,7 +80,7 @@ func (s *System) MarkerUpdate(ecs *ecs.ECS) {
 			x, y := ebiten.CursorPosition()
 			geoM := camera.WorldMatrix()
 			wx, wy := geoM.Apply(float64(x), float64(y))
-			entry.NewMarker(ecs, model.MarkerD, f64.Vec2{wx, wy})
+			entry.NewWorldMarker(ecs, model.WorldMarkerD, f64.Vec2{wx, wy})
 			log.Println("Create marker at", wx, wy)
 		}
 	}

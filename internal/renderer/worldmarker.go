@@ -8,14 +8,14 @@ import (
 	"github.com/yohamta/donburi/ecs"
 )
 
-func (r *Renderer) MarkerRender(ecs *ecs.ECS, screen *ebiten.Image) {
+func (r *Renderer) WorldMarkerRender(ecs *ecs.ECS, screen *ebiten.Image) {
 	camera := component.Camera.Get(tag.Camera.MustFirst(ecs.World))
-	for e := range tag.Marker.Iter(ecs.World) {
-		marker := component.Marker.Get(e)
-		config := model.MarkerConfigs[marker.Type]
+	for e := range tag.WorldMarker.Iter(ecs.World) {
+		marker := component.WorldMarker.Get(e)
+		config := model.WorldMarkerConfigs[marker.Type]
 		geoM := config.Texture.GetGeoM()
 		geoM.Scale(0.5, 0.5)
-		if marker.Type <= model.MarkerD {
+		if marker.Type <= model.WorldMarkerD {
 			geoM.Scale(1.1, 1.1)
 		}
 		geoM.Translate(marker.Position[0], marker.Position[1])

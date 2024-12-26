@@ -134,7 +134,7 @@ func (ms *FFScene) init() {
 			if m.MapID != fight.Maps[0].ID {
 				continue
 			}
-			entry.NewMarker(ms.ecs, model.MarkerA+model.MarkerType(m.Icon-1), f64.Vec2{float64(m.X) / 100 * 25, float64(m.Y) / 100 * 25})
+			entry.NewWorldMarker(ms.ecs, model.WorldMarkerA+model.WorldMarkerType(m.Icon-1), f64.Vec2{float64(m.X) / 100 * 25, float64(m.Y) / 100 * 25})
 		}
 		// initialize player events
 		players := ms.client.QueryFightPlayers(ms.code, fight.ID)

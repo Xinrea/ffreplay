@@ -109,7 +109,7 @@ func RenderBuffList(canvas *ebiten.Image, tick int64, buffs []model.Buff, x, y, 
 func (r *Renderer) Init(ecs *ecs.ECS) {
 	ecs.AddRenderer(layer.Background, r.BackgroundRender)
 	ecs.AddRenderer(layer.SkillRange, r.RangeRender)
-	ecs.AddRenderer(layer.Background, r.MarkerRender)
+	ecs.AddRenderer(layer.Background, r.WorldMarkerRender)
 	ecs.AddRenderer(layer.Player, r.EnemyRender)
 	ecs.AddRenderer(layer.Player, r.PlayerRender)
 	ecs.AddRenderer(layer.UI, r.UIRender)

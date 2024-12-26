@@ -169,7 +169,7 @@ func (s *System) Update(ecs *ecs.ECS) {
 	s.TimelineUpdate(ecs)
 	s.BuffUpdate(ecs, globalData.Tick/10)
 	s.SkillUpdate(ecs)
-	s.MarkerUpdate(ecs)
+	s.WorldMarkerUpdate(ecs)
 	if globalData.Loaded.Load() && !s.Pause && util.MSToTick(globalData.FightDuration.Load())*10 > globalData.Tick {
 		globalData.Tick += globalData.Speed
 		globalData.Tick = min(globalData.Tick, util.MSToTick(globalData.FightDuration.Load())*10)

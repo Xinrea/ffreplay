@@ -7,7 +7,7 @@ import (
 
 var Camera = donburi.NewComponentType[model.CameraData]()
 var Status = donburi.NewComponentType[model.StatusData]()
-var Marker = donburi.NewComponentType[model.MarkerData]()
+var WorldMarker = donburi.NewComponentType[model.WorldMarkerData]()
 var Sprite = donburi.NewComponentType[model.SpriteData]()
 var Timeline = donburi.NewComponentType[model.TimelineData]()
 var Velocity = donburi.NewComponentType[model.VelocityData]()

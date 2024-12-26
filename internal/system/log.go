@@ -136,7 +136,13 @@ func (s *System) applyLog(ecs *ecs.ECS, tick int64, target *donburi.Entry, event
 			instanceID = int(*event.SourceInstance) - 1
 		}
 		source := component.Sprite.Get(s.EntryMap[*event.SourceID])
+		status := component.Status.Get(s.EntryMap[*event.SourceID])
 		source.Instances[instanceID].LastActive = event.LocalTick
+		if event.SourceMarker != nil {
+			status.Marker = *event.SourceMarker
+		} else {
+			status.Marker = 0
+		}
 	}
 
 	if event.TargetID != nil && s.EntryMap[*event.TargetID] != nil {
@@ -144,8 +150,14 @@ func (s *System) applyLog(ecs *ecs.ECS, tick int64, target *donburi.Entry, event
 		if event.TargetInstance != nil {
 			instanceID = int(*event.TargetInstance) - 1
 		}
+		status := component.Status.Get(s.EntryMap[*event.TargetID])
 		target := component.Sprite.Get(s.EntryMap[*event.TargetID])
 		target.Instances[instanceID].LastActive = event.LocalTick
+		if event.TargetMarker != nil {
+			status.Marker = *event.TargetMarker
+		} else {
+			status.Marker = 0
+		}
 	}
 	// {
 	// "timestamp": 4134160,
@@ -325,8 +337,8 @@ func (s *System) applyLog(ecs *ecs.ECS, tick int64, target *donburi.Entry, event
 
 	if event.Type == fflogs.WorldMarkerRemoved {
 		var targetMarker *donburi.Entry = nil
-		for m := range component.Marker.Iter(ecs.World) {
-			if component.Marker.Get(m).Type == model.MarkerType(*event.Icon) {
+		for m := range component.WorldMarker.Iter(ecs.World) {
+			if component.WorldMarker.Get(m).Type == model.WorldMarkerType(*event.Icon) {
 				targetMarker = m
 				break
 			}
@@ -339,9 +351,9 @@ func (s *System) applyLog(ecs *ecs.ECS, tick int64, target *donburi.Entry, event
 
 	if event.Type == fflogs.WorldMarkerPlaced {
 		found := false
-		for m := range component.Marker.Iter(ecs.World) {
-			marker := component.Marker.Get(m)
-			if marker.Type == model.MarkerType(*event.Icon-1) {
+		for m := range component.WorldMarker.Iter(ecs.World) {
+			marker := component.WorldMarker.Get(m)
+			if marker.Type == model.WorldMarkerType(*event.Icon-1) {
 				marker.Position[0] = float64(*event.X) / 100 * 25
 				marker.Position[1] = float64(*event.Y) / 100 * 25
 				found = true
@@ -349,7 +361,7 @@ func (s *System) applyLog(ecs *ecs.ECS, tick int64, target *donburi.Entry, event
 			}
 		}
 		if !found {
-			entry.NewMarker(ecs, model.MarkerType(*event.Icon-1), f64.Vec2{
+			entry.NewWorldMarker(ecs, model.WorldMarkerType(*event.Icon-1), f64.Vec2{
 				float64(*event.X) / 100 * 25,
 				float64(*event.Y) / 100 * 25,
 			})

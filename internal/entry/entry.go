@@ -23,7 +23,7 @@ var Enemy = newArchetype(tag.GameObject, tag.Enemy, tag.Buffable, component.Velo
 var Background = newArchetype(tag.Background, component.Map)
 var Camera = newArchetype(tag.Camera, component.Camera)
 var Timeline = newArchetype(tag.Timeline, component.Timeline)
-var Marker = newArchetype(tag.Marker, component.Marker)
+var WorldMarker = newArchetype(tag.WorldMarker, component.WorldMarker)
 var Global = newArchetype(tag.Global, component.Global)
 
 type archetype struct {
@@ -180,17 +180,17 @@ func NewTimeline(ecs *ecs.ECS, data *model.TimelineData) *donburi.Entry {
 	return timeline
 }
 
-func NewMarker(ecs *ecs.ECS, markerType model.MarkerType, pos f64.Vec2) *donburi.Entry {
+func NewWorldMarker(ecs *ecs.ECS, markerType model.WorldMarkerType, pos f64.Vec2) *donburi.Entry {
 	// each type of marker can only exists one instance
-	for m := range component.Marker.Iter(ecs.World) {
-		marker := component.Marker.Get(m)
+	for m := range component.WorldMarker.Iter(ecs.World) {
+		marker := component.WorldMarker.Get(m)
 		if marker.Type == markerType {
 			marker.Position = pos
 			return m
 		}
 	}
-	marker := Marker.Spawn(ecs)
-	component.Marker.Set(marker, &model.MarkerData{
+	marker := WorldMarker.Spawn(ecs)
+	component.WorldMarker.Set(marker, &model.WorldMarkerData{
 		Type:     markerType,
 		Position: pos,
 	})

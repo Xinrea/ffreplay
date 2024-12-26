@@ -131,6 +131,8 @@ type FFLogsEvent struct {
 	Icon                *int          `json:"icon,omitempty"`
 	X                   *int64        `json:"x,omitempty"`
 	Y                   *int64        `json:"y,omitempty"`
+	SourceMarker        *int          `json:"sourceMarker,omitempty"`
+	TargetMarker        *int          `json:"targetMarker,omitempty"`
 }
 
 type Aura struct {
