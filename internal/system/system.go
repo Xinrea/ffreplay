@@ -20,6 +20,7 @@ type System struct {
 	ECS              *ecs.ECS
 	ViewPort         f64.Vec2
 	PlayerList       []*donburi.Entry
+	MapChangeEvents  []fflogs.FFLogsEvent
 	LimitbreakEvents []fflogs.FFLogsEvent
 	EventLines       map[int64]*EventLine
 	EntryMap         map[int64]*donburi.Entry
@@ -76,6 +77,10 @@ func (s *System) AddLimitbreakEvents(events []fflogs.FFLogsEvent) {
 	s.LimitbreakEvents = events
 }
 
+func (s *System) AddMapChangeEvents(events []fflogs.FFLogsEvent) {
+	s.MapChangeEvents = events
+}
+
 func (s *System) AddEventLine(id int64, events []fflogs.FFLogsEvent) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -95,7 +100,7 @@ func (s *System) AddEventLine(id int64, events []fflogs.FFLogsEvent) {
 					MaxHP:    int(e.SourceResources.MaxHitPoints),
 					MP:       int(e.SourceResources.Mp),
 					MaxMP:    int(e.SourceResources.MaxMP),
-					Position: vector.Vector{float64(e.SourceResources.X-10000) / 100 * 25, float64(e.SourceResources.Y-10000) / 100 * 25},
+					Position: vector.Vector{float64(e.SourceResources.X) / 100 * 25, float64(e.SourceResources.Y) / 100 * 25},
 				})
 			} else {
 				status[instanceID][len(status[instanceID])-1] = StatusEvent{
@@ -105,7 +110,7 @@ func (s *System) AddEventLine(id int64, events []fflogs.FFLogsEvent) {
 					MaxHP:    int(e.SourceResources.MaxHitPoints),
 					MP:       int(e.SourceResources.Mp),
 					MaxMP:    int(e.SourceResources.MaxMP),
-					Position: vector.Vector{float64(e.SourceResources.X-10000) / 100 * 25, float64(e.SourceResources.Y-10000) / 100 * 25},
+					Position: vector.Vector{float64(e.SourceResources.X) / 100 * 25, float64(e.SourceResources.Y) / 100 * 25},
 				}
 			}
 		}
@@ -122,7 +127,7 @@ func (s *System) AddEventLine(id int64, events []fflogs.FFLogsEvent) {
 					MaxHP:    int(e.TargetResources.MaxHitPoints),
 					MP:       int(e.TargetResources.Mp),
 					MaxMP:    int(e.TargetResources.MaxMP),
-					Position: vector.Vector{float64(e.TargetResources.X-10000) / 100 * 25, float64(e.TargetResources.Y-10000) / 100 * 25},
+					Position: vector.Vector{float64(e.TargetResources.X) / 100 * 25, float64(e.TargetResources.Y) / 100 * 25},
 				})
 			} else {
 				status[instanceID][len(status[instanceID])-1] = StatusEvent{
@@ -132,7 +137,7 @@ func (s *System) AddEventLine(id int64, events []fflogs.FFLogsEvent) {
 					MaxHP:    int(e.TargetResources.MaxHitPoints),
 					MP:       int(e.TargetResources.Mp),
 					MaxMP:    int(e.TargetResources.MaxMP),
-					Position: vector.Vector{float64(e.TargetResources.X-10000) / 100 * 25, float64(e.TargetResources.Y-10000) / 100 * 25},
+					Position: vector.Vector{float64(e.TargetResources.X) / 100 * 25, float64(e.TargetResources.Y) / 100 * 25},
 				}
 			}
 		}

@@ -1,11 +1,8 @@
 package scenes
 
 import (
-	"encoding/json"
 	"image/color"
 	"log"
-	"net/http"
-	"os"
 	"sort"
 	"sync"
 	"time"
@@ -31,77 +28,6 @@ type FFScene struct {
 	code   string
 	fight  int
 	system *system.System
-}
-
-type MapPreset struct {
-	Maps []MapPresetItem
-}
-
-type MapPresetItem struct {
-	ID     int
-	Path   string
-	Offset struct {
-		X float64
-		Y float64
-	}
-	Phases []struct {
-		Path   string
-		Offset struct {
-			X float64
-			Y float64
-		}
-	}
-}
-
-func (m MapPresetItem) Load() *model.MapConfig {
-	config := &model.MapConfig{}
-	config.ID = m.ID
-	config.DefaultMap.Texture = texture.NewTextureFromFile(m.Path)
-	config.DefaultMap.Offset.X = m.Offset.X
-	config.DefaultMap.Offset.Y = m.Offset.Y
-	for _, p := range m.Phases {
-		item := model.MapItem{}
-		item.Texture = texture.NewTextureFromFile(p.Path)
-		item.Offset.X = p.Offset.X
-		item.Offset.Y = p.Offset.Y
-		config.Phases = append(config.Phases, item)
-	}
-	return config
-}
-
-var MapCache = map[int]MapPresetItem{}
-
-func init() {
-	if util.IsWasm() {
-		resp, err := http.Get("asset/floor/floor.json")
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer resp.Body.Close()
-		var config MapPreset
-		err = json.NewDecoder(resp.Body).Decode(&config)
-		if err != nil {
-			log.Fatal(err)
-		}
-		for _, m := range config.Maps {
-			MapCache[m.ID] = m
-		}
-		return
-	}
-	f, err := os.Open("asset/floor/floor.json")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-
-	var config MapPreset
-	err = json.NewDecoder(f).Decode(&config)
-	if err != nil {
-		log.Fatal(err)
-	}
-	for _, m := range config.Maps {
-		MapCache[m.ID] = m
-	}
 }
 
 func NewFFScene(client *fflogs.FFLogsClient, code string, fight int) *FFScene {
@@ -159,38 +85,41 @@ func (ms *FFScene) init() {
 			return phases[i] < phases[j]
 		})
 		global.Phases = phases
-		log.Println(fight.Maps)
 		// create a background base on mapID
-		if m, ok := MapCache[fight.Maps[0].ID]; ok {
+		if m, ok := model.MapCache[fight.Maps[0].ID]; ok {
 			entry.NewMap(ms.ecs, m.Load())
 		} else {
-			// get default map from fflogs
-			gameMap := ms.client.QueryMapInfo(fight.Maps[0].ID)
-			// fflogs map offset is based on top-left corner
-			texture := texture.NewMapTexture(gameMap.FileName)
-			// TODO refactor to remove scale/offset compensation
-			// 地图的偏移确实没有问题，但是一开始在实现 m1s-m4s 以及绝伊甸时忽略了这个，直接在 player 的位置
-			// 坐标计算时进行了固定的偏移，相当于得到的地图偏移是(-100, -100)，单位实际上都是游戏内的 m
-			// 如果某些地图偏移不是 (-100, -100)，那么需要下面的计算，进行偏移补偿
-			// SizeFactor 显然最开始也是先入为主忽略了，都是按照 400 来计算的，因此也要进行补偿
-			scale := 6.25 * 400 / gameMap.SizeFactor
-			oX := (gameMap.OffsetX + 100) * 25
-			oY := (gameMap.OffsetY + 100) * 25
-			mapItem := model.MapItem{
-				Texture: texture,
-				Scale:   scale,
-				Offset: struct {
-					X float64
-					Y float64
-				}{
-					-float64(oX),
-					-float64(oY),
-				},
+			queryMapItem := func(id int) model.MapItem {
+				// get default map from fflogs
+				gameMap := ms.client.QueryMapInfo(id)
+				// fflogs map offset is based on top-left corner
+				texture := texture.NewMapTexture(gameMap.FileName)
+				// TODO refactor to remove scale/offset compensation
+				// SizeFactor 显然最开始都是按照 400 来计算的，因此要进行补偿
+				scale := 6.25 * 400 / gameMap.SizeFactor
+				// meters into pixels
+				mapItem := model.MapItem{
+					ID:      id,
+					Texture: texture,
+					Scale:   scale,
+					Offset: struct {
+						X float64
+						Y float64
+					}{
+						-float64(gameMap.OffsetX),
+						-float64(gameMap.OffsetY),
+					},
+				}
+				return mapItem
 			}
-			log.Println(mapItem)
+			mapItems := map[int]model.MapItem{}
+			for _, m := range fight.Maps {
+				mapItems[m.ID] = queryMapItem(m.ID)
+			}
+			log.Println("Initial map", mapItems[fight.Maps[0].ID])
 			entry.NewMap(ms.ecs, &model.MapConfig{
-				ID:         fight.Maps[0].ID,
-				DefaultMap: mapItem,
+				CurrentMap: fight.Maps[0].ID,
+				Maps:       mapItems,
 			})
 		}
 		// query worldMarkers
@@ -200,7 +129,7 @@ func (ms *FFScene) init() {
 			if m.MapID != fight.Maps[0].ID {
 				continue
 			}
-			entry.NewMarker(ms.ecs, model.MarkerA+model.MarkerType(m.Icon-1), f64.Vec2{float64(m.X-10000) / 100 * 25, float64(m.Y-10000) / 100 * 25})
+			entry.NewMarker(ms.ecs, model.MarkerA+model.MarkerType(m.Icon-1), f64.Vec2{float64(m.X) / 100 * 25, float64(m.Y) / 100 * 25})
 		}
 		// initialize player events
 		players := ms.client.QueryFightPlayers(ms.code, fight.ID)
@@ -234,6 +163,15 @@ func (ms *FFScene) init() {
 			ret := []fflogs.FFLogsEvent{}
 			for _, e := range events {
 				if e.Type == fflogs.Limitbreakupdate {
+					ret = append(ret, e)
+				}
+			}
+			return ret
+		}
+		filterMapChange := func() []fflogs.FFLogsEvent {
+			ret := []fflogs.FFLogsEvent{}
+			for _, e := range events {
+				if e.Type == fflogs.MapChange {
 					ret = append(ret, e)
 				}
 			}
@@ -301,6 +239,10 @@ func (ms *FFScene) init() {
 		// create limitbreak events
 		{
 			ms.system.AddLimitbreakEvents(filterLimitbreak())
+		}
+
+		{
+			ms.system.AddMapChangeEvents(filterMapChange())
 		}
 
 		// create players

@@ -127,6 +127,7 @@ type FFLogsEvent struct {
 	AttackerID          *int64        `json:"attackerID,omitempty"`
 	Absorb              *int64        `json:"absorb,omitempty"`
 	SourceInstance      *int64        `json:"sourceInstance,omitempty"`
+	MapID               *int          `json:"mapID,omitempty"`
 }
 
 type Aura struct {
@@ -171,6 +172,7 @@ const (
 	Removebuff       EventType = "removebuff"
 	RemoveDebuff     EventType = "removedebuff"
 	Removebuffstack  EventType = "removebuffstack"
+	MapChange        EventType = "mapchange"
 )
 
 type Actor struct {

@@ -26,13 +26,24 @@ func (s *System) LogUpdate(ecs *ecs.ECS, tick int64) {
 
 func (s *System) replayUpdate(ecs *ecs.ECS, tick int64) {
 	global := component.Global.Get(tag.Global.MustFirst(ecs.World))
+	if !global.Loaded.Load() {
+		return
+	}
 	// limitbreak event
 	index := sort.Search(len(s.LimitbreakEvents), func(i int) bool {
-		return s.LimitbreakEvents[i].LocalTick >= tick
+		return s.LimitbreakEvents[i].LocalTick > tick
 	})
-	if index < len(s.LimitbreakEvents) {
-		global.Bar = int(*s.LimitbreakEvents[index].Bars)
-		global.LimitBreak = int(*s.LimitbreakEvents[index].Value)
+	if index > 0 {
+		global.Bar = int(*s.LimitbreakEvents[index-1].Bars)
+		global.LimitBreak = int(*s.LimitbreakEvents[index-1].Value)
+	}
+	// map event
+	gamemap := component.Map.Get(component.Map.MustFirst(ecs.World))
+	index = sort.Search(len(s.MapChangeEvents), func(i int) bool {
+		return s.MapChangeEvents[i].LocalTick > tick
+	})
+	if index > 0 {
+		gamemap.Config.CurrentMap = *s.MapChangeEvents[index-1].MapID
 	}
 	for e := range tag.GameObject.Iter(ecs.World) {
 		id := component.Status.Get(e).ID

@@ -12,20 +12,36 @@ import (
 )
 
 func (r *Renderer) BackgroundRender(ecs *ecs.ECS, screen *ebiten.Image) {
+	global := component.Global.Get(tag.Global.MustFirst(ecs.World))
+	if !global.Loaded.Load() {
+		return
+	}
 	camera := component.Camera.Get(tag.Camera.MustFirst(ecs.World))
-	for g := range tag.Background.Iter(ecs.World) {
-		ground := component.Map.Get(g)
-		if ground.Config.Phases == nil {
-			r.mapRender(camera, screen, ground.Config.DefaultMap)
-			continue
-		}
+	g, ok := tag.Background.First(ecs.World)
+	if !ok {
+		return
+	}
+	ground := component.Map.Get(g)
+	if len(ground.Config.Phases) > 0 {
 		// find current phase
 		p := entry.GetPhase(ecs)
 		if p < 0 || p >= len(ground.Config.Phases) {
-			log.Println("phase not found", p)
 			p = 0
 		}
 		r.mapRender(camera, screen, ground.Config.Phases[p])
+		return
+	}
+	// have no choice
+	if len(ground.Config.Maps) == 1 {
+		for _, m := range ground.Config.Maps {
+			r.mapRender(camera, screen, m)
+			return
+		}
+	}
+	if m, ok := ground.Config.Maps[ground.Config.CurrentMap]; ok {
+		r.mapRender(camera, screen, m)
+	} else {
+		log.Println("Current map not found")
 	}
 }
 
@@ -34,7 +50,7 @@ func (r *Renderer) mapRender(camera *model.CameraData, screen *ebiten.Image, m m
 	if m.Scale > 0 {
 		geoM.Scale(m.Scale, m.Scale)
 	}
-	geoM.Translate(m.Offset.X, m.Offset.Y)
+	geoM.Translate(m.Offset.X*25, m.Offset.Y*25)
 	wordM := camera.WorldMatrix()
 	wordM.Invert()
 	geoM.Concat(wordM)
