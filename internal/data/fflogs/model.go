@@ -128,6 +128,9 @@ type FFLogsEvent struct {
 	Absorb              *int64        `json:"absorb,omitempty"`
 	SourceInstance      *int64        `json:"sourceInstance,omitempty"`
 	MapID               *int          `json:"mapID,omitempty"`
+	Icon                *int          `json:"icon,omitempty"`
+	X                   *int64        `json:"x,omitempty"`
+	Y                   *int64        `json:"y,omitempty"`
 }
 
 type Aura struct {
@@ -154,25 +157,27 @@ type Resources struct {
 type EventType string
 
 const (
-	Absorbed         EventType = "absorbed"
-	Applybuff        EventType = "applybuff"
-	Refreshbuff      EventType = "refreshbuff"
-	Applybuffstack   EventType = "applybuffstack"
-	Applydebuff      EventType = "applydebuff"
-	Begincast        EventType = "begincast"
-	Calculateddamage EventType = "calculateddamage"
-	Calculatedheal   EventType = "calculatedheal"
-	Cast             EventType = "cast"
-	Combatantinfo    EventType = "combatantinfo"
-	TDamage          EventType = "damage"
-	THeal            EventType = "heal"
-	Death            EventType = "death"
-	Gaugeupdate      EventType = "gaugeupdate"
-	Limitbreakupdate EventType = "limitbreakupdate"
-	Removebuff       EventType = "removebuff"
-	RemoveDebuff     EventType = "removedebuff"
-	Removebuffstack  EventType = "removebuffstack"
-	MapChange        EventType = "mapchange"
+	Absorbed           EventType = "absorbed"
+	Applybuff          EventType = "applybuff"
+	Refreshbuff        EventType = "refreshbuff"
+	Applybuffstack     EventType = "applybuffstack"
+	Applydebuff        EventType = "applydebuff"
+	Begincast          EventType = "begincast"
+	Calculateddamage   EventType = "calculateddamage"
+	Calculatedheal     EventType = "calculatedheal"
+	Cast               EventType = "cast"
+	Combatantinfo      EventType = "combatantinfo"
+	TDamage            EventType = "damage"
+	THeal              EventType = "heal"
+	Death              EventType = "death"
+	Gaugeupdate        EventType = "gaugeupdate"
+	Limitbreakupdate   EventType = "limitbreakupdate"
+	Removebuff         EventType = "removebuff"
+	RemoveDebuff       EventType = "removedebuff"
+	Removebuffstack    EventType = "removebuffstack"
+	MapChange          EventType = "mapchange"
+	WorldMarkerRemoved EventType = "worldmarkerremoved"
+	WorldMarkerPlaced  EventType = "worldmarkerplaced"
 )
 
 type Actor struct {

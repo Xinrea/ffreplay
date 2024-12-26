@@ -15,6 +15,7 @@ import (
 	"github.com/fogleman/ease"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"
+	"golang.org/x/image/math/f64"
 )
 
 // Update only do update-work every 30 ticks, which means 0.5 second in default 60 TPS.
@@ -29,6 +30,7 @@ func (s *System) replayUpdate(ecs *ecs.ECS, tick int64) {
 	if !global.Loaded.Load() {
 		return
 	}
+
 	// limitbreak event
 	index := sort.Search(len(s.LimitbreakEvents), func(i int) bool {
 		return s.LimitbreakEvents[i].LocalTick > tick
@@ -37,6 +39,7 @@ func (s *System) replayUpdate(ecs *ecs.ECS, tick int64) {
 		global.Bar = int(*s.LimitbreakEvents[index-1].Bars)
 		global.LimitBreak = int(*s.LimitbreakEvents[index-1].Value)
 	}
+
 	// map event
 	gamemap := component.Map.Get(component.Map.MustFirst(ecs.World))
 	index = sort.Search(len(s.MapChangeEvents), func(i int) bool {
@@ -45,6 +48,14 @@ func (s *System) replayUpdate(ecs *ecs.ECS, tick int64) {
 	if index > 0 {
 		gamemap.Config.CurrentMap = *s.MapChangeEvents[index-1].MapID
 	}
+
+	// marker event
+	for s.WorldMarkerEvents.Cursor < len(s.WorldMarkerEvents.Events) && s.WorldMarkerEvents.Events[s.WorldMarkerEvents.Cursor].LocalTick <= tick {
+		event := s.WorldMarkerEvents.Events[s.WorldMarkerEvents.Cursor]
+		s.applyLog(ecs, tick, nil, event)
+		s.WorldMarkerEvents.Cursor++
+	}
+
 	for e := range tag.GameObject.Iter(ecs.World) {
 		id := component.Status.Get(e).ID
 		line := s.EventLines[id]
@@ -310,6 +321,39 @@ func (s *System) applyLog(ecs *ecs.ECS, tick int64, target *donburi.Entry, event
 		}
 		status := component.Status.Get(target)
 		status.SetDeath(true)
+	}
+
+	if event.Type == fflogs.WorldMarkerRemoved {
+		var targetMarker *donburi.Entry = nil
+		for m := range component.Marker.Iter(ecs.World) {
+			if component.Marker.Get(m).Type == model.MarkerType(*event.Icon) {
+				targetMarker = m
+				break
+			}
+		}
+		if targetMarker == nil {
+			return
+		}
+		ecs.World.Remove(targetMarker.Entity())
+	}
+
+	if event.Type == fflogs.WorldMarkerPlaced {
+		found := false
+		for m := range component.Marker.Iter(ecs.World) {
+			marker := component.Marker.Get(m)
+			if marker.Type == model.MarkerType(*event.Icon-1) {
+				marker.Position[0] = float64(*event.X) / 100 * 25
+				marker.Position[1] = float64(*event.Y) / 100 * 25
+				found = true
+				break
+			}
+		}
+		if !found {
+			entry.NewMarker(ecs, model.MarkerType(*event.Icon-1), f64.Vec2{
+				float64(*event.X) / 100 * 25,
+				float64(*event.Y) / 100 * 25,
+			})
+		}
 	}
 }
 

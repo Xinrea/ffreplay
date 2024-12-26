@@ -16,17 +16,18 @@ import (
 
 // Remember that system is updated in TPS (Ticks Per Second) rate, in ebiten, it's 60 TPS.
 type System struct {
-	lock             sync.Mutex
-	ECS              *ecs.ECS
-	ViewPort         f64.Vec2
-	PlayerList       []*donburi.Entry
-	MapChangeEvents  []fflogs.FFLogsEvent
-	LimitbreakEvents []fflogs.FFLogsEvent
-	EventLines       map[int64]*EventLine
-	EntryMap         map[int64]*donburi.Entry
-	InReplay         bool
-	reset            bool
-	Pause            bool
+	lock              sync.Mutex
+	ECS               *ecs.ECS
+	ViewPort          f64.Vec2
+	PlayerList        []*donburi.Entry
+	MapChangeEvents   []fflogs.FFLogsEvent
+	LimitbreakEvents  []fflogs.FFLogsEvent
+	WorldMarkerEvents EventLine
+	EventLines        map[int64]*EventLine
+	EntryMap          map[int64]*donburi.Entry
+	InReplay          bool
+	reset             bool
+	Pause             bool
 }
 
 type EventLine struct {
@@ -79,6 +80,11 @@ func (s *System) AddLimitbreakEvents(events []fflogs.FFLogsEvent) {
 
 func (s *System) AddMapChangeEvents(events []fflogs.FFLogsEvent) {
 	s.MapChangeEvents = events
+}
+
+func (s *System) AddWorldMarkerEvents(events []fflogs.FFLogsEvent) {
+	s.WorldMarkerEvents.Cursor = 0
+	s.WorldMarkerEvents.Events = events
 }
 
 func (s *System) AddEventLine(id int64, events []fflogs.FFLogsEvent) {
@@ -172,6 +178,7 @@ func (s *System) Update(ecs *ecs.ECS) {
 
 func (s *System) doReset(ecs *ecs.ECS) {
 	// reset event lines
+	s.WorldMarkerEvents.Cursor = 0
 	for _, line := range s.EventLines {
 		line.Cursor = 0
 	}

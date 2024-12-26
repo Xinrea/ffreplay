@@ -182,6 +182,15 @@ func (ms *FFScene) init() {
 			}
 			return ret
 		}
+		filterMarkerChange := func() []fflogs.FFLogsEvent {
+			ret := []fflogs.FFLogsEvent{}
+			for _, e := range events {
+				if e.Type == fflogs.WorldMarkerPlaced || e.Type == fflogs.WorldMarkerRemoved {
+					ret = append(ret, e)
+				}
+			}
+			return ret
+		}
 		global.LoadTotal = len(events)
 		var wg sync.WaitGroup
 		for _, p := range players.Tanks {
@@ -248,6 +257,7 @@ func (ms *FFScene) init() {
 
 		{
 			ms.system.AddMapChangeEvents(filterMapChange())
+			ms.system.AddWorldMarkerEvents(filterMarkerChange())
 		}
 
 		// create players
