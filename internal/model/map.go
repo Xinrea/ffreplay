@@ -52,7 +52,8 @@ type MapPresetItem struct {
 
 func (m MapPresetItem) Load() *MapConfig {
 	config := &MapConfig{
-		Maps: make(map[int]MapItem),
+		CurrentMap: m.ID,
+		Maps:       make(map[int]MapItem),
 	}
 	defaultItem := MapItem{}
 	defaultItem.ID = m.ID

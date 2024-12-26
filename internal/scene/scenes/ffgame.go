@@ -15,6 +15,7 @@ import (
 	"github.com/Xinrea/ffreplay/internal/renderer"
 	"github.com/Xinrea/ffreplay/internal/system"
 	"github.com/Xinrea/ffreplay/pkg/texture"
+	"github.com/Xinrea/ffreplay/pkg/vector"
 	"github.com/Xinrea/ffreplay/util"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/yohamta/donburi"
@@ -47,7 +48,7 @@ func (ms *FFScene) init() {
 	// create a global config entry
 	g := entry.NewGlobal(ms.ecs)
 	// create basic camera
-	entry.NewCamera(ms.ecs)
+	camera := component.Camera.Get(entry.NewCamera(ms.ecs))
 	global := component.Global.Get(g)
 
 	ms.ecs.AddSystem(ms.system.Update)
@@ -87,7 +88,10 @@ func (ms *FFScene) init() {
 		global.Phases = phases
 		// create a background base on mapID
 		if m, ok := model.MapCache[fight.Maps[0].ID]; ok {
-			entry.NewMap(ms.ecs, m.Load())
+			config := m.Load()
+			current := config.Maps[config.CurrentMap]
+			camera.Position = vector.NewVector(current.Offset.X*25, current.Offset.Y*25)
+			entry.NewMap(ms.ecs, config)
 		} else {
 			queryMapItem := func(id int) model.MapItem {
 				// get default map from fflogs
@@ -117,6 +121,7 @@ func (ms *FFScene) init() {
 				mapItems[m.ID] = queryMapItem(m.ID)
 			}
 			log.Println("Initial map", mapItems[fight.Maps[0].ID])
+			camera.Position = vector.NewVector(mapItems[fight.Maps[0].ID].Offset.X*25, mapItems[fight.Maps[0].ID].Offset.Y*25)
 			entry.NewMap(ms.ecs, &model.MapConfig{
 				CurrentMap: fight.Maps[0].ID,
 				Maps:       mapItems,
@@ -246,28 +251,17 @@ func (ms *FFScene) init() {
 		}
 
 		// create players
-		posPreset := []f64.Vec2{
-			{0, -200},
-			{0, 200},
-			{200, 0},
-			{-200, 0},
-			{-200, 200},
-			{200, 200},
-			{-200, -200},
-			{200, -200},
-		}
-
 		playerCnt := 0
 		for _, t := range players.Tanks {
-			ms.system.AddEntry(t.ID, entry.NewPlayer(ms.ecs, t.Type, posPreset[playerCnt], &t))
+			ms.system.AddEntry(t.ID, entry.NewPlayer(ms.ecs, t.Type, f64.Vec2{}, &t))
 			playerCnt++
 		}
 		for _, h := range players.Healers {
-			ms.system.AddEntry(h.ID, entry.NewPlayer(ms.ecs, h.Type, posPreset[playerCnt], &h))
+			ms.system.AddEntry(h.ID, entry.NewPlayer(ms.ecs, h.Type, f64.Vec2{}, &h))
 			playerCnt++
 		}
 		for _, d := range players.DPS {
-			ms.system.AddEntry(d.ID, entry.NewPlayer(ms.ecs, d.Type, posPreset[playerCnt], &d))
+			ms.system.AddEntry(d.ID, entry.NewPlayer(ms.ecs, d.Type, f64.Vec2{}, &d))
 			playerCnt++
 		}
 		getInstanceCount := func(id int64) int {
