@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"image/color"
 	"log"
+	"strconv"
 
 	"github.com/Xinrea/ffreplay/internal/layer"
 	"github.com/Xinrea/ffreplay/internal/model"
@@ -101,7 +102,11 @@ func RenderBuffList(canvas *ebiten.Image, tick int64, buffs []model.Buff, x, y, 
 		canvas.DrawImage(iconTexture.Img(), &ebiten.DrawImageOptions{GeoM: geoM})
 		remain := buff.Remain(tick)
 		if remain > 0 {
-			DrawText(canvas, formatSeconds(remain), 14, x+float64(i*25), y+5, color.White, AlignCenter)
+			DrawText(canvas, formatSeconds(remain), 14, x+float64(i*25), y+8, color.White, AlignCenter)
+		}
+		if buff.Stacks > 1 {
+			canvas.DrawImage(model.BuffStackBG.Img(), &ebiten.DrawImageOptions{GeoM: geoM})
+			DrawText(canvas, strconv.Itoa(buff.Stacks), 10, x+float64(i*25)+6, y-16, color.NRGBA{0, 0, 0, 255}, AlignCenter)
 		}
 	}
 }

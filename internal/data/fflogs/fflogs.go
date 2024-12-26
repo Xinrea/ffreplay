@@ -302,9 +302,10 @@ type Ability struct {
 
 func (a Ability) ToBuff() model.Buff {
 	return model.Buff{
-		ID:   a.Guid,
-		Name: a.Name,
-		Icon: a.AbilityIcon,
+		ID:     a.Guid,
+		Name:   a.Name,
+		Icon:   a.AbilityIcon,
+		Stacks: 1,
 	}
 }
 

@@ -62,6 +62,15 @@ func (bl *BuffList) Add(buff Buff) {
 	}
 }
 
+func (bl *BuffList) UpdateStack(id int64, stack int) {
+	for i := range bl.buffs {
+		if bl.buffs[i].ID == id {
+			bl.buffs[i].Stacks = stack
+			return
+		}
+	}
+}
+
 func (bl *BuffList) Refresh(buff Buff) {
 	index := -1
 	for i, b := range bl.buffs {
@@ -137,6 +146,8 @@ type Buff struct {
 	ProcessHeal    func(heal *Heal)                                      `json:"-"`
 	RemoveCallback func(*Buff, *ecs.ECS, *donburi.Entry, *donburi.Entry) `json:"-"`
 }
+
+var BuffStackBG = texture.NewTextureFromFile("asset/buffstack.png")
 
 func (b Buff) Remain(now int64) int64 {
 	if b.Duration == 0 || b.Duration > 7200*1000 {

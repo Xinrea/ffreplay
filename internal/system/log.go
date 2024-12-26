@@ -367,6 +367,24 @@ func (s *System) applyLog(ecs *ecs.ECS, tick int64, target *donburi.Entry, event
 			})
 		}
 	}
+
+	if event.Type == fflogs.Applybuffstack {
+		buffTarget := s.EntryMap[*event.TargetID]
+		if buffTarget == nil {
+			return
+		}
+		status := component.Status.Get(buffTarget)
+		status.BuffList.UpdateStack(event.Ability.Guid, int(*event.Stack))
+	}
+
+	if event.Type == fflogs.Removebuffstack {
+		buffTarget := s.EntryMap[*event.TargetID]
+		if buffTarget == nil {
+			return
+		}
+		status := component.Status.Get(buffTarget)
+		status.BuffList.UpdateStack(event.Ability.Guid, int(*event.Stack))
+	}
 }
 
 func aurasToBuffs(auras []fflogs.Aura) []model.Buff {
