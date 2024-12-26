@@ -181,6 +181,14 @@ func NewTimeline(ecs *ecs.ECS, data *model.TimelineData) *donburi.Entry {
 }
 
 func NewMarker(ecs *ecs.ECS, markerType model.MarkerType, pos f64.Vec2) *donburi.Entry {
+	// each type of marker can only exists one instance
+	for m := range component.Marker.Iter(ecs.World) {
+		marker := component.Marker.Get(m)
+		if marker.Type == markerType {
+			marker.Position = pos
+			return m
+		}
+	}
 	marker := Marker.Spawn(ecs)
 	component.Marker.Set(marker, &model.MarkerData{
 		Type:     markerType,
