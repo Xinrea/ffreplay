@@ -154,7 +154,7 @@ func (ms *FFScene) init() {
 		}
 
 		pBeforeLoad := time.Now()
-		events := data.FetchLogEvents(ms.client, ms.code, fight)
+		status, events := data.FetchLogEvents(ms.client, ms.code, fight)
 		filterTarget := func(targetID int64) []fflogs.FFLogsEvent {
 			ret := []fflogs.FFLogsEvent{}
 			for _, e := range events {
@@ -199,7 +199,7 @@ func (ms *FFScene) init() {
 				defer wg.Done()
 				events := filterTarget(p.ID)
 				data.PreloadAbilityInfo(events, &global.LoadCount)
-				ms.system.AddEventLine(p.ID, events)
+				ms.system.AddEventLine(p.ID, status[p.ID], events)
 			}()
 		}
 		for _, p := range players.Healers {
@@ -208,7 +208,7 @@ func (ms *FFScene) init() {
 				defer wg.Done()
 				events := filterTarget(p.ID)
 				data.PreloadAbilityInfo(events, &global.LoadCount)
-				ms.system.AddEventLine(p.ID, events)
+				ms.system.AddEventLine(p.ID, status[p.ID], events)
 			}()
 		}
 		for _, p := range players.DPS {
@@ -217,7 +217,7 @@ func (ms *FFScene) init() {
 				defer wg.Done()
 				events := filterTarget(p.ID)
 				data.PreloadAbilityInfo(events, &global.LoadCount)
-				ms.system.AddEventLine(p.ID, events)
+				ms.system.AddEventLine(p.ID, status[p.ID], events)
 			}()
 		}
 
@@ -228,7 +228,7 @@ func (ms *FFScene) init() {
 				defer wg.Done()
 				events := filterTarget(e.ID)
 				data.PreloadAbilityInfo(events, &global.LoadCount)
-				ms.system.AddEventLine(e.ID, events)
+				ms.system.AddEventLine(e.ID, status[e.ID], events)
 			}()
 		}
 
@@ -239,7 +239,7 @@ func (ms *FFScene) init() {
 				defer wg.Done()
 				events := filterTarget(e.ID)
 				data.PreloadAbilityInfo(events, &global.LoadCount)
-				ms.system.AddEventLine(e.ID, events)
+				ms.system.AddEventLine(e.ID, status[e.ID], events)
 			}()
 		}
 
@@ -247,7 +247,7 @@ func (ms *FFScene) init() {
 		{
 			events := filterTarget(-1)
 			data.PreloadAbilityInfo(events, &global.LoadCount)
-			ms.system.AddEventLine(-1, events)
+			ms.system.AddEventLine(-1, status[-1], events)
 		}
 
 		// create limitbreak events

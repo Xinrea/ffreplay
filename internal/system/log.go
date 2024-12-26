@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"github.com/Xinrea/ffreplay/internal/component"
+	"github.com/Xinrea/ffreplay/internal/data"
 	"github.com/Xinrea/ffreplay/internal/data/fflogs"
 	"github.com/Xinrea/ffreplay/internal/entry"
 	"github.com/Xinrea/ffreplay/internal/game/skills"
@@ -77,7 +78,7 @@ func (s *System) replayUpdate(ecs *ecs.ECS, tick int64) {
 				continue
 			}
 
-			normalUpdate := func(status StatusEvent) {
+			normalUpdate := func(status data.StatusEvent) {
 				facing := status.Face + math.Pi/2
 				sprite.Face = facing
 				sprite.Object.UpdatePosition(status.Position)
@@ -86,7 +87,7 @@ func (s *System) replayUpdate(ecs *ecs.ECS, tick int64) {
 				component.Status.Get(e).Mana = status.MP
 				component.Status.Get(e).MaxMana = status.MaxMP
 			}
-			lerpUpdate := func(previous, status StatusEvent) {
+			lerpUpdate := func(previous, status data.StatusEvent) {
 				// lerping between two status event
 				t := float64(tick - previous.Tick)
 				d := float64(status.Tick - previous.Tick)
