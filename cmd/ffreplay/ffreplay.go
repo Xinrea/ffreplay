@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Xinrea/ffreplay/internal/data/fflogs"
 	"github.com/Xinrea/ffreplay/internal/scene"
 	"github.com/Xinrea/ffreplay/internal/scene/scenes"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -24,9 +23,9 @@ type Game struct {
 	sceneManager *scene.SceneManager
 }
 
-func NewGame(clientID, clientSecret, report string, fight int) *Game {
+func NewGame(opt *scenes.FFLogsOpt) *Game {
 	sceneManager := scene.NewSceneManager()
-	sceneManager.AddScene(report, scenes.NewFFScene(fflogs.NewFFLogsClient(clientID, clientSecret), report, fight))
+	sceneManager.AddScene("default", scenes.NewFFScene(opt))
 	g := &Game{
 		bounds:       image.Rectangle{},
 		sceneManager: sceneManager,
@@ -85,10 +84,6 @@ func main() {
 			}
 		}
 	}
-	if report == "" {
-		log.Println("Invalid report")
-		return
-	}
 	ebiten.SetWindowSize(1920, 1080)
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 	ebiten.SetWindowTitle(fmt.Sprintf("FFReplay %s-%d", report, fight))
@@ -105,7 +100,13 @@ func main() {
 		credential = string(cbytes)
 	}
 	credentials := strings.Split(credential, ":")
-	if err := ebiten.RunGame(NewGame(credentials[0], credentials[1], report, fight)); err != nil {
-		log.Fatal(err)
+	if len(credentials) != 2 || report == "" {
+		if err := ebiten.RunGame(NewGame(nil)); err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		if err := ebiten.RunGame(NewGame(&scenes.FFLogsOpt{ClientID: credentials[0], ClientSecret: credentials[1], Report: report, Fight: fight})); err != nil {
+			log.Fatal(err)
+		}
 	}
 }

@@ -197,6 +197,14 @@ func NewWorldMarker(ecs *ecs.ECS, markerType model.WorldMarkerType, pos f64.Vec2
 	return marker
 }
 
+func GetGlobal(ecs *ecs.ECS) *model.GlobalData {
+	return component.Global.Get(tag.Global.MustFirst(ecs.World))
+}
+
+func GetCamera(ecs *ecs.ECS) *model.CameraData {
+	return component.Camera.Get(tag.Camera.MustFirst(ecs.World))
+}
+
 func IsDebug(ecs *ecs.ECS) bool {
 	return component.Global.Get(tag.Global.MustFirst(ecs.World)).Debug
 }

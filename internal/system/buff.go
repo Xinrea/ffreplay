@@ -2,6 +2,7 @@ package system
 
 import (
 	"github.com/Xinrea/ffreplay/internal/component"
+	"github.com/Xinrea/ffreplay/internal/entry"
 	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/internal/tag"
 	"github.com/yohamta/donburi"
@@ -22,7 +23,7 @@ func init() {
 }
 
 func (s *System) BuffUpdate(ecs *ecs.ECS, tick int64) {
-	if s.InReplay {
+	if entry.GetGlobal(s.ecs).ReplayMode {
 		return
 	}
 	for e := range tag.Buffable.Iter(ecs.World) {

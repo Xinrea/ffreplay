@@ -17,7 +17,7 @@ import (
 // Remember that system is updated in TPS (Ticks Per Second) rate, in ebiten, it's 60 TPS.
 type System struct {
 	lock              sync.Mutex
-	ECS               *ecs.ECS
+	ecs               *ecs.ECS
 	ViewPort          f64.Vec2
 	PlayerList        []*donburi.Entry
 	MapChangeEvents   []fflogs.FFLogsEvent
@@ -25,7 +25,6 @@ type System struct {
 	WorldMarkerEvents EventLine
 	EventLines        map[int64]*EventLine
 	EntryMap          map[int64]*donburi.Entry
-	InReplay          bool
 	reset             bool
 	Pause             bool
 }
@@ -38,14 +37,18 @@ type EventLine struct {
 
 // NewSystem create a system that controls camera, players and all game objects also status.
 // if replay is true, all skill and buff status are disabled, player status only change by fflogs event
-func NewSystem(replay bool) *System {
+func NewSystem() *System {
 	return &System{
 		lock:       sync.Mutex{},
-		InReplay:   replay,
 		EntryMap:   make(map[int64]*donburi.Entry),
 		EventLines: make(map[int64]*EventLine),
 		reset:      false,
 	}
+}
+
+func (s *System) Init(ecs *ecs.ECS) {
+	s.ecs = ecs
+	ecs.AddSystem(s.Update)
 }
 
 func (s *System) Reset() {

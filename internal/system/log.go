@@ -21,7 +21,7 @@ import (
 
 // Update only do update-work every 30 ticks, which means 0.5 second in default 60 TPS.
 func (s *System) LogUpdate(ecs *ecs.ECS, tick int64) {
-	if s.InReplay {
+	if entry.GetGlobal(s.ecs).ReplayMode {
 		s.replayUpdate(ecs, tick)
 	}
 }

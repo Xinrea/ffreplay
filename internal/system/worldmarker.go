@@ -14,7 +14,7 @@ import (
 )
 
 func (s *System) WorldMarkerUpdate(ecs *ecs.ECS) {
-	if s.InReplay {
+	if entry.GetGlobal(s.ecs).ReplayMode {
 		return
 	}
 	camera := component.Camera.Get(tag.Camera.MustFirst(ecs.World))
