@@ -6,8 +6,10 @@ import (
 	"log"
 
 	"github.com/Xinrea/ffreplay/internal/model"
-	"github.com/Xinrea/ffreplay/util"
+	"github.com/Xinrea/ffreplay/internal/ui"
+	"github.com/Xinrea/ffreplay/pkg/texture"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/yohamta/furex/v2"
 )
 
 const (
@@ -35,30 +37,28 @@ func init() {
 }
 
 func initBackground() {
-	s := ebiten.Monitor().DeviceScaleFactor()
-	background = ebiten.NewImage(int(TIMELINE_WIDTH*s), int(TIMELINE_HEIGHT*s))
-	skillLayer = ebiten.NewImage(int(TIMELINE_WIDTH*s), int(TIMELINE_HEIGHT*s))
-	skillLayerMask = ebiten.NewImage(int(TIMELINE_WIDTH*s), int(TIMELINE_HEIGHT*s))
-	for i := 0; i < int(TIMELINE_WIDTH*s); i++ {
-		p := min(128, min(i, int(TIMELINE_WIDTH*s)-i))
-		for j := 0; j < int(TIMELINE_HEIGHT*s); j++ {
+	background = ebiten.NewImage(int(TIMELINE_WIDTH), int(TIMELINE_HEIGHT))
+	skillLayer = ebiten.NewImage(int(TIMELINE_WIDTH), int(TIMELINE_HEIGHT))
+	skillLayerMask = ebiten.NewImage(int(TIMELINE_WIDTH), int(TIMELINE_HEIGHT))
+	for i := 0; i < int(TIMELINE_WIDTH); i++ {
+		p := min(128, min(i, int(TIMELINE_WIDTH)-i))
+		for j := 0; j < int(TIMELINE_HEIGHT); j++ {
 			background.Set(i, j, color.NRGBA{0, 0, 0, uint8(p)})
 		}
 	}
-	for i := 0; i < int(TIMELINE_WIDTH*s); i++ {
-		p := min(255, min(i, int(TIMELINE_WIDTH*s)-i))
-		for j := 0; j < int(TIMELINE_HEIGHT*s); j++ {
+	for i := 0; i < int(TIMELINE_WIDTH); i++ {
+		p := min(255, min(i, int(TIMELINE_WIDTH)-i))
+		for j := 0; j < int(TIMELINE_HEIGHT); j++ {
 			skillLayerMask.Set(i, j, color.NRGBA{0, 0, 0, uint8(p)})
 		}
 	}
 }
 
 func RenderCasting(debug bool, canvas *ebiten.Image, tick int64, cast *model.Skill, x, y float64) {
-	s := ebiten.Monitor().DeviceScaleFactor()
 	textSize := 12.0
-	yOffset := 20.0
+	yOffset := 30.0
 	iconTexture := cast.Texture()
-	geoM := iconTexture.GetGeoM()
+	geoM := texture.CenterGeoM(iconTexture)
 	borderGeoM := model.BorderGeoM
 	if !model.IsGCD(cast.ID) {
 		geoM.Scale(0.8, 0.8)
@@ -66,25 +66,23 @@ func RenderCasting(debug bool, canvas *ebiten.Image, tick int64, cast *model.Ski
 		geoM.Translate(0, -30)
 		borderGeoM.Translate(0, -30)
 		textSize = 10.0
-		yOffset = -60
+		yOffset = -50
 	}
 	geoM.Translate(x, y)
-	geoM.Scale(s, s)
 	borderGeoM.Translate(x, y)
-	borderGeoM.Scale(s, s)
-	canvas.DrawImage(iconTexture.Img(), &ebiten.DrawImageOptions{GeoM: geoM})
-	canvas.DrawImage(model.BorderTexture.Img(), &ebiten.DrawImageOptions{GeoM: borderGeoM})
+	canvas.DrawImage(iconTexture, &ebiten.DrawImageOptions{GeoM: geoM})
+	canvas.DrawImage(model.BorderTexture, &ebiten.DrawImageOptions{GeoM: borderGeoM})
 	name := cast.Name
 	if debug {
 		name = fmt.Sprintf("[%d]%s", cast.ID, cast.Name)
 	}
-	DrawText(canvas, name, textSize, x, y+yOffset, color.White, AlignCenter)
+	ui.DrawText(canvas, name, textSize, x, y+yOffset, color.White, furex.AlignItemCenter, textShdowOpt)
 }
 
 func (g GCDPeriod) Render(debug bool, canvas *ebiten.Image, x, y float64, tick int64) {
 	if g.GCDSkill != nil {
-		tailLength := tickToLength(util.MSToTick(g.GCDSkill.Cast))
-		DrawFilledRect(canvas, x, y-6, tailLength, 12, color.NRGBA{119, 123, 131, 255})
+		// tailLength := tickToLength(util.MSToTick(g.GCDSkill.Cast))
+		// DrawFilledRect(canvas, x, y-6, tailLength, 12, color.NRGBA{119, 123, 131, 255})
 		RenderCasting(debug, canvas, tick, g.GCDSkill, x, y)
 	}
 	for i := range g.NoneGCDSkills {
@@ -126,17 +124,18 @@ func tickToLength(tick int64) float64 {
 }
 
 func (st SkillTimeline) Render(debug bool, canvas *ebiten.Image, x, y float64, tick int64) {
+	s := ebiten.Monitor().DeviceScaleFactor()
 	if len(st.Periods) == 0 {
 		return
 	}
-	s := ebiten.Monitor().DeviceScaleFactor()
-	if int(s*TIMELINE_WIDTH) != background.Bounds().Dx() {
+	if int(TIMELINE_WIDTH) != background.Bounds().Dx() {
 		initBackground()
 		log.Println("Scale factor changed, recreated skill timeline assets")
 	}
 	x = x - TIMELINE_WIDTH/2
 	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(x*s, y*s)
+	op.GeoM.Translate(x, y)
+	op.GeoM.Scale(s, s)
 	canvas.DrawImage(background, op)
 
 	skillLayer.Clear()

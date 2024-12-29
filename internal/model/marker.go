@@ -4,9 +4,10 @@ import (
 	"fmt"
 
 	"github.com/Xinrea/ffreplay/pkg/texture"
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
-var MarkerTextures = []*texture.Texture{}
+var MarkerTextures = []*ebiten.Image{}
 
 func init() {
 	// headmarker id 1 to 17

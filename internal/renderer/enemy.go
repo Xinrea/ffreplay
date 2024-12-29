@@ -6,6 +6,7 @@ import (
 	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/internal/tag"
 	"github.com/Xinrea/ffreplay/pkg/object"
+	"github.com/Xinrea/ffreplay/pkg/texture"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/colorm"
 	"github.com/yohamta/donburi"
@@ -13,6 +14,9 @@ import (
 )
 
 func (r *Renderer) EnemyRender(ecs *ecs.ECS, screen *ebiten.Image) {
+	if !entry.GetGlobal(ecs).Loaded.Load() {
+		return
+	}
 	for e := range tag.Enemy.Iter(ecs.World) {
 		r.renderEnemy(ecs, screen, e)
 	}
@@ -32,13 +36,12 @@ func (r *Renderer) renderEnemy(ecs *ecs.ECS, screen *ebiten.Image, enemy *donbur
 		if sprite.Texture == nil {
 			return
 		}
-		wordM := camera.WorldMatrix()
-		wordM.Invert()
+		wordM := camera.WorldMatrixInverted()
 
 		var c colorm.ColorM
 		// render target ring
 		if global.Debug || status.Role == model.Boss {
-			geoM := sprite.Texture.GetGeoM()
+			geoM := texture.CenterGeoM(sprite.Texture)
 			if status.Role == model.NPC {
 				geoM.Scale(0.5, 0.5)
 			}
@@ -47,18 +50,18 @@ func (r *Renderer) renderEnemy(ecs *ecs.ECS, screen *ebiten.Image, enemy *donbur
 			geoM.Concat(wordM)
 			op := &colorm.DrawImageOptions{}
 			op.GeoM = geoM
-			colorm.DrawImage(screen, sprite.Texture.Img(), c, op)
+			colorm.DrawImage(screen, sprite.Texture, c, op)
 		}
 
 		// render icon for npcs
 		if status.Role == model.NPC && global.Debug {
-			geoM := status.RoleTexture().GetGeoM()
+			geoM := texture.CenterGeoM(status.RoleTexture())
 			geoM.Rotate(camera.Rotation)
 			geoM.Translate(pos[0], pos[1])
 			geoM.Concat(wordM)
 			op := &colorm.DrawImageOptions{}
 			op.GeoM = geoM
-			colorm.DrawImage(screen, status.RoleTexture().Img(), c, op)
+			colorm.DrawImage(screen, status.RoleTexture(), c, op)
 		}
 	}
 

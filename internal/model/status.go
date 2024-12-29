@@ -2,6 +2,7 @@ package model
 
 import (
 	"github.com/Xinrea/ffreplay/pkg/texture"
+	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/yohamta/donburi"
 )
 
@@ -62,7 +63,7 @@ func (r *StatusData) Reset() {
 	r.HP = r.MaxHP
 	r.Mana = r.MaxMana
 	r.death = false
-	r.BuffList = NewBuffList()
+	r.BuffList.Clear()
 }
 
 func (r *StatusData) TakeDamage(d Damage) {
@@ -92,6 +93,6 @@ func (r *StatusData) TakeHeal(h Heal) {
 	}
 }
 
-func (r StatusData) RoleTexture() *texture.Texture {
+func (r StatusData) RoleTexture() *ebiten.Image {
 	return texture.NewTextureFromFile("asset/role/" + string(r.Role) + ".png")
 }

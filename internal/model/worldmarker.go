@@ -31,13 +31,13 @@ type WorldMarkerData struct {
 
 type WorldMarkerConfig struct {
 	Type            WorldMarkerType
-	Texture         *texture.Texture
+	Texture         *ebiten.Image
 	Background      *ebiten.Image
 	BackgroundColor color.NRGBA
 }
 
 func (m *WorldMarkerConfig) preprocess() {
-	m.Background = ebiten.NewImage(m.Texture.Img().Bounds().Dx(), m.Texture.Img().Bounds().Dy())
+	m.Background = ebiten.NewImage(m.Texture.Bounds().Dx(), m.Texture.Bounds().Dy())
 	mainColor := m.BackgroundColor
 	w := float32(m.Background.Bounds().Dx())
 	h := float32(m.Background.Bounds().Dy())

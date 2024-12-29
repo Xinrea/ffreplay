@@ -388,10 +388,10 @@ func (s *System) applyLog(ecs *ecs.ECS, tick int64, target *donburi.Entry, event
 	}
 }
 
-func aurasToBuffs(auras []fflogs.Aura) []model.Buff {
-	buffs := make([]model.Buff, len(auras))
+func aurasToBuffs(auras []fflogs.Aura) []*model.Buff {
+	buffs := make([]*model.Buff, len(auras))
 	for i, aura := range auras {
-		buffs[i] = model.Buff{
+		buffs[i] = &model.Buff{
 			ID:       aura.Ability,
 			Name:     aura.Name,
 			Icon:     aura.Icon,

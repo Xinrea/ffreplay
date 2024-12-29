@@ -1,7 +1,11 @@
 package util
 
 import (
+	"image"
+	"io"
 	"math"
+	"net/http"
+	"os"
 	"runtime"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -23,11 +27,7 @@ func IsWasm() bool {
 }
 
 func WindowSize() (int, int) {
-	width, height := ebiten.WindowSize()
-	s := ebiten.Monitor().DeviceScaleFactor()
-	w := int(float64(width) * s)
-	h := int(float64(height) * s)
-	return w, h
+	return ebiten.WindowSize()
 }
 
 func Lerpf(a, b, t float64) float64 {
@@ -66,4 +66,28 @@ func TickToMS(ticks int64) int64 {
 
 func MSToTick(ms int64) int64 {
 	return int64(float64(ms) / 1000 * ebiten.DefaultTPS)
+}
+
+func LoadFile(path string) ([]byte, error) {
+	if IsWasm() {
+		// load from http get
+		resp, err := http.Get(path)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+		return io.ReadAll(resp.Body)
+	}
+	// just read from file
+	return os.ReadFile(path)
+}
+
+func ScaleFrame(frame image.Rectangle) image.Rectangle {
+	s := ebiten.Monitor().DeviceScaleFactor()
+	return image.Rect(
+		int(float64(frame.Min.X)*s),
+		int(float64(frame.Min.Y)*s),
+		int(float64(frame.Max.X)*s),
+		int(float64(frame.Max.Y)*s),
+	)
 }

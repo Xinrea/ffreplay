@@ -13,6 +13,7 @@ import (
 	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/internal/renderer"
 	"github.com/Xinrea/ffreplay/internal/system"
+	"github.com/Xinrea/ffreplay/internal/ui"
 	"github.com/Xinrea/ffreplay/pkg/texture"
 	"github.com/Xinrea/ffreplay/pkg/vector"
 	"github.com/Xinrea/ffreplay/util"
@@ -29,8 +30,11 @@ type FFScene struct {
 	fight    int
 	system   *system.System
 	renderer *renderer.Renderer
+	ui       *ui.FFUI
 	global   *model.GlobalData
 	camera   *model.CameraData
+	screenW  int
+	screenH  int
 }
 
 type FFLogsOpt struct {
@@ -58,6 +62,7 @@ func NewFFScene(opt *FFLogsOpt) *FFScene {
 		camera:   entry.GetCamera(ecs),
 		system:   system,
 		renderer: renderer,
+		ui:       ui.NewFFUI(ecs),
 	}
 	if opt != nil {
 		ms.client = fflogs.NewFFLogsClient(opt.ClientID, opt.ClientSecret)
@@ -353,13 +358,17 @@ func (ms *FFScene) Reset() {
 
 func (ms *FFScene) Update() {
 	ms.ecs.Update()
+	ms.ui.Update(ms.screenW, ms.screenH)
 }
 
 func (ms *FFScene) Layout(w, h int) {
 	ms.system.Layout(w, h)
+	ms.screenW = w
+	ms.screenH = h
 }
 
 func (ms *FFScene) Draw(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{20, 20, 40, 255})
 	ms.ecs.Draw(screen)
+	ms.ui.Draw(screen)
 }

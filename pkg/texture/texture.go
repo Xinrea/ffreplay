@@ -9,15 +9,11 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
-type Texture struct {
-	asset *ebiten.Image
-}
-
 var textureCache = sync.Map{}
 
-func NewAbilityTexture(iconName string) *Texture {
+func NewAbilityTexture(iconName string) *ebiten.Image {
 	if texture, ok := textureCache.Load(iconName); ok {
-		if value, ok := texture.(*Texture); ok {
+		if value, ok := texture.(*ebiten.Image); ok {
 			return value
 		}
 		return nil
@@ -33,16 +29,13 @@ func NewAbilityTexture(iconName string) *Texture {
 		log.Println("Load icon from fflogs failed")
 		return nil
 	}
-	texture := &Texture{
-		asset: img,
-	}
-	textureCache.Store(iconName, texture)
-	return texture
+	textureCache.Store(iconName, img)
+	return img
 }
 
-func NewMapTexture(mapName string) *Texture {
+func NewMapTexture(mapName string) *ebiten.Image {
 	if texture, ok := textureCache.Load(mapName); ok {
-		if value, ok := texture.(*Texture); ok {
+		if value, ok := texture.(*ebiten.Image); ok {
 			return value
 		}
 		return nil
@@ -58,16 +51,13 @@ func NewMapTexture(mapName string) *Texture {
 		log.Println("Load map from fflogs failed", finalUrl)
 		return nil
 	}
-	texture := &Texture{
-		asset: img,
-	}
-	textureCache.Store(mapName, texture)
-	return texture
+	textureCache.Store(mapName, img)
+	return img
 }
 
-func NewTextureFromFile(filepath string) *Texture {
+func NewTextureFromFile(filepath string) *ebiten.Image {
 	if texture, ok := textureCache.Load(filepath); ok {
-		if value, ok := texture.(*Texture); ok {
+		if value, ok := texture.(*ebiten.Image); ok {
 			return value
 		}
 		return nil
@@ -77,25 +67,12 @@ func NewTextureFromFile(filepath string) *Texture {
 	if err != nil {
 		log.Fatal(err)
 	}
-	texture := &Texture{
-		asset: img,
-	}
-	textureCache.Store(filepath, texture)
-	return texture
+	textureCache.Store(filepath, img)
+	return img
 }
 
-func NewTextureFromImage(img *ebiten.Image) *Texture {
-	return &Texture{
-		asset: img,
-	}
-}
-
-func (t *Texture) Img() *ebiten.Image {
-	return t.asset
-}
-
-func (t Texture) GetGeoM() ebiten.GeoM {
+func CenterGeoM(t *ebiten.Image) ebiten.GeoM {
 	geoM := ebiten.GeoM{}
-	geoM.Translate(-float64(t.asset.Bounds().Dx())/2, -float64(t.asset.Bounds().Dy())/2)
+	geoM.Translate(-float64(t.Bounds().Dx())/2, -float64(t.Bounds().Dy())/2)
 	return geoM
 }

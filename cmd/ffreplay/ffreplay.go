@@ -47,12 +47,11 @@ func (g *Game) Draw(screen *ebiten.Image) {
 }
 
 func (g *Game) Layout(width, height int) (int, int) {
-	s := ebiten.Monitor().DeviceScaleFactor()
-	w := int(float64(width) * s)
-	h := int(float64(height) * s)
-	g.bounds = image.Rect(0, 0, w, h)
+	g.bounds = image.Rect(0, 0, width, height)
 	g.sceneManager.Layout(width, height)
-	return w, h
+	s := ebiten.Monitor().DeviceScaleFactor()
+	width, height = int(float64(width)*s), int(float64(height)*s)
+	return width, height
 }
 
 var credential string

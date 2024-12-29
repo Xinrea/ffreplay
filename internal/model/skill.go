@@ -16,7 +16,7 @@ var BorderTexture = texture.NewTextureFromFile("asset/skillborder.png")
 var BorderGeoM = ebiten.GeoM{}
 
 func init() {
-	BorderGeoM.Translate(-float64(BorderTexture.Img().Bounds().Dx())/2, -float64(BorderTexture.Img().Bounds().Dy())/2)
+	BorderGeoM = texture.CenterGeoM(BorderTexture)
 }
 
 type Skill struct {
@@ -30,7 +30,7 @@ type Skill struct {
 	SkillEvents *TimelineData
 }
 
-func (s Skill) Texture() *texture.Texture {
+func (s Skill) Texture() *ebiten.Image {
 	return texture.NewAbilityTexture(s.Icon)
 }
 

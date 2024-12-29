@@ -10,7 +10,7 @@ import (
 // SpriteData is a struct that contains texture, face, and object
 // Face is the radian relative to the north direction, range: [-pi, pi]
 type SpriteData struct {
-	Texture     *texture.Texture
+	Texture     *ebiten.Image
 	Scale       float64
 	Instances   []*Instance
 	Initialized bool
@@ -29,13 +29,12 @@ func (s SpriteData) Render(camera *CameraData, screen *ebiten.Image) {
 		return
 	}
 	for _, instance := range s.Instances {
-		geoM := s.Texture.GetGeoM()
+		geoM := texture.CenterGeoM(s.Texture)
 		geoM.Rotate(instance.Face)
 		geoM.Translate(instance.Object.Position()[0], instance.Object.Position()[1])
-		wordM := camera.WorldMatrix()
-		wordM.Invert()
+		wordM := camera.WorldMatrixInverted()
 		geoM.Concat(wordM)
-		screen.DrawImage(s.Texture.Img(), &ebiten.DrawImageOptions{
+		screen.DrawImage(s.Texture, &ebiten.DrawImageOptions{
 			GeoM: geoM,
 		})
 	}

@@ -8,6 +8,7 @@ import (
 
 	"github.com/Xinrea/ffreplay/pkg/texture"
 	"github.com/Xinrea/ffreplay/util"
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 type MapData struct {
@@ -22,7 +23,7 @@ type MapConfig struct {
 
 type MapItem struct {
 	ID      int
-	Texture *texture.Texture
+	Texture *ebiten.Image
 	Scale   float64
 	Offset  struct {
 		X float64

@@ -7,6 +7,7 @@ import (
 	"github.com/Xinrea/ffreplay/internal/entry"
 	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/internal/tag"
+	"github.com/Xinrea/ffreplay/pkg/texture"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/yohamta/donburi/ecs"
 )
@@ -46,15 +47,14 @@ func (r *Renderer) BackgroundRender(ecs *ecs.ECS, screen *ebiten.Image) {
 }
 
 func (r *Renderer) mapRender(camera *model.CameraData, screen *ebiten.Image, m model.MapItem) {
-	geoM := m.Texture.GetGeoM()
+	geoM := texture.CenterGeoM(m.Texture)
 	if m.Scale > 0 {
 		geoM.Scale(m.Scale, m.Scale)
 	}
 	geoM.Translate(m.Offset.X*25, m.Offset.Y*25)
-	wordM := camera.WorldMatrix()
-	wordM.Invert()
+	wordM := camera.WorldMatrixInverted()
 	geoM.Concat(wordM)
-	screen.DrawImage(m.Texture.Img(), &ebiten.DrawImageOptions{
+	screen.DrawImage(m.Texture, &ebiten.DrawImageOptions{
 		Filter: ebiten.FilterLinear,
 		GeoM:   geoM,
 	})

@@ -5,6 +5,7 @@ import (
 
 	"github.com/Xinrea/ffreplay/pkg/texture"
 	"github.com/Xinrea/ffreplay/util"
+	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"
 )
@@ -17,20 +18,26 @@ const (
 )
 
 type BuffList struct {
-	buffs []Buff
+	buffs []*Buff
 }
 
 func NewBuffList() *BuffList {
 	return &BuffList{
-		buffs: make([]Buff, 0, 24),
+		buffs: make([]*Buff, 0, 24),
 	}
 }
 
-func (bl *BuffList) SetBuffs(buffs []Buff) {
+func (bl *BuffList) Update(now int64) {
+	for _, b := range bl.buffs {
+		b.UpdateRemain(now)
+	}
+}
+
+func (bl *BuffList) SetBuffs(buffs []*Buff) {
 	bl.buffs = append(bl.buffs, buffs...)
 }
 
-func (bl *BuffList) Buffs() []Buff {
+func (bl *BuffList) Buffs() []*Buff {
 	// order buffs by type, debuff first
 	sort.Slice(bl.buffs, func(i, j int) bool {
 		return bl.buffs[i].Type > bl.buffs[j].Type
@@ -38,7 +45,7 @@ func (bl *BuffList) Buffs() []Buff {
 	return bl.buffs
 }
 
-func (bl *BuffList) DeBuffs() (ret []Buff) {
+func (bl *BuffList) DeBuffs() (ret []*Buff) {
 	for _, b := range bl.buffs {
 		if b.Type == Debuff {
 			ret = append(ret, b)
@@ -47,7 +54,7 @@ func (bl *BuffList) DeBuffs() (ret []Buff) {
 	return
 }
 
-func (bl *BuffList) Add(buff Buff) {
+func (bl *BuffList) Add(buff *Buff) {
 	index := -1
 	for i, b := range bl.buffs {
 		if b.ID == buff.ID {
@@ -71,7 +78,7 @@ func (bl *BuffList) UpdateStack(id int64, stack int) {
 	}
 }
 
-func (bl *BuffList) Refresh(buff Buff) {
+func (bl *BuffList) Refresh(buff *Buff) {
 	index := -1
 	for i, b := range bl.buffs {
 		if b.ID == buff.ID {
@@ -84,7 +91,7 @@ func (bl *BuffList) Refresh(buff Buff) {
 	}
 }
 
-func (bl *BuffList) Remove(buff Buff) {
+func (bl *BuffList) Remove(buff *Buff) {
 	index := -1
 	for i, b := range bl.buffs {
 		if b.ID == buff.ID {
@@ -99,7 +106,7 @@ func (bl *BuffList) Remove(buff Buff) {
 }
 
 func (bl *BuffList) UpdateExpire(now int64) {
-	toRemove := make([]Buff, 0)
+	toRemove := make([]*Buff, 0)
 	for _, b := range bl.buffs {
 		if b.Expired(now) {
 			toRemove = append(toRemove, b)
@@ -127,7 +134,7 @@ func (bl *BuffList) ProcessHeal(heal *Heal) {
 }
 
 func (bl *BuffList) Clear() {
-	bl.buffs = make([]Buff, 0)
+	bl.buffs = bl.buffs[:0]
 }
 
 type Buff struct {
@@ -136,6 +143,7 @@ type Buff struct {
 	Name   string
 	Icon   string
 	Stacks int
+	Remain int64
 	// buff duration in ms
 	Duration       int64
 	ApplyTick      int64
@@ -149,11 +157,12 @@ type Buff struct {
 
 var BuffStackBG = texture.NewTextureFromFile("asset/buffstack.png")
 
-func (b Buff) Remain(now int64) int64 {
+func (b *Buff) UpdateRemain(now int64) {
 	if b.Duration == 0 || b.Duration > 7200*1000 {
-		return 0
+		b.Remain = 0
+		return
 	}
-	return (b.Duration - util.TickToMS(now-b.ApplyTick)) / 1000
+	b.Remain = (b.Duration - util.TickToMS(now-b.ApplyTick)) / 1000
 }
 
 func (b Buff) Expired(now int64) bool {
@@ -163,7 +172,7 @@ func (b Buff) Expired(now int64) bool {
 	return b.Duration < util.TickToMS(now-b.ApplyTick)
 }
 
-func (b Buff) Texture() *texture.Texture {
+func (b Buff) Texture() *ebiten.Image {
 	return texture.NewAbilityTexture(b.Icon)
 }
 

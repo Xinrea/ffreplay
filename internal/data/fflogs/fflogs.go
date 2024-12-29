@@ -300,8 +300,8 @@ type Ability struct {
 	AbilityIcon string `json:"abilityIcon"`
 }
 
-func (a Ability) ToBuff() model.Buff {
-	return model.Buff{
+func (a Ability) ToBuff() *model.Buff {
+	return &model.Buff{
 		ID:     a.Guid,
 		Name:   a.Name,
 		Icon:   a.AbilityIcon,

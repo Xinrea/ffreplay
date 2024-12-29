@@ -24,22 +24,21 @@ func (c *CameraData) viewportCenter() f64.Vec2 {
 
 // Window size without scaled
 func (c *CameraData) WindowSize() (float64, float64) {
-	s := ebiten.Monitor().DeviceScaleFactor()
-	return c.ViewPort[0] / s, c.ViewPort[1] / s
+	return c.ViewPort[0], c.ViewPort[1]
 }
 
 func (c *CameraData) Update(v f64.Vec2) {
-	s := ebiten.Monitor().DeviceScaleFactor()
-	c.ViewPort = f64.Vec2{v[0] * s, v[1] * s}
+	c.ViewPort = f64.Vec2{v[0], v[1]}
 }
 
 func (c *CameraData) WorldMatrix() ebiten.GeoM {
 	s := ebiten.Monitor().DeviceScaleFactor()
 	m := ebiten.GeoM{}
+	m.Scale(1/s, 1/s)
 	m.Translate(-c.viewportCenter()[0], -c.viewportCenter()[1])
 	m.Scale(
-		math.Pow(1.01, float64(c.ZoomFactor))/s,
-		math.Pow(1.01, float64(c.ZoomFactor))/s,
+		math.Pow(1.01, float64(c.ZoomFactor)),
+		math.Pow(1.01, float64(c.ZoomFactor)),
 	)
 	m.Rotate(c.Rotation)
 	m.Translate(c.Position[0], c.Position[1])

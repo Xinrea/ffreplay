@@ -7,6 +7,7 @@ import (
 	"github.com/Xinrea/ffreplay/internal/entry"
 	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/internal/tag"
+	"github.com/Xinrea/ffreplay/pkg/texture"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/colorm"
 	"github.com/yohamta/donburi"
@@ -28,8 +29,7 @@ func (r *Renderer) renderPlayer(ecs *ecs.ECS, camera *model.CameraData, screen *
 		return
 	}
 	status := component.Status.Get(player)
-	worldM := camera.WorldMatrix()
-	worldM.Invert()
+	worldM := camera.WorldMatrixInverted()
 
 	// render target ring
 	c := colorm.ColorM{}
@@ -38,41 +38,40 @@ func (r *Renderer) renderPlayer(ecs *ecs.ECS, camera *model.CameraData, screen *
 	}
 	// player only has one instance
 	pos := sprite.Instances[0].Object.Position()
-	geoM := sprite.Texture.GetGeoM()
+	geoM := texture.CenterGeoM(sprite.Texture)
 	geoM.Scale(sprite.Scale, sprite.Scale)
 	geoM.Rotate(sprite.Instances[0].Face)
 	geoM.Translate(pos[0], pos[1])
 	geoM.Concat(worldM)
 	op := &colorm.DrawImageOptions{}
 	op.GeoM = geoM
-	colorm.DrawImage(screen, sprite.Texture.Img(), c, op)
+	colorm.DrawImage(screen, sprite.Texture, c, op)
 
 	c = colorm.ColorM{}
 	if status.IsDead() {
 		c.ChangeHSV(0, 0, 1)
 	}
 	// render icon
-	geoM = status.RoleTexture().GetGeoM()
+	geoM = texture.CenterGeoM(status.RoleTexture())
 	geoM.Scale(0.5, 0.5)
 	geoM.Rotate(camera.Rotation)
 	geoM.Translate(pos[0], pos[1])
 	geoM.Concat(worldM)
 	op = &colorm.DrawImageOptions{}
 	op.GeoM = geoM
-	colorm.DrawImage(screen, status.RoleTexture().Img(), c, op)
+	colorm.DrawImage(screen, status.RoleTexture(), c, op)
 
 	// render debuffs on side of player
-	s := ebiten.Monitor().DeviceScaleFactor()
 	screenX, screenY := camera.WorldToScreen(pos[0], pos[1])
-	RenderBuffList(screen, tick, status.BuffList.DeBuffs(), screenX/s+30/math.Pow(1.01, float64(camera.ZoomFactor)), screenY/s, ebiten.Monitor().DeviceScaleFactor())
+	RenderBuffList(screen, tick, status.BuffList.DeBuffs(), screenX+30/math.Pow(1.01, float64(camera.ZoomFactor)), screenY)
 
 	// render marker on player
 	if status.Marker > 0 {
 		markerTexture := model.MarkerTextures[status.Marker-1]
-		geoM = markerTexture.GetGeoM()
+		geoM = texture.CenterGeoM(markerTexture)
 		geoM.Rotate(camera.Rotation)
 		geoM.Translate(pos[0], pos[1]-30)
 		geoM.Concat(worldM)
-		screen.DrawImage(markerTexture.Img(), &ebiten.DrawImageOptions{GeoM: geoM})
+		screen.DrawImage(markerTexture, &ebiten.DrawImageOptions{GeoM: geoM})
 	}
 }
