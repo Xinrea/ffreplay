@@ -92,6 +92,10 @@ func (s *System) AddEventLine(id int64, status map[int][]data.StatusEvent, event
 
 func (s *System) Update(ecs *ecs.ECS) {
 	globalData := component.Global.Get(tag.Global.MustFirst(ecs.World))
+	if globalData.Reset.Load() {
+		s.doReset(ecs)
+		globalData.Reset.Store(false)
+	}
 	if s.reset {
 		s.doReset(ecs)
 		globalData.Tick = 0

@@ -20,21 +20,22 @@ func EnemyBarsView() *furex.View {
 			Update: func(v *furex.View) {
 				v.SetRight(0)
 				v.SetTop(0)
+				v.RemoveAll()
+				cnt := 0
+				for e := range tag.Enemy.Iter(ecsInstance.World) {
+					sprite := component.Sprite.Get(e)
+					if !sprite.Initialized {
+						continue
+					}
+					enemy := component.Status.Get(e)
+					if enemy.Role != model.Boss || !sprite.Instances[0].IsActive(entry.GetTick(ecsInstance)) {
+						continue
+					}
+					v.AddChild(CreateEnemyBarView(cnt, e))
+					cnt++
+				}
 			},
 		}),
-	}
-	cnt := 0
-	for e := range tag.Enemy.Iter(ecsInstance.World) {
-		sprite := component.Sprite.Get(e)
-		if !sprite.Initialized {
-			continue
-		}
-		enemy := component.Status.Get(e)
-		if enemy.Role != model.Boss {
-			continue
-		}
-		view.AddChild(CreateEnemyBarView(cnt, e))
-		cnt++
 	}
 	return view
 }
@@ -88,7 +89,7 @@ func CreateEnemyBarView(i int, enemy *donburi.Entry) *furex.View {
 				return formatInt(status.HP) + " / " + formatInt(status.MaxHP)
 			},
 			Color:        color.NRGBA{252, 183, 190, 255},
-			Align:        furex.AlignItemEnd,
+			Align:        furex.AlignItemStart,
 			Shadow:       true,
 			ShadowOffset: 2,
 			ShadowColor:  color.NRGBA{0, 0, 0, 128},

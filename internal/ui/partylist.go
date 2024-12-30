@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"image"
 	"image/color"
 	"strconv"
 
@@ -54,12 +55,12 @@ func (p *PlayerItem) Update(v *furex.View) {
 	}
 }
 
-func (p *PlayerItem) HandleJustPressedMouseButtonLeft(x, y int) bool {
+func (p *PlayerItem) HandleJustPressedMouseButtonLeft(_ image.Rectangle, x, y int) bool {
 	entry.GetGlobal(ecsInstance).TargetPlayer = p.Player
 	return true
 }
 
-func (p *PlayerItem) HandleJustReleasedMouseButtonLeft(x, y int) {
+func (p *PlayerItem) HandleJustReleasedMouseButtonLeft(_ image.Rectangle, x, y int) {
 }
 
 func (p *PlayerItem) HandleMouseEnter(x, y int) bool {

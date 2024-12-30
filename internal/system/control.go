@@ -110,7 +110,7 @@ func (s *System) replayModeControl(ecs *ecs.ECS) {
 	if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) {
 		global.Tick -= 60 * 10 // 1s tick
 		global.Tick = max(0, global.Tick)
-		s.doReset(ecs)
+		global.Reset.Store(true)
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyArrowRight) {
 		global.Tick += 60 * 10 // 1s tick

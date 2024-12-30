@@ -2,7 +2,6 @@ package ui
 
 import (
 	"image"
-	"log"
 
 	"github.com/Xinrea/ffreplay/pkg/texture"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -10,18 +9,39 @@ import (
 )
 
 type Bar struct {
-	Progress any
-	BG       *texture.NineSlice
-	FG       *texture.NineSlice
-	ClickAt  func(p float64)
+	Progress     any
+	BG           *texture.NineSlice
+	FG           *texture.NineSlice
+	Interactable bool
+	ClickAt      func(c float64, p float64)
 }
 
-func (b *Bar) HandleJustPressedMouseButtonLeft(x, y int) bool {
-	log.Println("Bar.HandleJustPressedMouseButtonLeft", x, y)
+func (b *Bar) HandleJustPressedMouseButtonLeft(frame image.Rectangle, x, y int) bool {
+	if b.ClickAt != nil {
+		progress := 0.0
+		switch b.Progress.(type) {
+		case float64:
+			progress = b.Progress.(float64)
+		case func() float64:
+			progress = b.Progress.(func() float64)()
+		}
+		b.ClickAt(progress, float64(x-frame.Min.X)/float64(frame.Dx()))
+	}
 	return true
 }
 
-func (b *Bar) HandleJustReleasedMouseButtonLeft(x, y int) {
+func (b *Bar) HandleJustReleasedMouseButtonLeft(frame image.Rectangle, x, y int) {
+}
+
+func (b *Bar) HandleMouseEnter(x, y int) bool {
+	if b.Interactable {
+		ebiten.SetCursorShape(ebiten.CursorShapePointer)
+	}
+	return true
+}
+
+func (b *Bar) HandleMouseLeave() {
+	ebiten.SetCursorShape(ebiten.CursorShapeDefault)
 }
 
 func (b *Bar) Draw(screen *ebiten.Image, frame image.Rectangle, view *furex.View) {

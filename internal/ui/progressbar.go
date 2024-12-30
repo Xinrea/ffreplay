@@ -5,6 +5,7 @@ import (
 	"image/color"
 
 	"github.com/Xinrea/ffreplay/internal/entry"
+	"github.com/Xinrea/ffreplay/util"
 	"github.com/yohamta/furex/v2"
 )
 
@@ -50,8 +51,15 @@ func ProgressBarView() *furex.View {
 		MarginTop:    5,
 		MarginBottom: 5,
 		Handler: &Bar{
-			FG: barAtlas.GetNineSlice("normal_bar_fg.png"),
-			BG: barAtlas.GetNineSlice("normal_bar_bg.png"),
+			FG:           barAtlas.GetNineSlice("normal_bar_fg.png"),
+			BG:           barAtlas.GetNineSlice("normal_bar_bg.png"),
+			Interactable: true,
+			ClickAt: func(c, p float64) {
+				global.Tick = util.MSToTick(int64(float64(global.FightDuration.Load())*p)) * 10
+				if p < c {
+					global.Reset.Store(true)
+				}
+			},
 		},
 	})
 	view.AddChild(&furex.View{
