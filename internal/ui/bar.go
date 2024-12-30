@@ -12,6 +12,7 @@ type Bar struct {
 	Progress     any
 	BG           *texture.NineSlice
 	FG           *texture.NineSlice
+	Segments     []float64
 	Interactable bool
 	ClickAt      func(c float64, p float64)
 }
@@ -45,7 +46,6 @@ func (b *Bar) HandleMouseLeave() {
 }
 
 func (b *Bar) Draw(screen *ebiten.Image, frame image.Rectangle, view *furex.View) {
-	b.BG.Draw(screen, frame)
 	progress := 0.0
 	switch b.Progress.(type) {
 	case float64:
@@ -55,6 +55,28 @@ func (b *Bar) Draw(screen *ebiten.Image, frame image.Rectangle, view *furex.View
 	default:
 		return
 	}
+	if progress > 1.0 {
+		progress = 1.0
+	}
+	if progress < 0.0 {
+		progress = 0.0
+	}
+	if len(b.Segments) == 0 {
+		b.BG.Draw(screen, frame)
+	} else {
+		s := 0.0
+		for i := range b.Segments {
+			e := b.Segments[i]
+			b.BG.Draw(screen, image.Rect(
+				frame.Min.X+int(s*float64(frame.Dx())),
+				frame.Min.Y,
+				frame.Min.X+int(e*float64(frame.Dx())),
+				frame.Max.Y,
+			))
+			s = e
+		}
+	}
+
 	p := progress * float64(frame.Dx())
 	frame.Max.X = frame.Min.X + int(p)
 	b.FG.Draw(screen, frame)

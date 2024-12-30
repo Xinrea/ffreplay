@@ -44,6 +44,17 @@ func ProgressBarView() *furex.View {
 			ShadowColor:  color.NRGBA{22, 45, 87, 128},
 		},
 	})
+	// progress segments from phases
+	segments := []float64{}
+	for _, phase := range global.Phases {
+		if phase == 0 {
+			continue
+		}
+		segments = append(segments, float64(phase)/float64(util.MSToTick(global.FightDuration.Load())))
+	}
+	if len(segments) > 0 && segments[len(segments)-1] < 1 {
+		segments = append(segments, 1)
+	}
 	view.AddChild(&furex.View{
 		ID:           "bar",
 		Width:        250,
@@ -53,6 +64,7 @@ func ProgressBarView() *furex.View {
 		Handler: &Bar{
 			FG:           barAtlas.GetNineSlice("normal_bar_fg.png"),
 			BG:           barAtlas.GetNineSlice("normal_bar_bg.png"),
+			Segments:     segments,
 			Interactable: true,
 			ClickAt: func(c, p float64) {
 				global.Tick = util.MSToTick(int64(float64(global.FightDuration.Load())*p)) * 10
