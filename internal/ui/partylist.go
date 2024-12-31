@@ -104,7 +104,7 @@ func NewPlayerItem(playerEntry *donburi.Entry) *furex.View {
 		Left:     30,
 		Width:    275,
 		Height:   40,
-		Handler:  &Sprite{NineSliceTexture: texture.NewNineSlice(texture.NewTextureFromFile("asset/partylist_hover.png"), 0, 0, 0, 0)},
+		Handler:  &Sprite{Texture: texture.NewTextureFromFile("asset/partylist_hover.png")},
 	})
 	view.AddChild(&furex.View{
 		ID:       "selected",
@@ -113,13 +113,13 @@ func NewPlayerItem(playerEntry *donburi.Entry) *furex.View {
 		Left:     30,
 		Width:    275,
 		Height:   40,
-		Handler:  &Sprite{NineSliceTexture: texture.NewNineSlice(texture.NewTextureFromFile("asset/partylist_selected.png"), 0, 0, 0, 0)},
+		Handler:  &Sprite{Texture: texture.NewTextureFromFile("asset/partylist_selected.png")},
 	})
 	// add job icon
 	view.AddChild(&furex.View{
 		Width:   38,
 		Height:  38,
-		Handler: &Sprite{NineSliceTexture: texture.NewNineSlice(player.RoleTexture(), 0, 0, 0, 0)},
+		Handler: &Sprite{Texture: player.RoleTexture()},
 	})
 	statusView := &furex.View{
 		MarginLeft: 5,
