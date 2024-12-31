@@ -9,9 +9,17 @@ import (
 )
 
 type Sprite struct {
-	Texture *texture.NineSlice
+	NineSliceTexture *texture.NineSlice
+	Texture          *ebiten.Image
 }
 
 func (s *Sprite) Draw(screen *ebiten.Image, frame image.Rectangle, view *furex.View) {
-	s.Texture.Draw(screen, frame)
+	if s.Texture != nil {
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Scale(float64(frame.Dx())/float64(s.Texture.Bounds().Dx()), float64(frame.Dy())/float64(s.Texture.Bounds().Dy()))
+		op.GeoM.Translate(float64(frame.Min.X), float64(frame.Min.Y))
+		screen.DrawImage(s.Texture, op)
+		return
+	}
+	s.NineSliceTexture.Draw(screen, frame)
 }

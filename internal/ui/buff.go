@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/Xinrea/ffreplay/internal/model"
-	"github.com/Xinrea/ffreplay/pkg/texture"
 	"github.com/yohamta/furex/v2"
 )
 
@@ -18,7 +17,7 @@ func BuffView(buff *model.Buff) *furex.View {
 		Width:  24,
 		Height: 32,
 		Handler: &Sprite{
-			Texture: texture.NewNineSlice(buff.Texture(), 0, 0, 0, 0),
+			Texture: buff.Texture(),
 		}})
 	if buff.Stacks > 1 {
 		// view.AddChild(&furex.View{
