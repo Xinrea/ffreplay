@@ -16,6 +16,7 @@ import (
 
 func NewPartyList(players []*donburi.Entry) *furex.View {
 	view := &furex.View{
+		MarginTop:  10,
 		Direction:  furex.Column,
 		AlignItems: furex.AlignItemStart,
 		Justify:    furex.JustifyStart,
