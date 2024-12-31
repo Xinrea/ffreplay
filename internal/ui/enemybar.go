@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"image/color"
 	"strconv"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"github.com/Xinrea/ffreplay/internal/entry"
 	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/internal/tag"
+	"github.com/Xinrea/ffreplay/util"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/furex/v2"
 )
@@ -47,19 +49,10 @@ func CreateEnemyBarView(i int, enemy *donburi.Entry) *furex.View {
 		Position:   furex.PositionAbsolute,
 		Direction:  furex.Column,
 		AlignItems: furex.AlignItemStart,
-		Handler: furex.NewHandler(furex.HandlerOpts{
-			Update: func(v *furex.View) {
-				if !sprite.Instances[0].IsActive(entry.GetTick(ecsInstance)) {
-					v.Display = furex.DisplayNone
-				} else {
-					v.Display = furex.DisplayFlex
-				}
-			},
-		}),
 	}
 	view.SetRight(520)
 	view.SetTop(20 + 50*i)
-	view.AddChild(&furex.View{
+	nameView := &furex.View{
 		Height: 13,
 		Handler: &Text{
 			Content:      status.Name,
@@ -69,25 +62,66 @@ func CreateEnemyBarView(i int, enemy *donburi.Entry) *furex.View {
 			ShadowOffset: 2,
 			ShadowColor:  color.NRGBA{0, 0, 0, 128},
 		},
-	})
-	view.AddChild(&furex.View{
-		ID:     "bar",
-		Width:  500,
-		Height: 10,
-		Handler: &Bar{
-			Progress: func() float64 {
-				return float64(status.HP) / float64(status.MaxHP)
+	}
+	// add casting view
+	castView := &furex.View{
+		Height:     24,
+		Direction:  furex.Column,
+		AlignItems: furex.AlignItemEnd,
+	}
+	if sprite.Instances[0].GetCast() != nil {
+		cast := sprite.Instances[0].GetCast()
+		castView.AddChild(&furex.View{
+			Width:  210,
+			Height: 12,
+			Handler: &Bar{
+				Progress: float64(util.TickToMS(entry.GetTick(ecsInstance)-cast.StartTick)) / float64(cast.Cast),
+				BG:       castAtlas.GetNineSlice("casting_frame.png"),
+				FG:       castAtlas.GetNineSlice("casting_fg.png"),
 			},
-			FG: barAtlas.GetNineSlice("red_bar_fg.png"),
-			BG: barAtlas.GetNineSlice("red_bar_bg.png"),
+		})
+		castView.AddChild(&furex.View{
+			Height:    12,
+			MarginTop: -5,
+			Handler: &Text{
+				Align:        furex.AlignItemEnd,
+				Content:      cast.Name,
+				Color:        color.White,
+				Shadow:       true,
+				ShadowOffset: 1,
+				ShadowColor:  color.NRGBA{240, 152, 0, 128},
+			}})
+	}
+	nameCast := &furex.View{
+		Width:      500,
+		Direction:  furex.Row,
+		Justify:    furex.JustifySpaceBetween,
+		AlignItems: furex.AlignItemEnd,
+	}
+	nameCast.AddChild(nameView)
+	nameCast.AddChild(castView)
+	view.AddChild(nameCast)
+	view.AddChild(&furex.View{
+		ID:        "bar",
+		Width:     500,
+		Height:    10,
+		MarginTop: 5,
+		Handler: &Bar{
+			Progress: float64(status.HP) / float64(status.MaxHP),
+			FG:       barAtlas.GetNineSlice("red_bar_fg.png"),
+			BG:       barAtlas.GetNineSlice("red_bar_bg.png"),
 		},
 	})
-	view.AddChild(&furex.View{
-		Height: 13,
+	hpView := &furex.View{
+		Width:     500,
+		Direction: furex.Row,
+		Justify:   furex.JustifySpaceBetween,
+	}
+	hpView.AddChild(&furex.View{
+		MarginTop: 5,
+		Height:    13,
 		Handler: &Text{
-			Content: func() string {
-				return formatInt(status.HP) + " / " + formatInt(status.MaxHP)
-			},
+			Content:      formatInt(status.HP) + " / " + formatInt(status.MaxHP),
 			Color:        color.NRGBA{252, 183, 190, 255},
 			Align:        furex.AlignItemStart,
 			Shadow:       true,
@@ -95,6 +129,19 @@ func CreateEnemyBarView(i int, enemy *donburi.Entry) *furex.View {
 			ShadowColor:  color.NRGBA{0, 0, 0, 128},
 		},
 	})
+	hpView.AddChild(&furex.View{
+		MarginTop: 5,
+		Height:    13,
+		Handler: &Text{
+			Content:      fmt.Sprintf("%.2f%%", float64(status.HP)/float64(status.MaxHP)*100),
+			Color:        color.NRGBA{252, 183, 190, 255},
+			Align:        furex.AlignItemEnd,
+			Shadow:       true,
+			ShadowOffset: 2,
+			ShadowColor:  color.NRGBA{0, 0, 0, 128},
+		},
+	})
+	view.AddChild(hpView)
 	view.AddChild((&furex.View{
 		Handler: furex.NewHandler(furex.HandlerOpts{
 			Update: func(v *furex.View) {

@@ -27,8 +27,9 @@ func (b *Bar) HandleJustPressedMouseButtonLeft(frame image.Rectangle, x, y int) 
 			progress = b.Progress.(func() float64)()
 		}
 		b.ClickAt(progress, float64(x-frame.Min.X)/float64(frame.Dx()))
+		return true
 	}
-	return true
+	return false
 }
 
 func (b *Bar) HandleJustReleasedMouseButtonLeft(frame image.Rectangle, x, y int) {
@@ -53,7 +54,7 @@ func (b *Bar) Draw(screen *ebiten.Image, frame image.Rectangle, view *furex.View
 	case func() float64:
 		progress = b.Progress.(func() float64)()
 	default:
-		return
+		progress = 1.0
 	}
 	if progress > 1.0 {
 		progress = 1.0

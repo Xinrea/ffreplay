@@ -8,6 +8,7 @@ import (
 	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/entry"
 	"github.com/Xinrea/ffreplay/pkg/texture"
+	"github.com/Xinrea/ffreplay/util"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/furex/v2"
@@ -21,7 +22,7 @@ func NewPartyList(players []*donburi.Entry) *furex.View {
 	}
 	view.AddChild(&furex.View{
 		Width:    300,
-		Height:   50*len(players) + 20,
+		Height:   48*len(players) + 20,
 		Position: furex.PositionAbsolute,
 		Handler:  &Sprite{Texture: texture.NewNineSlice(texture.NewTextureFromFile("asset/partylist_bg.png"), 5, 14, 0, 0)},
 	})
@@ -41,6 +42,7 @@ var _ furex.MouseEnterLeaveHandler = (*PlayerItem)(nil)
 var _ furex.MouseLeftButtonHandler = (*PlayerItem)(nil)
 
 func (p *PlayerItem) Update(v *furex.View) {
+	// status := component.Status.Get(p.Player)
 	if p.Hovered {
 		v.MustGetByID("hover").Display = furex.DisplayFlex
 		ebiten.SetCursorShape(ebiten.CursorShapePointer)
@@ -52,6 +54,15 @@ func (p *PlayerItem) Update(v *furex.View) {
 		v.MustGetByID("selected").Display = furex.DisplayFlex
 	} else {
 		v.MustGetByID("selected").Display = furex.DisplayNone
+	}
+
+	// if player is casting, hide name
+	if component.Sprite.Get(p.Player).Instances[0].GetCast() != nil {
+		v.MustGetByID("name").Display = furex.DisplayNone
+		v.MustGetByID("cast").Display = furex.DisplayFlex
+	} else {
+		v.MustGetByID("name").Display = furex.DisplayFlex
+		v.MustGetByID("cast").Display = furex.DisplayNone
 	}
 }
 
@@ -79,6 +90,7 @@ func NewPlayerItem(playerEntry *donburi.Entry) *furex.View {
 	}
 	player := component.Status.Get(playerEntry)
 	view := &furex.View{
+		Height:     48,
 		Direction:  furex.Row,
 		AlignItems: furex.AlignItemCenter,
 		Justify:    furex.JustifyStart,
@@ -110,13 +122,55 @@ func NewPlayerItem(playerEntry *donburi.Entry) *furex.View {
 	})
 	statusView := &furex.View{
 		MarginLeft: 5,
-		MarginTop:  20,
 		Direction:  furex.Column,
 	}
+	// add casting view
+	castView := &furex.View{
+		ID:         "cast",
+		MarginTop:  5,
+		Direction:  furex.Column,
+		AlignItems: furex.AlignItemEnd,
+	}
+	castView.AddChild(&furex.View{
+		Width:  210,
+		Height: 12,
+		Handler: &Bar{
+			Progress: func() float64 {
+				cast := component.Sprite.Get(playerEntry).Instances[0].GetCast()
+				if cast == nil {
+					return 0
+				}
+				return float64(util.TickToMS(entry.GetTick(ecsInstance)-cast.StartTick)) / float64(cast.Cast)
+			},
+			BG: castAtlas.GetNineSlice("casting_frame.png"),
+			FG: castAtlas.GetNineSlice("casting_fg.png"),
+		},
+	})
+	castView.AddChild(&furex.View{
+		MarginTop: -5,
+		Width:     100,
+		Height:    12,
+		Handler: &Text{
+			Align: furex.AlignItemStart,
+			Content: func() string {
+				cast := component.Sprite.Get(playerEntry).Instances[0].GetCast()
+				if cast == nil {
+					return ""
+				}
+				return cast.Name
+			},
+			Color:        color.White,
+			Shadow:       true,
+			ShadowOffset: 1,
+			ShadowColor:  color.NRGBA{240, 152, 0, 128},
+		}})
+	statusView.AddChild(castView)
 	// add name
 	statusView.AddChild(&furex.View{
-		Width:  100,
-		Height: 13,
+		ID:        "name",
+		MarginTop: 10,
+		Width:     100,
+		Height:    13,
 		Handler: &Text{
 			Align:        furex.AlignItemStart,
 			Content:      player.Name,

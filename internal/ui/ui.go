@@ -16,6 +16,7 @@ import (
 
 var ecsInstance *ecs.ECS
 var barAtlas = texture.NewTextureAtlasFromFile("asset/ui/bar.xml")
+var castAtlas = texture.NewTextureAtlasFromFile("asset/ui/casting.xml")
 
 type FFUI struct {
 	view *furex.View
