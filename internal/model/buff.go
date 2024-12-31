@@ -155,8 +155,6 @@ type Buff struct {
 	RemoveCallback func(*Buff, *ecs.ECS, *donburi.Entry, *donburi.Entry) `json:"-"`
 }
 
-var BuffStackBG = texture.NewTextureFromFile("asset/buffstack.png")
-
 func (b *Buff) UpdateRemain(now int64) {
 	if b.Duration == 0 || b.Duration > 7200*1000 {
 		b.Remain = 0

@@ -21,23 +21,26 @@ func BuffView(buff *model.Buff) *furex.View {
 			Texture: texture.NewNineSlice(buff.Texture(), 0, 0, 0, 0),
 		}})
 	if buff.Stacks > 1 {
+		// view.AddChild(&furex.View{
+		// 	Position: furex.PositionAbsolute,
+		// 	Width:    24,
+		// 	Height:   32,
+		// 	Handler: &Sprite{
+		// 		Texture: texture.NewNineSlice(model.BuffStackBG, 0, 0, 0, 0),
+		// 	}})
 		view.AddChild(&furex.View{
 			Position: furex.PositionAbsolute,
-			Width:    24,
-			Height:   32,
-			Handler: &Sprite{
-				Texture: texture.NewNineSlice(model.BuffStackBG, 0, 0, 0, 0),
-			}})
-		view.AddChild(&furex.View{
-			Position: furex.PositionAbsolute,
-			Width:    11,
-			Height:   11,
-			Top:      1,
-			Left:     10,
+			Width:    13,
+			Height:   13,
+			Top:      2,
+			Left:     9,
 			Handler: &Text{
-				Align:   furex.AlignItemEnd,
-				Content: strconv.Itoa(buff.Stacks),
-				Color:   color.Black,
+				Align:        furex.AlignItemEnd,
+				Content:      strconv.Itoa(buff.Stacks),
+				Color:        color.White,
+				Shadow:       true,
+				ShadowOffset: 4,
+				ShadowColor:  color.NRGBA{0, 0, 0, 200},
 			}})
 	}
 	view.AddChild(&furex.View{

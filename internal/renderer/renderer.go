@@ -30,6 +30,11 @@ func NewRenderer() *Renderer {
 	return &Renderer{}
 }
 
+var stackTextShadowOpt = &ui.ShadowOpt{
+	Offset: 4,
+	Color:  color.NRGBA{0, 0, 0, 200},
+}
+
 func RenderBuffList(canvas *ebiten.Image, tick int64, buffs []*model.Buff, x, y float64) {
 	s := ebiten.Monitor().DeviceScaleFactor()
 	// render buff icons
@@ -40,11 +45,10 @@ func RenderBuffList(canvas *ebiten.Image, tick int64, buffs []*model.Buff, x, y 
 		geoM.Translate(x+float64((i+1)*25)*s, y)
 		canvas.DrawImage(iconTexture, &ebiten.DrawImageOptions{GeoM: geoM})
 		if buff.Remain > 0 {
-			ui.DrawText(canvas, formatSeconds(buff.Remain), 14*s, x+float64((i+1)*25)*s, y+12*s, color.White, furex.AlignItemCenter, textShdowOpt)
+			ui.DrawText(canvas, formatSeconds(buff.Remain), 14*s, x+float64((i+1)*25)*s, y+14*s, color.White, furex.AlignItemCenter, textShdowOpt)
 		}
 		if buff.Stacks > 1 {
-			canvas.DrawImage(model.BuffStackBG, &ebiten.DrawImageOptions{GeoM: geoM})
-			ui.DrawText(canvas, strconv.Itoa(buff.Stacks), 10*s, x+float64((i+1)*25)*s+6*s, y-16*s, color.NRGBA{0, 0, 0, 255}, furex.AlignItemCenter, textShdowOpt)
+			ui.DrawText(canvas, strconv.Itoa(buff.Stacks), 13*s, x+float64((i+1)*25)*s+6*s, y-7*s, color.White, furex.AlignItemCenter, stackTextShadowOpt)
 		}
 	}
 }
