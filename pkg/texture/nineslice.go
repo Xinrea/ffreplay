@@ -8,6 +8,8 @@ import (
 
 type NineSlice struct {
 	Texture                  *ebiten.Image
+	Width                    int
+	Height                   int
 	Top, Bottom, Left, Right int
 	SubImages                [9]*ebiten.Image
 }
@@ -45,6 +47,8 @@ func NewNineSlice(t *ebiten.Image, top, bottom, left, right int) *NineSlice {
 	}
 	return &NineSlice{
 		Texture:   t,
+		Width:     t.Bounds().Dx(),
+		Height:    t.Bounds().Dy(),
 		Top:       top,
 		Bottom:    bottom,
 		Left:      left,
