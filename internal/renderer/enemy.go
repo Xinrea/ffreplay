@@ -40,7 +40,7 @@ func (r *Renderer) renderEnemy(ecs *ecs.ECS, screen *ebiten.Image, enemy *donbur
 
 		var c colorm.ColorM
 		// render target ring
-		if global.Debug || status.Role == model.Boss {
+		if global.Debug || status.Role == model.Boss || global.RenderNPC {
 			geoM := texture.CenterGeoM(sprite.Texture)
 			if status.Role == model.NPC {
 				geoM.Scale(0.5, 0.5)
@@ -51,17 +51,6 @@ func (r *Renderer) renderEnemy(ecs *ecs.ECS, screen *ebiten.Image, enemy *donbur
 			op := &colorm.DrawImageOptions{}
 			op.GeoM = geoM
 			colorm.DrawImage(screen, sprite.Texture, c, op)
-		}
-
-		// render icon for npcs
-		if status.Role == model.NPC && global.Debug {
-			geoM := texture.CenterGeoM(status.RoleTexture())
-			geoM.Rotate(camera.Rotation)
-			geoM.Translate(pos[0], pos[1])
-			geoM.Concat(wordM)
-			op := &colorm.DrawImageOptions{}
-			op.GeoM = geoM
-			colorm.DrawImage(screen, status.RoleTexture(), c, op)
 		}
 	}
 

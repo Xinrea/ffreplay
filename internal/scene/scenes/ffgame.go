@@ -175,6 +175,9 @@ func (ms *FFScene) loadFFLogsReport() {
 
 	pBeforeLoad := time.Now()
 	status, events := data.FetchLogEvents(ms.client, ms.code, fight)
+	if events[0].Type == fflogs.DungeonStart {
+		ms.global.RenderNPC = true
+	}
 	filterTarget := func(targetID int64) []fflogs.FFLogsEvent {
 		ret := []fflogs.FFLogsEvent{}
 		for _, e := range events {

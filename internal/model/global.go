@@ -8,6 +8,7 @@ import (
 
 type GlobalData struct {
 	// Real tick * 10 for fine speed control
+	RenderNPC    bool
 	ReplayMode   bool
 	Tick         int64
 	Speed        int64

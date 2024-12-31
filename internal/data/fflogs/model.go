@@ -180,6 +180,7 @@ const (
 	MapChange          EventType = "mapchange"
 	WorldMarkerRemoved EventType = "worldmarkerremoved"
 	WorldMarkerPlaced  EventType = "worldmarkerplaced"
+	DungeonStart       EventType = "dungeonstart"
 )
 
 type Actor struct {
