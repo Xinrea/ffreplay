@@ -107,25 +107,18 @@ func DrawText(screen *ebiten.Image, content string, fontSize float64, x, y float
 	if opt != nil {
 		offset := opt.Offset
 		op.ColorScale.ScaleWithColor(opt.Color)
-		op.GeoM.Translate(offset, offset)
-		text.Draw(screen, content, f, op)
-		op.GeoM.Translate(0, -offset)
-		text.Draw(screen, content, f, op)
-		op.GeoM.Translate(0, -offset)
-		text.Draw(screen, content, f, op)
-		op.GeoM.Translate(-offset, 0)
-		text.Draw(screen, content, f, op)
-		op.GeoM.Translate(-offset, 0)
-		text.Draw(screen, content, f, op)
-		op.GeoM.Translate(0, offset)
-		text.Draw(screen, content, f, op)
-		op.GeoM.Translate(0, offset)
-		text.Draw(screen, content, f, op)
-		op.GeoM.Translate(offset, 0)
-		text.Draw(screen, content, f, op)
-		op.GeoM.Translate(0, -offset)
+		shadowOffsets := []struct{ dx, dy float64 }{
+			{offset, offset}, {offset, -offset}, {-offset, offset}, {-offset, -offset},
+			{offset, 0}, {-offset, 0}, {0, offset}, {0, -offset},
+		}
+		for _, o := range shadowOffsets {
+			op.GeoM.Translate(o.dx, o.dy)
+			text.Draw(screen, content, f, op)
+			op.GeoM.Translate(-o.dx, -o.dy)
+		}
 		op.ColorScale.Reset()
 	}
+
 	op.ColorScale.ScaleWithColor(clr)
 	text.Draw(screen, content, f, op)
 }
