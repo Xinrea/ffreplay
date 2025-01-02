@@ -17,9 +17,13 @@ import (
 const MaxVelocity = 8
 
 func (s *System) ControlUpdate(ecs *ecs.ECS) {
-	global := entry.GetGlobal(s.ecs)
 	camera := entry.GetCamera(s.ecs)
 	camera.Update(s.ViewPort)
+
+	global := entry.GetGlobal(s.ecs)
+	if !global.Loaded.Load() {
+		return
+	}
 
 	if inpututil.IsKeyJustPressed(ebiten.KeyBackquote) {
 		global.Debug = !global.Debug

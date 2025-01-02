@@ -8,6 +8,10 @@ import (
 )
 
 func (s *System) TimelineUpdate(ecs *ecs.ECS) {
+	global := entry.GetGlobal(ecs)
+	if !global.Loaded.Load() {
+		return
+	}
 	tick := entry.GetTick(ecs)
 	for e := range tag.Timeline.Iter(ecs.World) {
 		timeline := component.Timeline.Get(e)
