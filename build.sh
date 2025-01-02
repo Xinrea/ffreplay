@@ -10,9 +10,6 @@ COMMIT_HASH=$(git rev-parse --short HEAD)
 GOOS=js GOARCH=wasm go build -ldflags "-X main.credential=$CREDENTIAL" -o public/ffreplay-$COMMIT_HASH.wasm ./cmd/ffreplay/ffreplay.go
 cp $(go env GOROOT)/misc/wasm/wasm_exec.js ./public
 
-# Copy asset folder into public
-cp -r ./asset ./public
-
 cp index.html ./public/index.html
 cp ffreplay.html ./public/ffreplay.html
 

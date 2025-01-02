@@ -4,7 +4,7 @@ import (
 	"encoding/xml"
 	"image"
 
-	"github.com/Xinrea/ffreplay/util"
+	asset "github.com/Xinrea/ffreplay"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -43,7 +43,7 @@ func NewTextureAtlasFromFile(file string) *TextureAtlas {
 	if atlas, ok := atlasCache[file]; ok {
 		return atlas
 	}
-	bytes, err := util.LoadFile(file)
+	bytes, err := asset.AssetFS.ReadFile(file)
 	if err != nil {
 		panic(err)
 	}

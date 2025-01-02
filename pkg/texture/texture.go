@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"sync"
 
+	asset "github.com/Xinrea/ffreplay"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
@@ -63,7 +64,11 @@ func NewTextureFromFile(filepath string) *ebiten.Image {
 		return nil
 	}
 	var err error
-	img, _, err := ebitenutil.NewImageFromFile(filepath)
+	f, err := asset.AssetFS.Open(filepath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	img, _, err := ebitenutil.NewImageFromReader(f)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -2,10 +2,7 @@ package util
 
 import (
 	"image"
-	"io"
 	"math"
-	"net/http"
-	"os"
 	"runtime"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -66,20 +63,6 @@ func TickToMS(ticks int64) int64 {
 
 func MSToTick(ms int64) int64 {
 	return int64(float64(ms) / 1000 * ebiten.DefaultTPS)
-}
-
-func LoadFile(path string) ([]byte, error) {
-	if IsWasm() {
-		// load from http get
-		resp, err := http.Get(path)
-		if err != nil {
-			return nil, err
-		}
-		defer resp.Body.Close()
-		return io.ReadAll(resp.Body)
-	}
-	// just read from file
-	return os.ReadFile(path)
 }
 
 func ScaleFrame(frame image.Rectangle) image.Rectangle {

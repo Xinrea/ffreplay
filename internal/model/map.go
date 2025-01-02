@@ -3,11 +3,9 @@ package model
 import (
 	"encoding/json"
 	"log"
-	"net/http"
-	"os"
 
+	asset "github.com/Xinrea/ffreplay"
 	"github.com/Xinrea/ffreplay/pkg/texture"
-	"github.com/Xinrea/ffreplay/util"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -76,23 +74,7 @@ func (m MapPresetItem) Load() *MapConfig {
 var MapCache = map[int]MapPresetItem{}
 
 func init() {
-	if util.IsWasm() {
-		resp, err := http.Get("asset/floor/floor.json")
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer resp.Body.Close()
-		var config MapPreset
-		err = json.NewDecoder(resp.Body).Decode(&config)
-		if err != nil {
-			log.Fatal(err)
-		}
-		for _, m := range config.Maps {
-			MapCache[m.ID] = m
-		}
-		return
-	}
-	f, err := os.Open("asset/floor/floor.json")
+	f, err := asset.AssetFS.Open("asset/floor/floor.json")
 	if err != nil {
 		log.Fatal(err)
 	}
