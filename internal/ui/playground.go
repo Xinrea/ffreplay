@@ -12,8 +12,14 @@ type PlaygroundUI struct {
 var _ UI = (*PlaygroundUI)(nil)
 
 func NewPlaygroundUI() *PlaygroundUI {
+	view := &furex.View{
+		Position: furex.PositionAbsolute,
+		Top:      0,
+		Left:     0,
+	}
+	view.AddChild(CheckBoxView(16, false, false, "test", nil))
 	return &PlaygroundUI{
-		view: &furex.View{},
+		view: view,
 	}
 }
 
@@ -24,5 +30,5 @@ func (p *PlaygroundUI) Update(w, h int) {
 }
 
 func (p *PlaygroundUI) Draw(screen *ebiten.Image) {
-
+	p.view.Draw(screen)
 }
