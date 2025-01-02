@@ -44,6 +44,10 @@ func (i *Instance) IsActive(tick int64) bool {
 	if i.LastActive == -1 {
 		return false
 	}
+	if i.casting != nil {
+		i.LastActive = tick
+		return true
+	}
 	return util.TickToMS(tick-i.LastActive) <= 2500
 }
 
