@@ -51,3 +51,9 @@ go run cmd/ffreplay/ffreplay.go -r REPORT_CODE -f FIGHT_ID
 ## 项目结构
 
 该项目使用 `ebiten` 游戏引擎开发，主要原因是支持编译为 WASM，能够直接在浏览器中运行；整体架构为 ECS（Entity-Component-System），请务必熟悉这个概念。
+
+## 数据来源
+
+- [FFLogs](https://www.fflogs.com/)
+- [ffxiv-datamining-cn](https://github.com/thewakingsands/ffxiv-datamining-cn)
+- [GarlandTools](https://www.garlandtools.org)

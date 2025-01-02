@@ -103,7 +103,7 @@ func (i *Instance) GetHistoryCast(tick int64) []*Skill {
 	// only keep last 5 gcd of history
 	cnt := 5
 	for k := len(i.historyCasting) - 1; k >= 0; k-- {
-		if IsGCD(i.historyCasting[k].ID) {
+		if i.historyCasting[k].IsGCD {
 			cnt--
 		}
 		if cnt == 0 {

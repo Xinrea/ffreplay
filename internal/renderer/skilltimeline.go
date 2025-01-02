@@ -60,7 +60,7 @@ func RenderCasting(debug bool, canvas *ebiten.Image, tick int64, cast *model.Ski
 	iconTexture := cast.Texture()
 	geoM := texture.CenterGeoM(iconTexture)
 	borderGeoM := model.BorderGeoM
-	if !model.IsGCD(cast.ID) {
+	if !cast.IsGCD {
 		geoM.Scale(0.8, 0.8)
 		borderGeoM.Scale(0.8, 0.8)
 		geoM.Translate(0, -30)
@@ -96,7 +96,7 @@ func NewSkillTimeline(casts []*model.Skill) SkillTimeline {
 		StartTick: -1,
 	}
 	for _, c := range casts {
-		if model.IsGCD(c.ID) {
+		if c.IsGCD {
 			if currentPeriod.StartTick != -1 {
 				periods = append(periods, currentPeriod)
 			}

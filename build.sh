@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# update_actions.sh
+sh update_actions.sh
+
 mkdir public
 
 # Get currrent commit hash

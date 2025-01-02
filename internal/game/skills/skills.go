@@ -1,6 +1,8 @@
 package skills
 
 import (
+	"strings"
+
 	"github.com/Xinrea/ffreplay/internal/model"
 )
 
@@ -16,6 +18,14 @@ func QuerySkill(skill model.Skill) model.Skill {
 	case SKillCyclonicBreak:
 		return NewCyclonicBreak()
 	default:
+		actionInfo := model.GetAction(skill.ID)
+		if actionInfo == nil {
+			return skill
+		}
+		if !strings.HasPrefix(actionInfo.Name, "_rsv") {
+			skill.Name = actionInfo.Name
+		}
+		skill.IsGCD = actionInfo.IsGCD
 		return skill
 	}
 }

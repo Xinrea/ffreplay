@@ -94,7 +94,7 @@ func PreloadAbilityInfo(events []fflogs.FFLogsEvent, counter *atomic.Int32) {
 		counter.Add(1)
 		if events[i].Ability != nil {
 			_ = texture.NewAbilityTexture(events[i].Ability.AbilityIcon)
-			_ = model.IsGCD(events[i].Ability.Guid)
+			_ = model.GetAction(events[i].Ability.Guid)
 		}
 	}
 }

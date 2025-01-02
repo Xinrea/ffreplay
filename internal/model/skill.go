@@ -1,13 +1,16 @@
 package model
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"sync"
 
+	asset "github.com/Xinrea/ffreplay"
 	"github.com/Xinrea/ffreplay/pkg/texture"
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -26,6 +29,7 @@ type Skill struct {
 	StartTick int64
 	Cast      int64
 	Recast    int64
+	IsGCD     bool
 
 	SkillEvents *TimelineData
 }
@@ -34,32 +38,72 @@ func (s Skill) Texture() *ebiten.Image {
 	return texture.NewAbilityTexture(s.Icon)
 }
 
-var gcdDB = sync.Map{}
+type ActionInfo struct {
+	ID    int64
+	Name  string
+	IsGCD bool
+}
 
-func IsGCD(id int64) bool {
+var actionEntries = []ActionInfo{}
+
+func init() {
+	f, err := asset.AssetFS.Open("asset/gamedata/Action.csv")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+	r := csv.NewReader(f)
+	records, err := r.ReadAll()
+	if err != nil {
+		log.Fatal(err)
+	}
+	// remove headers
+	records = records[3:]
+	for _, record := range records {
+		id, _ := strconv.Atoi(record[0])
+		actionEntries = append(actionEntries, ActionInfo{
+			ID:    int64(id),
+			Name:  record[1],
+			IsGCD: record[41] == "58",
+		})
+	}
+}
+
+var additionalDB = sync.Map{}
+
+func GetAction(id int64) *ActionInfo {
 	// not normal ability
 	if id > 1000000 {
-		return false
+		return nil
 	}
-	if g, ok := gcdDB.Load(id); ok {
-		return g.(bool)
+	// try to get from action.csv
+	if id >= 0 && id < int64(len(actionEntries)) {
+		return &actionEntries[id]
+	}
+	if g, ok := additionalDB.Load(id); ok {
+		if g == nil {
+			return nil
+		}
+		return g.(*ActionInfo)
 	}
 	// https://www.garlandtools.org/db/doc/action/en/2/25865.json
 	resp, err := http.Get(fmt.Sprintf("https://www.garlandtools.org/db/doc/action/en/2/%d.json", id))
 	if err != nil {
 		log.Println(err)
-		return false
+		return nil
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		gcdDB.Store(id, false)
-		return false
+		additionalDB.Store(id, nil)
+		return nil
 	}
 
 	var Data struct {
 		Action struct {
-			GCD int `json:"gcd"`
+			ID   int64  `json:"id"`
+			Name string `json:"name"`
+			GCD  int    `json:"gcd"`
 		} `json:"action"`
 	}
 	jsonStr, _ := io.ReadAll(resp.Body)
@@ -67,8 +111,13 @@ func IsGCD(id int64) bool {
 	if err != nil {
 		log.Println(string(jsonStr))
 		log.Println(err)
-		return false
+		return nil
 	}
-	gcdDB.Store(id, Data.Action.GCD == 1)
-	return Data.Action.GCD == 1
+	actionInfo := &ActionInfo{
+		ID:    Data.Action.ID,
+		Name:  Data.Action.Name,
+		IsGCD: Data.Action.GCD == 1,
+	}
+	additionalDB.Store(id, actionInfo)
+	return actionInfo
 }
