@@ -30,7 +30,7 @@ type FFScene struct {
 	fight    int
 	system   *system.System
 	renderer *renderer.Renderer
-	ui       *ui.FFUI
+	ui       ui.UI
 	global   *model.GlobalData
 	camera   *model.CameraData
 	screenW  int
@@ -62,15 +62,16 @@ func NewFFScene(opt *FFLogsOpt) *FFScene {
 		camera:   entry.GetCamera(ecs),
 		system:   system,
 		renderer: renderer,
-		ui:       ui.NewFFUI(ecs),
 	}
 	if opt != nil {
+		ms.ui = ui.NewReplayUI(ecs)
 		ms.client = fflogs.NewFFLogsClient(opt.ClientID, opt.ClientSecret)
 		ms.code = opt.Report
 		ms.fight = opt.Fight
 		ms.global.ReplayMode = true
 		go ms.loadFFLogsReport()
 	} else {
+		ms.ui = ui.NewPlaygroundUI()
 		ms.global.Loaded.Store(true)
 	}
 	log.Println("Scene created")

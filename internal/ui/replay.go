@@ -23,7 +23,14 @@ type FFUI struct {
 	once sync.Once
 }
 
-func NewFFUI(ecs *ecs.ECS) *FFUI {
+type UI interface {
+	Update(int, int)
+	Draw(*ebiten.Image)
+}
+
+var _ UI = (*FFUI)(nil)
+
+func NewReplayUI(ecs *ecs.ECS) *FFUI {
 	ecsInstance = ecs
 	view := &furex.View{
 		Direction: furex.Row,
