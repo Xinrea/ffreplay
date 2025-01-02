@@ -85,7 +85,6 @@ func main() {
 	}
 	ebiten.SetWindowSize(1920, 1080)
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
-	ebiten.SetWindowTitle(fmt.Sprintf("FFReplay %s-%d", report, fight))
 	if credential == "" {
 		f, err := os.Open(".credential")
 		if err != nil {
@@ -100,10 +99,12 @@ func main() {
 	}
 	credentials := strings.Split(credential, ":")
 	if len(credentials) != 2 || report == "" {
+		ebiten.SetWindowTitle("FFReplay Playground")
 		if err := ebiten.RunGame(NewGame(nil)); err != nil {
 			log.Fatal(err)
 		}
 	} else {
+		ebiten.SetWindowTitle(fmt.Sprintf("FFReplay %s-%d", report, fight))
 		if err := ebiten.RunGame(NewGame(&scenes.FFLogsOpt{ClientID: credentials[0], ClientSecret: credentials[1], Report: report, Fight: fight})); err != nil {
 			log.Fatal(err)
 		}
