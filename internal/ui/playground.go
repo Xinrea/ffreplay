@@ -17,7 +17,7 @@ func NewPlaygroundUI() *PlaygroundUI {
 		Top:      0,
 		Left:     0,
 	}
-	view.AddChild(CheckBoxView(32, false, false, nil))
+	view.AddChild(CheckBoxView(16, false, false, "test", nil))
 	return &PlaygroundUI{
 		view: view,
 	}

@@ -2,6 +2,7 @@ package ui
 
 import (
 	"image"
+	"image/color"
 
 	"github.com/Xinrea/ffreplay/pkg/texture"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -12,6 +13,7 @@ var checkboxTextureAtlas = texture.NewTextureAtlasFromFile("asset/ui/checkbox.xm
 var multicheckboxTextureAtlas = texture.NewTextureAtlasFromFile("asset/ui/multicheckbox.xml")
 
 type CheckBoxHandler struct {
+	Size         int
 	Checked      bool
 	ClickHandler func(bool)
 }
@@ -21,6 +23,7 @@ var _ furex.MouseLeftButtonHandler = (*CheckBoxHandler)(nil)
 var _ furex.MouseEnterLeaveHandler = (*CheckBoxHandler)(nil)
 
 func (c *CheckBoxHandler) Update(v *furex.View) {
+	v.SetWidth(v.MustGetByID("label").Width + 5 + c.Size)
 	if c.Checked {
 		v.MustGetByID("checked").Hidden = false
 	} else {
@@ -51,11 +54,15 @@ func (c *CheckBoxHandler) HandleMouseLeave() {
 	ebiten.SetCursorShape(ebiten.CursorShapeDefault)
 }
 
-func CheckBoxView(size int, multiple bool, initial bool, clickHandler func(bool)) *furex.View {
+func CheckBoxView(size int, multiple bool, initial bool, label string, clickHandler func(bool)) *furex.View {
 	view := &furex.View{
-		Width:  size,
-		Height: size,
+		Position:   furex.PositionAbsolute,
+		Top:        100,
+		Left:       20,
+		Height:     size,
+		AlignItems: furex.AlignItemCenter,
 		Handler: &CheckBoxHandler{
+			Size:         size,
 			Checked:      initial,
 			ClickHandler: clickHandler,
 		},
@@ -107,5 +114,18 @@ func CheckBoxView(size int, multiple bool, initial bool, clickHandler func(bool)
 			},
 		})
 	}
+	view.AddChild(&furex.View{
+		ID:         "label",
+		MarginLeft: int(float64(size) * 1.2),
+		Height:     int(float64(size) * 0.8),
+		Handler: &Text{
+			Align:        furex.AlignItemStart,
+			Content:      label,
+			Color:        color.White,
+			Shadow:       true,
+			ShadowOffset: 2,
+			ShadowColor:  color.NRGBA{0, 0, 0, 128},
+		},
+	})
 	return view
 }
