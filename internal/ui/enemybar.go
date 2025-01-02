@@ -51,7 +51,7 @@ func CreateEnemyBarView(i int, enemy *donburi.Entry) *furex.View {
 		AlignItems: furex.AlignItemStart,
 	}
 	view.SetRight(520)
-	view.SetTop(20 + 50*i)
+	view.SetTop(20 + 100*i)
 	nameView := &furex.View{
 		Height: 13,
 		Handler: &Text{
@@ -142,17 +142,9 @@ func CreateEnemyBarView(i int, enemy *donburi.Entry) *furex.View {
 		},
 	})
 	view.AddChild(hpView)
-	view.AddChild((&furex.View{
-		Handler: furex.NewHandler(furex.HandlerOpts{
-			Update: func(v *furex.View) {
-				v.SetRight(0)
-			},
-		}),
-	}).AddChild(&furex.View{
-		Handler: &BuffList{
-			Buffs: status.BuffList,
-		},
-	}))
+	bufflist := BuffListView(status.BuffList.Buffs())
+	bufflist.MarginTop = 5
+	view.AddChild(bufflist)
 	return view
 }
 

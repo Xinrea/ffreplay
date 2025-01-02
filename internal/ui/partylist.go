@@ -241,12 +241,9 @@ func NewPlayerItem(playerEntry *donburi.Entry) *furex.View {
 		}}))
 	statusView.AddChild(hm)
 	view.AddChild(statusView)
-	view.AddChild(&furex.View{
-		MarginTop:  20,
-		MarginLeft: 5,
-		Handler: &BuffList{
-			Buffs: player.BuffList,
-		},
-	})
+	bufflist := BuffListView(player.BuffList)
+	bufflist.SetMarginTop(20)
+	bufflist.SetMarginLeft(5)
+	view.AddChild(bufflist)
 	return view
 }
