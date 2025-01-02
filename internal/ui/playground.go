@@ -12,13 +12,12 @@ type PlaygroundUI struct {
 var _ UI = (*PlaygroundUI)(nil)
 
 func NewPlaygroundUI() *PlaygroundUI {
-	checked := true
 	view := &furex.View{
 		Position: furex.PositionAbsolute,
 		Top:      0,
 		Left:     0,
 	}
-	view.AddChild(MultiCheckBoxView(32, &checked))
+	view.AddChild(CheckBoxView(32, false, false, nil))
 	return &PlaygroundUI{
 		view: view,
 	}
