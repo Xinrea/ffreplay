@@ -175,7 +175,8 @@ func (ms *FFScene) loadFFLogsReport() {
 
 	pBeforeLoad := time.Now()
 	status, events := data.FetchLogEvents(ms.client, ms.code, fight)
-	if events[0].Type == fflogs.DungeonStart {
+	isDungeonReport := events[0].Type == fflogs.DungeonStart
+	if isDungeonReport {
 		ms.global.RenderNPC = true
 	}
 	filterTarget := func(targetID int64) []fflogs.FFLogsEvent {
@@ -198,6 +199,12 @@ func (ms *FFScene) loadFFLogsReport() {
 	}
 	filterMapChange := func() []fflogs.FFLogsEvent {
 		ret := []fflogs.FFLogsEvent{}
+		if isDungeonReport {
+			ret = append(ret, fflogs.FFLogsEvent{
+				Type:  fflogs.MapChange,
+				MapID: &fight.Maps[0].ID,
+			})
+		}
 		for _, e := range events {
 			if e.Type == fflogs.MapChange {
 				ret = append(ret, e)

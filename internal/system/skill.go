@@ -13,6 +13,10 @@ import (
 )
 
 func (s *System) SkillUpdate(ecs *ecs.ECS) {
+	global := entry.GetGlobal(ecs)
+	if !global.Loaded.Load() {
+		return
+	}
 	for e := range tag.GameObject.Iter(ecs.World) {
 		sprite := component.Sprite.Get(e)
 		if !sprite.Initialized {
