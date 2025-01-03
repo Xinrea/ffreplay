@@ -73,7 +73,7 @@ func (p *PlaygroundUI) Update(w, h int) {
 	global := entry.GetGlobal(ecsInstance)
 	if global.Loaded.Load() {
 		p.once.Do(func() {
-			p.view.AddChild(InputView("> "))
+			p.view.AddChild(InputView("> ", 512))
 		})
 	}
 	s := ebiten.Monitor().DeviceScaleFactor()

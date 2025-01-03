@@ -17,6 +17,7 @@ type Focusable interface {
 }
 
 type InputHandler struct {
+	Width         int
 	focused       bool
 	runes         []rune
 	content       string
@@ -70,8 +71,11 @@ func (i *InputHandler) Update(v *furex.View) {
 	if !i.focused {
 		return
 	}
-	i.runes = ebiten.AppendInputChars(i.runes[:0])
-	i.content += string(i.runes)
+	currentWidth := v.MustGetByID("content").Width
+	if currentWidth+18 < i.Width {
+		i.runes = ebiten.AppendInputChars(i.runes[:0])
+		i.content += string(i.runes)
+	}
 	// If the enter key is pressed, commit this
 	if repeatingKeyPressed(ebiten.KeyEnter) || repeatingKeyPressed(ebiten.KeyNumpadEnter) {
 		if i.CommitHandler != nil {
@@ -99,19 +103,23 @@ var _ Focusable = (*InputHandler)(nil)
 var _ furex.MouseLeftButtonHandler = (*InputHandler)(nil)
 var _ furex.MouseEnterLeaveHandler = (*InputHandler)(nil)
 
-func InputView(prefix string) *furex.View {
-	handler := &InputHandler{}
+func InputView(prefix string, width int) *furex.View {
+	handler := &InputHandler{
+		Width: width,
+	}
 	view := &furex.View{
 		Direction: furex.Column,
 		Handler:   handler,
 	}
 	view.AddChild(&furex.View{
 		Height: 28,
+		Width:  width,
 		Handler: &Sprite{
 			NineSliceTexture: messageTextureAtlas.GetNineSlice("input_bg.png"),
 		},
 	})
 	view.AddChild(&furex.View{
+		ID:       "content",
 		Position: furex.PositionAbsolute,
 		Top:      8,
 		Left:     6,
