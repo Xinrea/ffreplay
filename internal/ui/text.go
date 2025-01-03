@@ -91,6 +91,9 @@ type ShadowOpt struct {
 var textCache = make(map[string]*ebiten.Image)
 
 func DrawText(screen *ebiten.Image, content string, fontSize float64, x, y float64, clr color.Color, align furex.AlignItem, opt *ShadowOpt) {
+	if content == "" {
+		return
+	}
 	cacheKey := fmt.Sprintf("%s_%f_%v", content, fontSize, clr)
 	if opt != nil {
 		cacheKey += fmt.Sprintf("_%v", opt.Color)
