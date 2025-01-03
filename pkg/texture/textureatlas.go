@@ -3,6 +3,7 @@ package texture
 import (
 	"encoding/xml"
 	"image"
+	"log"
 
 	asset "github.com/Xinrea/ffreplay"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -51,6 +52,7 @@ func NewTextureAtlasFromFile(file string) *TextureAtlas {
 	textureAtlas := &TextureAtlas{}
 	err = xml.Unmarshal(bytes, textureAtlas)
 	if err != nil {
+		log.Println(string(bytes))
 		panic(err)
 	}
 	// load main texture

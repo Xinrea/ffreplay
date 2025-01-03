@@ -1,17 +1,28 @@
 package ui
 
 import (
-	"fmt"
+	"image"
 	"sync"
 
-	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/entry"
-	"github.com/Xinrea/ffreplay/internal/model"
-	"github.com/Xinrea/ffreplay/pkg/vector"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/yohamta/donburi/ecs"
 	"github.com/yohamta/furex/v2"
 )
+
+// Due to the design of furex.View, root view cannot handle any events,
+// so we need a global root as wrap.
+var root *furex.View = &furex.View{ID: "root", Handler: furex.NewHandler(furex.HandlerOpts{
+	Update: func(v *furex.View) {
+		realroot := v.NthChild(0)
+		if realroot != nil {
+			if realroot.Height != v.Height || realroot.Width != v.Width {
+				realroot.SetHeight(v.Height)
+				realroot.SetWidth(v.Width)
+			}
+		}
+	},
+})}
 
 type PlaygroundUI struct {
 	view    *furex.View
@@ -23,74 +34,53 @@ var _ UI = (*PlaygroundUI)(nil)
 
 func NewPlaygroundUI(ecs *ecs.ECS) *PlaygroundUI {
 	ecsInstance = ecs
+	handler := &FocusHandler{}
 	view := &furex.View{
-		Position:  furex.PositionAbsolute,
+		ID:        "Playground",
 		Direction: furex.Column,
-		Top:       0,
-		Left:      0,
+		Justify:   furex.JustifyEnd,
 	}
+	handler.view = view
+	view.Handler = handler
+	root.AddChild(view)
 	return &PlaygroundUI{
 		view:    view,
 		maplist: make(map[string]*bool),
 	}
 }
 
+type FocusHandler struct {
+	view *furex.View
+}
+
+// HandleJustPressedMouseButtonLeft implements furex.MouseLeftButtonHandler.
+func (f *FocusHandler) HandleJustPressedMouseButtonLeft(frame image.Rectangle, x int, y int) bool {
+	for _, c := range f.view.GetChildren() {
+		if fh, ok := c.Handler.(Focusable); ok {
+			fh.SetFocus(false)
+		}
+	}
+	return false
+}
+
+// HandleJustReleasedMouseButtonLeft implements furex.MouseLeftButtonHandler.
+func (f *FocusHandler) HandleJustReleasedMouseButtonLeft(frame image.Rectangle, x int, y int) {
+}
+
+var _ furex.MouseLeftButtonHandler = (*FocusHandler)(nil)
+
 func (p *PlaygroundUI) Update(w, h int) {
 	global := entry.GetGlobal(ecsInstance)
 	if global.Loaded.Load() {
 		p.once.Do(func() {
-			gamemap := component.Map.Get(component.Map.MustFirst(ecsInstance.World))
-			camera := component.Camera.Get(component.Camera.MustFirst(ecsInstance.World))
-			for _, m := range model.MapCache {
-				if len(m.Phases) == 0 {
-					v := false
-					p.maplist[m.Path] = &v
-					p.view.AddChild(CheckBoxView(16, false, &v, m.Path, func(checked bool) {
-						if checked {
-							gamemap.Config = m.Load()
-							camera.Position = vector.NewVector(m.Offset.X*25, m.Offset.Y*25)
-							for k, v := range p.maplist {
-								if k != m.Path {
-									*v = false
-								}
-							}
-						} else {
-							v = true
-						}
-					}))
-					continue
-				}
-				for i, phase := range m.Phases {
-					id := fmt.Sprintf("%s:%d", phase.Path, i)
-					v := false
-					p.maplist[id] = &v
-					p.view.AddChild(CheckBoxView(16, false, &v, id, func(checked bool) {
-						if checked {
-							gamemap.Config = m.Load()
-							gamemap.Config.CurrentPhase = i
-							camera.Position = vector.NewVector(m.Offset.X*25, m.Offset.Y*25)
-							for k, v := range p.maplist {
-								if k != id {
-									*v = false
-								}
-							}
-						} else {
-							v = true
-						}
-					}))
-				}
-			}
+			p.view.AddChild(InputView("> "))
 		})
 	}
 	s := ebiten.Monitor().DeviceScaleFactor()
 	furex.GlobalScale = s
-	if p.view != nil {
-		p.view.UpdateWithSize(w, h)
-	}
+	root.UpdateWithSize(w, h)
 }
 
 func (p *PlaygroundUI) Draw(screen *ebiten.Image) {
-	if p.view != nil {
-		p.view.Draw(screen)
-	}
+	root.Draw(screen)
 }

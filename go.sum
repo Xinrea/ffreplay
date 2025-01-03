@@ -4,10 +4,14 @@ github.com/PuerkitoBio/goquery v1.8.1/go.mod h1:Q8ICL1kNUJ2sXGoAhPGUdYDJvgQgHzJs
 github.com/PuerkitoBio/goquery v1.9.2/go.mod h1:GHPCaP0ODyyxqcNoFGYlAprUFH81NuRPd0GX3Zu2Mvk=
 github.com/PuerkitoBio/goquery v1.10.1 h1:Y8JGYUkXWTGRB6Ars3+j3kN0xg1YqqlwvdTV8WTFQcU=
 github.com/PuerkitoBio/goquery v1.10.1/go.mod h1:IYiHrOMps66ag56LEH7QYDDupKXyo5A8qrjIx3ZtujY=
+github.com/Xinrea/furex/v2 v2.4.6-children h1:UujrPQAE/jTlGdlZUikLuMoAPJZ3jZ0zyjrRvbayxd4=
+github.com/Xinrea/furex/v2 v2.4.6-children/go.mod h1:hDe7A/HSbCFE2egqvfjM6OiY+oT0353weNSEuvjogyY=
 github.com/Xinrea/furex/v2 v2.4.6-global-scale h1:C4kLCevrTZaSWGITdD2X0ioj3hLO5fHXWU7A9uEQLa0=
 github.com/Xinrea/furex/v2 v2.4.6-global-scale/go.mod h1:hDe7A/HSbCFE2egqvfjM6OiY+oT0353weNSEuvjogyY=
 github.com/Xinrea/furex/v2 v2.4.6-handle-frame h1:eqQIlVdksMWiF8ZQKNheKFu1rrLv8BmvfW9fNT/3cPw=
 github.com/Xinrea/furex/v2 v2.4.6-handle-frame/go.mod h1:hDe7A/HSbCFE2egqvfjM6OiY+oT0353weNSEuvjogyY=
+github.com/Xinrea/furex/v2 v2.4.6-tag-filter h1:ZhPtb5GUYobQLms6BoTFfgbaCyyBniuHAZmn/qWMkvQ=
+github.com/Xinrea/furex/v2 v2.4.6-tag-filter/go.mod h1:hDe7A/HSbCFE2egqvfjM6OiY+oT0353weNSEuvjogyY=
 github.com/andybalholm/cascadia v1.1.0/go.mod h1:GsXiBklL0woXo1j/WYWtSYYC4ouU9PqHO0sqidkEA4Y=
 github.com/andybalholm/cascadia v1.3.1 h1:nhxRkql1kdYCc8Snf7D5/D3spOX+dBgjA6u8x004T2c=
 github.com/andybalholm/cascadia v1.3.1/go.mod h1:R4bJ1UQfqADjvDa4P6HZHLh/3OxWWEqc0Sk8XGwHqvA=
