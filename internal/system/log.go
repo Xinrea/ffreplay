@@ -43,11 +43,13 @@ func (s *System) replayUpdate(ecs *ecs.ECS, tick int64) {
 
 	// map event
 	gamemap := component.Map.Get(component.Map.MustFirst(ecs.World))
-	index = sort.Search(len(s.MapChangeEvents), func(i int) bool {
-		return s.MapChangeEvents[i].LocalTick > tick
-	})
-	if index > 0 {
-		gamemap.Config.CurrentMap = *s.MapChangeEvents[index-1].MapID
+	if gamemap.Config != nil {
+		index = sort.Search(len(s.MapChangeEvents), func(i int) bool {
+			return s.MapChangeEvents[i].LocalTick > tick
+		})
+		if index > 0 {
+			gamemap.Config.CurrentMap = *s.MapChangeEvents[index-1].MapID
+		}
 	}
 
 	// marker event

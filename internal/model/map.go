@@ -14,9 +14,10 @@ type MapData struct {
 }
 
 type MapConfig struct {
-	CurrentMap int
-	Maps       map[int]MapItem
-	Phases     []MapItem
+	CurrentMap   int
+	CurrentPhase int
+	Maps         map[int]MapItem
+	Phases       []MapItem
 }
 
 type MapItem struct {
@@ -51,8 +52,9 @@ type MapPresetItem struct {
 
 func (m MapPresetItem) Load() *MapConfig {
 	config := &MapConfig{
-		CurrentMap: m.ID,
-		Maps:       make(map[int]MapItem),
+		CurrentMap:   m.ID,
+		CurrentPhase: -1,
+		Maps:         make(map[int]MapItem),
 	}
 	defaultItem := MapItem{}
 	defaultItem.ID = m.ID

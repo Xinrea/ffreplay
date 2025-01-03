@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/data"
 	"github.com/Xinrea/ffreplay/internal/data/fflogs"
 	"github.com/Xinrea/ffreplay/internal/entry"
@@ -50,6 +51,7 @@ func NewFFScene(opt *FFLogsOpt) *FFScene {
 	entry.NewGlobal(ecs)
 	// create basic camera
 	entry.NewCamera(ecs)
+	entry.NewMap(ecs, nil)
 	// init system
 	system := system.NewSystem()
 	system.Init(ecs)
@@ -71,7 +73,7 @@ func NewFFScene(opt *FFLogsOpt) *FFScene {
 		ms.global.ReplayMode = true
 		go ms.loadFFLogsReport()
 	} else {
-		ms.ui = ui.NewPlaygroundUI()
+		ms.ui = ui.NewPlaygroundUI(ecs)
 		ms.global.Loaded.Store(true)
 	}
 	log.Println("Scene created")
@@ -113,7 +115,7 @@ func (ms *FFScene) loadFFLogsReport() {
 		config := m.Load()
 		current := config.Maps[config.CurrentMap]
 		ms.camera.Position = vector.NewVector(current.Offset.X*25, current.Offset.Y*25)
-		entry.NewMap(ms.ecs, config)
+		component.Map.Get(component.Map.MustFirst(ms.ecs.World)).Config = config
 	} else {
 		queryMapItem := func(id int) model.MapItem {
 			// get default map from fflogs
@@ -144,10 +146,11 @@ func (ms *FFScene) loadFFLogsReport() {
 		}
 		log.Println("Initial map", mapItems[fight.Maps[0].ID])
 		ms.camera.Position = vector.NewVector(mapItems[fight.Maps[0].ID].Offset.X*25, mapItems[fight.Maps[0].ID].Offset.Y*25)
-		entry.NewMap(ms.ecs, &model.MapConfig{
-			CurrentMap: fight.Maps[0].ID,
-			Maps:       mapItems,
-		})
+		component.Map.Get(component.Map.MustFirst(ms.ecs.World)).Config = &model.MapConfig{
+			CurrentMap:   fight.Maps[0].ID,
+			CurrentPhase: -1,
+			Maps:         mapItems,
+		}
 	}
 	// query worldMarkers
 	markers := ms.client.QueryWorldMarkers(ms.code, fight.ID)
