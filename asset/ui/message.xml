@@ -1,0 +1,3 @@
+<TextureAtlas>
+    <SubTexture name="input_bg.png" x="28" y="84" w="28" h="28" top="8" right="12" bottom="8" left="12"/>
+</TextureAtlas>

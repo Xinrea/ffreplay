@@ -2,7 +2,7 @@ module github.com/Xinrea/ffreplay
 
 go 1.23.1
 
-replace github.com/yohamta/furex/v2 => github.com/Xinrea/furex/v2 v2.4.6-handle-frame
+replace github.com/yohamta/furex/v2 => github.com/Xinrea/furex/v2 v2.4.6-children
 
 require (
 	github.com/fogleman/ease v0.0.0-20170301025033-8da417bf1776
