@@ -23,13 +23,23 @@ func (r *Renderer) BackgroundRender(ecs *ecs.ECS, screen *ebiten.Image) {
 		return
 	}
 	ground := component.Map.Get(g)
-	if len(ground.Config.Phases) > 0 {
-		// find current phase
-		p := entry.GetPhase(ecs)
-		if p < 0 || p >= len(ground.Config.Phases) {
-			p = 0
+	if ground.Config == nil {
+		return
+	}
+	// only auto update phase in replay mode
+	if global.ReplayMode {
+		if len(ground.Config.Phases) > 0 {
+			// find current phase
+			p := entry.GetPhase(ecs)
+			if p < 0 || p >= len(ground.Config.Phases) {
+				p = 0
+			}
+			ground.Config.CurrentPhase = p
 		}
-		r.mapRender(camera, screen, ground.Config.Phases[p])
+	}
+	// phase is setted
+	if ground.Config.CurrentPhase >= 0 {
+		r.mapRender(camera, screen, ground.Config.Phases[ground.Config.CurrentPhase])
 		return
 	}
 	// have no choice
@@ -39,6 +49,7 @@ func (r *Renderer) BackgroundRender(ecs *ecs.ECS, screen *ebiten.Image) {
 			return
 		}
 	}
+	// just find map
 	if m, ok := ground.Config.Maps[ground.Config.CurrentMap]; ok {
 		r.mapRender(camera, screen, m)
 	} else {

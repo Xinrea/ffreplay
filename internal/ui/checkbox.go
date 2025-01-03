@@ -5,7 +5,6 @@ import (
 	"image/color"
 
 	"github.com/Xinrea/ffreplay/pkg/texture"
-	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/yohamta/furex/v2"
 )
 
@@ -14,17 +13,16 @@ var multicheckboxTextureAtlas = texture.NewTextureAtlasFromFile("asset/ui/multic
 
 type CheckBoxHandler struct {
 	Size         int
-	Checked      bool
+	Checked      *bool
 	ClickHandler func(bool)
 }
 
 var _ furex.Updater = (*CheckBoxHandler)(nil)
 var _ furex.MouseLeftButtonHandler = (*CheckBoxHandler)(nil)
-var _ furex.MouseEnterLeaveHandler = (*CheckBoxHandler)(nil)
 
 func (c *CheckBoxHandler) Update(v *furex.View) {
 	v.SetWidth(v.MustGetByID("label").Width + 5 + c.Size)
-	if c.Checked {
+	if *c.Checked {
 		v.MustGetByID("checked").Hidden = false
 	} else {
 		v.MustGetByID("checked").Hidden = true
@@ -32,9 +30,9 @@ func (c *CheckBoxHandler) Update(v *furex.View) {
 }
 
 func (c *CheckBoxHandler) HandleJustPressedMouseButtonLeft(frame image.Rectangle, x, y int) bool {
-	c.Checked = !c.Checked
+	*c.Checked = !*c.Checked
 	if c.ClickHandler != nil {
-		c.ClickHandler(c.Checked)
+		c.ClickHandler(*c.Checked)
 	}
 	return true
 }
@@ -43,27 +41,13 @@ func (c *CheckBoxHandler) HandleJustReleasedMouseButtonLeft(frame image.Rectangl
 
 }
 
-// HandleMouseEnter implements furex.MouseEnterLeaveHandler.
-func (c *CheckBoxHandler) HandleMouseEnter(x int, y int) bool {
-	ebiten.SetCursorShape(ebiten.CursorShapePointer)
-	return true
-}
-
-// HandleMouseLeave implements furex.MouseEnterLeaveHandler.
-func (c *CheckBoxHandler) HandleMouseLeave() {
-	ebiten.SetCursorShape(ebiten.CursorShapeDefault)
-}
-
-func CheckBoxView(size int, multiple bool, initial bool, label string, clickHandler func(bool)) *furex.View {
+func CheckBoxView(size int, multiple bool, value *bool, label string, clickHandler func(bool)) *furex.View {
 	view := &furex.View{
-		Position:   furex.PositionAbsolute,
-		Top:        100,
-		Left:       20,
 		Height:     size,
 		AlignItems: furex.AlignItemCenter,
 		Handler: &CheckBoxHandler{
 			Size:         size,
-			Checked:      initial,
+			Checked:      value,
 			ClickHandler: clickHandler,
 		},
 	}
