@@ -25,9 +25,8 @@ var root *furex.View = &furex.View{ID: "root", Handler: furex.NewHandler(furex.H
 })}
 
 type PlaygroundUI struct {
-	view    *furex.View
-	once    sync.Once
-	maplist map[string]*bool
+	view *furex.View
+	once sync.Once
 }
 
 var _ UI = (*PlaygroundUI)(nil)
@@ -38,14 +37,13 @@ func NewPlaygroundUI(ecs *ecs.ECS) *PlaygroundUI {
 	view := &furex.View{
 		ID:        "Playground",
 		Direction: furex.Column,
-		Justify:   furex.JustifyEnd,
+		Justify:   furex.JustifySpaceBetween,
 	}
 	handler.view = view
 	view.Handler = handler
 	root.AddChild(view)
 	return &PlaygroundUI{
-		view:    view,
-		maplist: make(map[string]*bool),
+		view: view,
 	}
 }
 
@@ -77,6 +75,10 @@ func (p *PlaygroundUI) Update(w, h int) {
 			command := CommandView()
 			command.MarginBottom = 20
 			command.MarginLeft = 20
+			partyList := NewPartyList(nil)
+			partyList.MarginTop = 40
+			partyList.MarginLeft = 20
+			p.view.AddChild(partyList)
 			p.view.AddChild(command)
 		})
 	}

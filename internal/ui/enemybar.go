@@ -8,7 +8,7 @@ import (
 
 	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/entry"
-	"github.com/Xinrea/ffreplay/internal/model"
+	"github.com/Xinrea/ffreplay/internal/model/role"
 	"github.com/Xinrea/ffreplay/internal/tag"
 	"github.com/Xinrea/ffreplay/util"
 	"github.com/yohamta/donburi"
@@ -30,7 +30,7 @@ func EnemyBarsView() *furex.View {
 						continue
 					}
 					enemy := component.Status.Get(e)
-					if enemy.Role != model.Boss || !sprite.Instances[0].IsActive(entry.GetTick(ecsInstance)) {
+					if enemy.Role != role.Boss || !sprite.Instances[0].IsActive(entry.GetTick(ecsInstance)) {
 						continue
 					}
 					v.AddChild(CreateEnemyBarView(cnt, e))

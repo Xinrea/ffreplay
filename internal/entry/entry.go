@@ -8,6 +8,7 @@ import (
 	"github.com/Xinrea/ffreplay/internal/data/fflogs"
 	"github.com/Xinrea/ffreplay/internal/layer"
 	"github.com/Xinrea/ffreplay/internal/model"
+	"github.com/Xinrea/ffreplay/internal/model/role"
 	"github.com/Xinrea/ffreplay/internal/tag"
 	"github.com/Xinrea/ffreplay/pkg/object"
 	"github.com/Xinrea/ffreplay/pkg/texture"
@@ -48,9 +49,9 @@ func (a *archetype) Spawn(ecs *ecs.ECS, cs ...donburi.IComponentType) *donburi.E
 func NewEnemy(ecs *ecs.ECS, pos f64.Vec2, ringSize float64, gameID int64, id int64, name string, isBoss bool, instanceCount int) *donburi.Entry {
 	enemy := Enemy.Spawn(ecs)
 	textureRing := texture.NewTextureFromFile("asset/target_enemy.png")
-	role := model.Boss
+	erole := role.Boss
 	if !isBoss {
-		role = model.NPC
+		erole = role.NPC
 	}
 	instances := []*model.Instance{}
 	for i := 0; i < instanceCount; i++ {
@@ -70,7 +71,7 @@ func NewEnemy(ecs *ecs.ECS, pos f64.Vec2, ringSize float64, gameID int64, id int
 		GameID:   gameID,
 		ID:       id,
 		Name:     name,
-		Role:     role,
+		Role:     erole,
 		HP:       1,
 		MaxHP:    1,
 		Mana:     10000,
@@ -100,7 +101,7 @@ func NewPet(ecs *ecs.ECS, gameID int64, id int64, name string, instanceCount int
 		GameID:   gameID,
 		ID:       id,
 		Name:     name,
-		Role:     model.Pet,
+		Role:     role.Pet,
 		HP:       1,
 		MaxHP:    1,
 		Mana:     10000,
@@ -110,7 +111,7 @@ func NewPet(ecs *ecs.ECS, gameID int64, id int64, name string, instanceCount int
 	return pet
 }
 
-func NewPlayer(ecs *ecs.ECS, role model.RoleType, pos f64.Vec2, detail *fflogs.PlayerDetail) *donburi.Entry {
+func NewPlayer(ecs *ecs.ECS, role role.RoleType, pos f64.Vec2, detail *fflogs.PlayerDetail) *donburi.Entry {
 	player := Player.Spawn(ecs)
 	var id int64 = 0
 	name := "测试玩家"

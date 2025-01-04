@@ -2,15 +2,13 @@ package fflogs
 
 import (
 	"net/http"
-
-	"github.com/Xinrea/ffreplay/internal/model"
 )
 
 type PlayerDetail struct {
-	ID     int64          `json:"id"`
-	Name   string         `json:"name"`
-	Type   model.RoleType `json:"type"`
-	Server string         `json:"server"`
+	ID     int64  `json:"id"`
+	Name   string `json:"name"`
+	Type   string `json:"type"`
+	Server string `json:"server"`
 }
 
 type PlayerDetails struct {

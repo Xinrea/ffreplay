@@ -8,10 +8,14 @@ import (
 	"strings"
 
 	"github.com/Xinrea/ffreplay/internal/component"
+	"github.com/Xinrea/ffreplay/internal/data/fflogs"
 	"github.com/Xinrea/ffreplay/internal/entry"
 	"github.com/Xinrea/ffreplay/internal/model"
+	"github.com/Xinrea/ffreplay/internal/model/role"
+	"github.com/Xinrea/ffreplay/internal/tag"
 	"github.com/Xinrea/ffreplay/pkg/vector"
 	"github.com/yohamta/furex/v2"
+	"golang.org/x/image/math/f64"
 )
 
 var ResultColor = color.NRGBA{24, 169, 248, 128}
@@ -22,6 +26,11 @@ type CommandHandler struct {
 	wrap    *furex.View
 	message *furex.View
 	input   *furex.View
+	player  PlayerCommand
+}
+
+type PlayerCommand struct {
+	idcnt int64
 }
 
 func (c *CommandHandler) CommitCommand(cmd string) {
@@ -39,9 +48,13 @@ func (c *CommandHandler) Execute(cmd string) {
 		c.AddResult("可用命令：")
 		c.AddResult("/map list - 查看地图列表")
 		c.AddResult("/map set <id> - 设置地图")
+		c.AddResult("/player add <name> <role> [player_hp] - 添加玩家")
+		c.AddResult("/player remove <id> - 移除玩家")
 		c.AddResult("/clear - 清空记录")
 	case "/map":
 		c.mapHandler(commands[1:])
+	case "/player":
+		c.playerHandler(commands[1:])
 	case "/clear":
 		c.message.RemoveAll()
 		c.message.SetHeight(12)
@@ -79,6 +92,57 @@ func (c *CommandHandler) mapHandler(cmds []string) {
 		}
 	default:
 		c.AddError("Invalid map command")
+	}
+}
+
+func (c *CommandHandler) playerHandler(cmds []string) {
+	if len(cmds) == 0 {
+		c.AddError("Invalid player command")
+		return
+	}
+	switch cmds[0] {
+	case "add":
+		if len(cmds) < 3 {
+			c.AddError("Invalid player add command")
+			break
+		}
+		r := role.StringToRole(cmds[2])
+		if r == -1 {
+			c.AddError("Invalid player role")
+			break
+		}
+		p := entry.NewPlayer(ecsInstance, r, f64.Vec2{0, 0}, &fflogs.PlayerDetail{
+			ID:     c.player.idcnt,
+			Name:   fmt.Sprintf("[%d]%s", c.player.idcnt, cmds[1]),
+			Server: "ffreplay",
+		})
+		for _, v := range root.FilterByTagName("PartyList") {
+			v.AddChild(NewPlayerItem(p))
+		}
+		c.AddResult("Player " + cmds[1] + " added")
+		c.player.idcnt += 1
+	case "remove":
+		if len(cmds) < 2 {
+			c.AddError("Invalid player remove command")
+			break
+		}
+		for _, v := range root.FilterByTagName("PartyList") {
+			for _, p := range v.GetChildren() {
+				if p.ID == cmds[1] {
+					v.RemoveChild(p)
+				}
+			}
+		}
+		for p := range tag.Player.Iter(ecsInstance.World) {
+			status := component.Status.Get(p)
+			if strconv.Itoa(int(status.ID)) == cmds[1] {
+				p.Remove()
+				c.AddResult("Player " + status.Name + " removed")
+				return
+			}
+		}
+	default:
+		c.AddError("Invalid player command")
 	}
 }
 

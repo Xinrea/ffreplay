@@ -12,6 +12,7 @@ import (
 	"github.com/Xinrea/ffreplay/internal/data/fflogs"
 	"github.com/Xinrea/ffreplay/internal/entry"
 	"github.com/Xinrea/ffreplay/internal/model"
+	"github.com/Xinrea/ffreplay/internal/model/role"
 	"github.com/Xinrea/ffreplay/internal/renderer"
 	"github.com/Xinrea/ffreplay/internal/system"
 	"github.com/Xinrea/ffreplay/internal/ui"
@@ -297,15 +298,15 @@ func (ms *FFScene) loadFFLogsReport() {
 	// create players
 	playerCnt := 0
 	for _, t := range players.Tanks {
-		ms.system.AddEntry(t.ID, entry.NewPlayer(ms.ecs, t.Type, f64.Vec2{}, &t))
+		ms.system.AddEntry(t.ID, entry.NewPlayer(ms.ecs, role.StringToRole(t.Type), f64.Vec2{}, &t))
 		playerCnt++
 	}
 	for _, h := range players.Healers {
-		ms.system.AddEntry(h.ID, entry.NewPlayer(ms.ecs, h.Type, f64.Vec2{}, &h))
+		ms.system.AddEntry(h.ID, entry.NewPlayer(ms.ecs, role.StringToRole(h.Type), f64.Vec2{}, &h))
 		playerCnt++
 	}
 	for _, d := range players.DPS {
-		ms.system.AddEntry(d.ID, entry.NewPlayer(ms.ecs, d.Type, f64.Vec2{}, &d))
+		ms.system.AddEntry(d.ID, entry.NewPlayer(ms.ecs, role.StringToRole(d.Type), f64.Vec2{}, &d))
 		playerCnt++
 	}
 	getInstanceCount := func(id int64) int {

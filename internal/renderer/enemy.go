@@ -3,7 +3,7 @@ package renderer
 import (
 	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/entry"
-	"github.com/Xinrea/ffreplay/internal/model"
+	"github.com/Xinrea/ffreplay/internal/model/role"
 	"github.com/Xinrea/ffreplay/internal/tag"
 	"github.com/Xinrea/ffreplay/pkg/object"
 	"github.com/Xinrea/ffreplay/pkg/texture"
@@ -40,9 +40,9 @@ func (r *Renderer) renderEnemy(ecs *ecs.ECS, screen *ebiten.Image, enemy *donbur
 
 		var c colorm.ColorM
 		// render target ring
-		if global.Debug || status.Role == model.Boss || global.RenderNPC {
+		if global.Debug || status.Role == role.Boss || global.RenderNPC {
 			geoM := texture.CenterGeoM(sprite.Texture)
-			if status.Role == model.NPC {
+			if status.Role == role.NPC {
 				geoM.Scale(0.5, 0.5)
 			}
 			geoM.Rotate(face)

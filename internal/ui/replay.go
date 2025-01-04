@@ -5,7 +5,7 @@ import (
 
 	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/entry"
-	"github.com/Xinrea/ffreplay/internal/model"
+	"github.com/Xinrea/ffreplay/internal/model/role"
 	"github.com/Xinrea/ffreplay/internal/tag"
 	"github.com/Xinrea/ffreplay/pkg/texture"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -72,7 +72,7 @@ func (f *FFUI) Update(w, h int) {
 		memberList := []*donburi.Entry{}
 		tag.PartyMember.Each(ecsInstance.World, func(e *donburi.Entry) {
 			status := component.Status.Get(e)
-			if status.Role == model.Pet {
+			if status.Role == role.Pet {
 				return
 			}
 			memberList = append(memberList, e)

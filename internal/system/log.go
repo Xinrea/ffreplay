@@ -11,6 +11,7 @@ import (
 	"github.com/Xinrea/ffreplay/internal/entry"
 	"github.com/Xinrea/ffreplay/internal/game/skills"
 	"github.com/Xinrea/ffreplay/internal/model"
+	"github.com/Xinrea/ffreplay/internal/model/role"
 	"github.com/Xinrea/ffreplay/internal/tag"
 	"github.com/Xinrea/ffreplay/util"
 	"github.com/fogleman/ease"
@@ -113,7 +114,7 @@ func (s *System) replayUpdate(ecs *ecs.ECS, tick int64) {
 			} else {
 				// not lerping for npc (normally invisible object in game)
 				previous := line.Status[instanceID][index-1]
-				if component.Status.Get(e).Role == model.NPC {
+				if component.Status.Get(e).Role == role.NPC {
 					normalUpdate(previous)
 				} else {
 					lerpUpdate(previous, status)

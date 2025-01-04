@@ -6,7 +6,7 @@ import (
 	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/data"
 	"github.com/Xinrea/ffreplay/internal/data/fflogs"
-	"github.com/Xinrea/ffreplay/internal/model"
+	"github.com/Xinrea/ffreplay/internal/model/role"
 	"github.com/Xinrea/ffreplay/internal/tag"
 	"github.com/Xinrea/ffreplay/util"
 	"github.com/yohamta/donburi"
@@ -61,8 +61,8 @@ func (s *System) Layout(w, h int) {
 
 func (s *System) AddEntry(id int64, player *donburi.Entry) {
 	s.EntryMap[id] = player
-	role := component.Status.Get(player).Role
-	if role != model.Boss && role != model.NPC {
+	prole := component.Status.Get(player).Role
+	if prole != role.Boss && prole != role.NPC {
 		s.PlayerList = append(s.PlayerList, player)
 	}
 }

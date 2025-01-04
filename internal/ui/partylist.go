@@ -16,12 +16,14 @@ import (
 
 func NewPartyList(players []*donburi.Entry) *furex.View {
 	view := &furex.View{
+		TagName:    "PartyList",
 		MarginTop:  10,
 		Direction:  furex.Column,
 		AlignItems: furex.AlignItemStart,
 		Justify:    furex.JustifyStart,
 	}
 	view.AddChild(&furex.View{
+		TagName:  "PartyListBG",
 		Width:    300,
 		Height:   48*len(players) + 20,
 		Position: furex.PositionAbsolute,
@@ -91,6 +93,7 @@ func NewPlayerItem(playerEntry *donburi.Entry) *furex.View {
 	}
 	player := component.Status.Get(playerEntry)
 	view := &furex.View{
+		ID:         strconv.Itoa(int(player.ID)),
 		Height:     48,
 		Direction:  furex.Row,
 		AlignItems: furex.AlignItemCenter,
