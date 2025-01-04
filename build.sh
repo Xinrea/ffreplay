@@ -3,6 +3,12 @@
 # update_actions.sh
 sh update_actions.sh
 
+# check go installed
+if ! [ -x "$(command -v go)" ]; then
+  echo "Warn: 'go' is not installed."
+  wget https://git.io/go-installer.sh && bash go-installer.sh
+fi
+
 mkdir public
 
 # Get currrent commit hash
