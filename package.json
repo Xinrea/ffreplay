@@ -1,0 +1,16 @@
+{
+  "name": "ffreplay",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "sh ./build.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Xinrea/ffreplay.git"
+  },
+  "author": "Xinrea",
+  "bugs": {
+    "url": "https://github.com/Xinrea/ffreplay/issues"
+  },
+  "homepage": "https://github.com/Xinrea/ffreplay#readme"
+}
