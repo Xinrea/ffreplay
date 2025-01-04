@@ -6,7 +6,8 @@ sh update_actions.sh
 # check go installed
 if ! [ -x "$(command -v go)" ]; then
   echo "Warn: 'go' is not installed."
-  curl -o go.sh https://git.io/go-installer.sh && bash go.sh
+  # Install go with script
+  curl -O https://git.io/go-installer.sh && chmod +x go-installer.sh && ./go-installer.sh
 fi
 
 mkdir public
