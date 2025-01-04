@@ -23,7 +23,7 @@ jobs:
       - name: Build
         env:
           CREDENTIAL: ${{ secrets.CREDENTIAL }}
-        run: sh build.sh && mkdir -r .vercel/output/ && cp -r public/* .vercel/output/
+        run: sh build.sh && mkdir -p .vercel/output/ && cp -r public/* .vercel/output/
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
