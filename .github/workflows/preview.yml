@@ -32,4 +32,11 @@ jobs:
         run: npm install --global vercel@latest
 
       - name: Deploy Project Artifacts to Vercel
-        run: vercel deploy --yes --prebuilt --target=preview --token=${{ secrets.VERCEL_TOKEN }}
+        run: |
+          vercel deploy --yes --prebuilt --target=preview --token=${{ secrets.VERCEL_TOKEN }} | tee deploy.log
+
+      - id: seturl
+        name: Set preview url
+        run: echo "url=$(tail -1 deploy.log)">> $GITHUB_OUTPUT
+
+      - run: echo "${{ steps.seturl.outputs.url }}"
