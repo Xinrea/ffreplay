@@ -4,6 +4,7 @@ import (
 	"image"
 	"image/color"
 
+	"github.com/Xinrea/ffreplay/internal/entry"
 	"github.com/Xinrea/ffreplay/pkg/texture"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -44,6 +45,7 @@ func (i *InputHandler) SetFocus(b bool) {
 // HandleJustPressedMouseButtonLeft implements furex.MouseLeftButtonHandler.
 func (i *InputHandler) HandleJustPressedMouseButtonLeft(frame image.Rectangle, x int, y int) bool {
 	i.focused = true
+	entry.GetGlobal(ecsInstance).UIFocus = true
 	return true
 }
 

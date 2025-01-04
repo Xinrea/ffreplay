@@ -25,6 +25,9 @@ func (s *System) ControlUpdate(ecs *ecs.ECS) {
 		return
 	}
 
+	if global.UIFocus {
+		return
+	}
 	if inpututil.IsKeyJustPressed(ebiten.KeyBackquote) {
 		global.Debug = !global.Debug
 		furex.Debug = !furex.Debug

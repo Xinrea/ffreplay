@@ -60,6 +60,7 @@ func (f *FocusHandler) HandleJustPressedMouseButtonLeft(frame image.Rectangle, x
 			fh.SetFocus(false)
 		}
 	}
+	entry.GetGlobal(ecsInstance).UIFocus = false
 	return false
 }
 
