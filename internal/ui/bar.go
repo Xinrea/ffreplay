@@ -63,7 +63,7 @@ func (b *Bar) Draw(screen *ebiten.Image, frame image.Rectangle, view *furex.View
 		progress = 0.0
 	}
 	if len(b.Segments) == 0 {
-		b.BG.Draw(screen, frame)
+		b.BG.Draw(screen, frame, nil)
 	} else {
 		s := 0.0
 		for i := range b.Segments {
@@ -73,12 +73,12 @@ func (b *Bar) Draw(screen *ebiten.Image, frame image.Rectangle, view *furex.View
 				frame.Min.Y,
 				frame.Min.X+int(e*float64(frame.Dx())),
 				frame.Max.Y,
-			))
+			), nil)
 			s = e
 		}
 	}
 
 	p := progress * float64(frame.Dx())
 	frame.Max.X = frame.Min.X + int(p)
-	b.FG.Draw(screen, frame)
+	b.FG.Draw(screen, frame, nil)
 }

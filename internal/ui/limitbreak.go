@@ -44,10 +44,10 @@ func (l *LimitBreak) Draw(screen *ebiten.Image, frame image.Rectangle, view *fur
 func (l *LimitBreak) RenderLimitbreakSingleBar(canvas *ebiten.Image, x, y float64, value int) {
 	s := ebiten.Monitor().DeviceScaleFactor()
 	bg := limitbreakTexture.GetNineSlice("limitbreak_bg.png")
-	bg.Draw(canvas, image.Rect(int(x), int(y), int(x+float64(bg.Width)*s*widthScale), int(y+float64(bg.Height)*s)))
+	bg.Draw(canvas, image.Rect(int(x), int(y), int(x+float64(bg.Width)*s*widthScale), int(y+float64(bg.Height)*s)), nil)
 	if value == 10000 {
 		full := limitbreakTexture.GetNineSlice("limitbreak_full.png")
-		full.Draw(canvas, image.Rect(int(x), int(y), int(x+float64(full.Width)*s*widthScale), int(y+float64(full.Height)*s)))
+		full.Draw(canvas, image.Rect(int(x), int(y), int(x+float64(full.Width)*s*widthScale), int(y+float64(full.Height)*s)), nil)
 	} else {
 		fg := limitbreakTexture.GetNineSlice("limitbreak_fg.png").Texture
 		fgWidth := float64(value)/10000*(float64(fg.Bounds().Dx())-26*widthScale) + 13.0*widthScale
@@ -58,5 +58,5 @@ func (l *LimitBreak) RenderLimitbreakSingleBar(canvas *ebiten.Image, x, y float6
 		canvas.DrawImage(subFG, op)
 	}
 	frame := limitbreakTexture.GetNineSlice("limitbreak_frame.png")
-	frame.Draw(canvas, image.Rect(int(x), int(y), int(x+float64(frame.Width)*s*widthScale), int(y+float64(frame.Height)*s)))
+	frame.Draw(canvas, image.Rect(int(x), int(y), int(x+float64(frame.Width)*s*widthScale), int(y+float64(frame.Height)*s)), nil)
 }

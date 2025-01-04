@@ -44,8 +44,8 @@ type Text struct {
 	ShadowColor  color.Color
 }
 
-func (t *Text) Update(v *furex.View) {
-	fontFace.Size = float64(v.Height)
+func (t *Text) Measure(fontSize float64) (float64, float64) {
+	fontFace.Size = fontSize
 	content := ""
 	if v, ok := t.Content.(string); ok {
 		content = v
@@ -53,7 +53,11 @@ func (t *Text) Update(v *furex.View) {
 	if v, ok := t.Content.(func() string); ok {
 		content = v()
 	}
-	w, _ := text.Measure(content, fontFace, 0)
+	return text.Measure(content, fontFace, 0)
+}
+
+func (t *Text) Update(v *furex.View) {
+	w, _ := t.Measure(float64(v.Height))
 	v.SetWidth(int(w))
 }
 

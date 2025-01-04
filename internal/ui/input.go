@@ -72,9 +72,12 @@ func (i *InputHandler) Update(v *furex.View) {
 		return
 	}
 	currentWidth := v.MustGetByID("content").Width
-	if currentWidth+18 < i.Width {
+	if currentWidth+18 <= i.Width {
 		i.runes = ebiten.AppendInputChars(i.runes[:0])
 		i.content += string(i.runes)
+	} else {
+		runes := []rune(i.content)
+		i.content = string(runes[:len(runes)-1])
 	}
 	// If the enter key is pressed, commit this
 	if repeatingKeyPressed(ebiten.KeyEnter) || repeatingKeyPressed(ebiten.KeyNumpadEnter) {
@@ -103,11 +106,13 @@ var _ Focusable = (*InputHandler)(nil)
 var _ furex.MouseLeftButtonHandler = (*InputHandler)(nil)
 var _ furex.MouseEnterLeaveHandler = (*InputHandler)(nil)
 
-func InputView(prefix string, width int) *furex.View {
+func InputView(prefix string, width int, commitHandler func(string)) *furex.View {
 	handler := &InputHandler{
-		Width: width,
+		Width:         width,
+		CommitHandler: commitHandler,
 	}
 	view := &furex.View{
+		TagName:   "input",
 		Direction: furex.Column,
 		Handler:   handler,
 	}

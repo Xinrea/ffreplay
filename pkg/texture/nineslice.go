@@ -57,7 +57,7 @@ func NewNineSlice(t *ebiten.Image, top, bottom, left, right int) *NineSlice {
 	}
 }
 
-func (n *NineSlice) Draw(screen *ebiten.Image, frame image.Rectangle) {
+func (n *NineSlice) Draw(screen *ebiten.Image, frame image.Rectangle, colorScale *ebiten.ColorScale) {
 	if frame.Dx() == 0 || frame.Dy() == 0 {
 		return
 	}
@@ -81,6 +81,9 @@ func (n *NineSlice) Draw(screen *ebiten.Image, frame image.Rectangle) {
 
 	if n.Top == 0 && n.Bottom == 0 && n.Left == 0 && n.Right == 0 {
 		op := &ebiten.DrawImageOptions{}
+		if colorScale != nil {
+			op.ColorScale.ScaleWithColorScale(*colorScale)
+		}
 		op.GeoM.Scale(float64(frame.Dx())/float64(w), float64(frame.Dy())/float64(h))
 		op.GeoM.Translate(float64(frame.Min.X), float64(frame.Min.Y))
 		screen.DrawImage(n.Texture, op)
@@ -90,6 +93,9 @@ func (n *NineSlice) Draw(screen *ebiten.Image, frame image.Rectangle) {
 	if n.SubImages[1] != nil {
 		// then draw the top
 		op := &ebiten.DrawImageOptions{}
+		if colorScale != nil {
+			op.ColorScale.ScaleWithColorScale(*colorScale)
+		}
 		op.GeoM.Scale(sx, sy)
 		op.GeoM.Scale(max(0, float64(frame.Dx()-n.Left-n.Right)/float64(w-n.Left-n.Right)), float64(n.Top)/float64(n.Top))
 		op.GeoM.Translate(float64(frame.Min.X)+left, float64(frame.Min.Y))
@@ -98,6 +104,9 @@ func (n *NineSlice) Draw(screen *ebiten.Image, frame image.Rectangle) {
 	if n.SubImages[5] != nil {
 		// then draw the right
 		op := &ebiten.DrawImageOptions{}
+		if colorScale != nil {
+			op.ColorScale.ScaleWithColorScale(*colorScale)
+		}
 		op.GeoM.Scale(sx, sy)
 		op.GeoM.Scale(float64(n.Right)/float64(n.Right), max(0, float64(frame.Dy()-n.Top-n.Bottom)/float64(h-n.Top-n.Bottom)))
 		op.GeoM.Translate(float64(frame.Max.X)-right, float64(frame.Min.Y)+top)
@@ -106,6 +115,9 @@ func (n *NineSlice) Draw(screen *ebiten.Image, frame image.Rectangle) {
 	if n.SubImages[4] != nil {
 		// first draw the center
 		op := &ebiten.DrawImageOptions{}
+		if colorScale != nil {
+			op.ColorScale.ScaleWithColorScale(*colorScale)
+		}
 		op.GeoM.Scale(sx, sy)
 		op.GeoM.Scale(max(0, float64(frame.Dx()-n.Left-n.Right)/float64(w-n.Left-n.Right)), max(0, float64(frame.Dy()-n.Top-n.Bottom)/float64(h-n.Top-n.Bottom)))
 		op.GeoM.Translate(float64(frame.Min.X)+left, float64(frame.Min.Y)+top)
@@ -114,6 +126,9 @@ func (n *NineSlice) Draw(screen *ebiten.Image, frame image.Rectangle) {
 	if n.SubImages[0] != nil {
 		// then draw the top left
 		op := &ebiten.DrawImageOptions{}
+		if colorScale != nil {
+			op.ColorScale.ScaleWithColorScale(*colorScale)
+		}
 		op.GeoM.Scale(sx, sy)
 		op.GeoM.Translate(float64(frame.Min.X), float64(frame.Min.Y))
 		screen.DrawImage(n.SubImages[0], op)
@@ -121,6 +136,9 @@ func (n *NineSlice) Draw(screen *ebiten.Image, frame image.Rectangle) {
 	if n.SubImages[2] != nil {
 		// then draw the top right
 		op := &ebiten.DrawImageOptions{}
+		if colorScale != nil {
+			op.ColorScale.ScaleWithColorScale(*colorScale)
+		}
 		op.GeoM.Scale(sx, sy)
 		op.GeoM.Translate(float64(frame.Max.X)-right, float64(frame.Min.Y))
 		screen.DrawImage(n.SubImages[2], op)
@@ -128,6 +146,9 @@ func (n *NineSlice) Draw(screen *ebiten.Image, frame image.Rectangle) {
 	if n.SubImages[3] != nil {
 		// then draw the left
 		op := &ebiten.DrawImageOptions{}
+		if colorScale != nil {
+			op.ColorScale.ScaleWithColorScale(*colorScale)
+		}
 		op.GeoM.Scale(sx, sy)
 		op.GeoM.Scale(float64(n.Left)/float64(n.Left), max(0, float64(frame.Dy()-n.Top-n.Bottom)/float64(h-n.Top-n.Bottom)))
 		op.GeoM.Translate(float64(frame.Min.X), float64(frame.Min.Y)+top)
@@ -136,6 +157,9 @@ func (n *NineSlice) Draw(screen *ebiten.Image, frame image.Rectangle) {
 	if n.SubImages[7] != nil {
 		// then draw the bottom
 		op := &ebiten.DrawImageOptions{}
+		if colorScale != nil {
+			op.ColorScale.ScaleWithColorScale(*colorScale)
+		}
 		op.GeoM.Scale(sx, sy)
 		op.GeoM.Scale(max(0, float64(frame.Dx()-n.Left-n.Right)/float64(w-n.Left-n.Right)), float64(n.Bottom)/float64(n.Bottom))
 		op.GeoM.Translate(float64(frame.Min.X)+left, float64(frame.Max.Y)-bottom)
@@ -144,6 +168,9 @@ func (n *NineSlice) Draw(screen *ebiten.Image, frame image.Rectangle) {
 	if n.SubImages[6] != nil {
 		// then draw the bottom left
 		op := &ebiten.DrawImageOptions{}
+		if colorScale != nil {
+			op.ColorScale.ScaleWithColorScale(*colorScale)
+		}
 		op.GeoM.Scale(sx, sy)
 		op.GeoM.Translate(float64(frame.Min.X), float64(frame.Max.Y)-bottom)
 		screen.DrawImage(n.SubImages[6], op)
@@ -151,6 +178,9 @@ func (n *NineSlice) Draw(screen *ebiten.Image, frame image.Rectangle) {
 	if n.SubImages[8] != nil {
 		// then draw the bottom right
 		op := &ebiten.DrawImageOptions{}
+		if colorScale != nil {
+			op.ColorScale.ScaleWithColorScale(*colorScale)
+		}
 		op.GeoM.Scale(sx, sy)
 		op.GeoM.Translate(float64(frame.Max.X)-right, float64(frame.Max.Y)-bottom)
 		screen.DrawImage(n.SubImages[8], op)

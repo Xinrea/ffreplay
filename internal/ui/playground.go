@@ -55,7 +55,7 @@ type FocusHandler struct {
 
 // HandleJustPressedMouseButtonLeft implements furex.MouseLeftButtonHandler.
 func (f *FocusHandler) HandleJustPressedMouseButtonLeft(frame image.Rectangle, x int, y int) bool {
-	for _, c := range f.view.GetChildren() {
+	for _, c := range f.view.FilterByTagName("input") {
 		if fh, ok := c.Handler.(Focusable); ok {
 			fh.SetFocus(false)
 		}
@@ -73,7 +73,10 @@ func (p *PlaygroundUI) Update(w, h int) {
 	global := entry.GetGlobal(ecsInstance)
 	if global.Loaded.Load() {
 		p.once.Do(func() {
-			p.view.AddChild(InputView("> ", 512))
+			command := CommandView()
+			command.MarginBottom = 20
+			command.MarginLeft = 20
+			p.view.AddChild(command)
 		})
 	}
 	s := ebiten.Monitor().DeviceScaleFactor()

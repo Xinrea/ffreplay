@@ -1,3 +1,4 @@
 <TextureAtlas>
     <SubTexture name="input_bg.png" x="28" y="84" w="28" h="28" top="8" right="12" bottom="8" left="12"/>
+    <SubTexture name="message_bg.png" x="84" y="0" w="44" h="44" top="18" right="18" bottom="18" left="18"/>
 </TextureAtlas>
