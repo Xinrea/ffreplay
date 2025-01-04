@@ -3,15 +3,13 @@
 
 name: Preview
 
-on:
-  push:
-    branches-ignore: ["release"]
-  pull_request:
-    branches-ignore: ["release"]
+on: pull_request
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
 
@@ -39,4 +37,8 @@ jobs:
         name: Set preview url
         run: echo "url=$(tail -1 deploy.log)">> $GITHUB_OUTPUT
 
-      - run: echo "${{ steps.seturl.outputs.url }}"
+      - name: add preview url to PR
+        uses: mshick/add-pr-comment@v2
+        with:
+          message: |
+            Vercel Preview URL: ${{ steps.seturl.outputs.url }}
