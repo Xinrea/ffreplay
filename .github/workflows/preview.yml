@@ -32,4 +32,4 @@ jobs:
         run: npm install --global vercel@latest
 
       - name: Deploy Project Artifacts to Vercel
-        run: vercel deploy --yes --prebuilt --target=preview --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel deploy --yes --prebuilt --target=development --token=${{ secrets.VERCEL_TOKEN }}
