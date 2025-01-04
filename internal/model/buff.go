@@ -17,6 +17,21 @@ const (
 	Debuff
 )
 
+// BuffFilter contains all useless buff id:
+// https://github.com/Xinrea/ffreplay/issues/17
+var BuffFilter = map[int64]bool{}
+
+func init() {
+	ids := []int64{
+		1061, 1079, 1080, 1081, 1082, 1083, 1084, 1085, 1086,
+		353, 354, 355, 356, 357, 360, 361, 362, 363, 364, 365, 366, 367, 368,
+		413, 414, 902, 2932,
+	}
+	for _, id := range ids {
+		BuffFilter[id+1000000] = true
+	}
+}
+
 type BuffList struct {
 	buffs []*Buff
 }
@@ -34,7 +49,14 @@ func (bl *BuffList) Update(now int64) {
 }
 
 func (bl *BuffList) SetBuffs(buffs []*Buff) {
-	bl.buffs = append(bl.buffs, buffs...)
+	filtered := []*Buff{}
+	for _, b := range buffs {
+		if BuffFilter[b.ID] {
+			continue
+		}
+		filtered = append(filtered, b)
+	}
+	bl.buffs = append(bl.buffs, filtered...)
 }
 
 func (bl *BuffList) Buffs() []*Buff {
@@ -55,6 +77,9 @@ func (bl *BuffList) DeBuffs() (ret []*Buff) {
 }
 
 func (bl *BuffList) Add(buff *Buff) {
+	if BuffFilter[buff.ID] {
+		return
+	}
 	index := -1
 	for i, b := range bl.buffs {
 		if b.ID == buff.ID {
