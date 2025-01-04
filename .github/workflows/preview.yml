@@ -5,9 +5,9 @@ name: Preview
 
 on:
   push:
-    branches: ["!release"]
+    branches-ignore: ["release"]
   pull_request:
-    branches: ["!release"]
+    branches-ignore: ["release"]
 
 jobs:
   build:
