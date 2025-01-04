@@ -3,17 +3,6 @@
 # update_actions.sh
 sh update_actions.sh
 
-# check go installed
-if ! [ -x "$(command -v go)" ]; then
-  echo "Warn: 'go' is not installed."
-  # Install go with script
-  # downloads then runs the script
-  curl -O https://git.io/go-installer.sh
-  echo "Script downloaded. Run the script to install go."
-  chmod +x go-installer.sh
-  ./go-installer.sh
-fi
-
 mkdir public
 
 # Get currrent commit hash
