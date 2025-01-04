@@ -56,7 +56,7 @@ func (s *System) replayUpdate(ecs *ecs.ECS, tick int64) {
 	// marker event
 	for s.WorldMarkerEvents.Cursor < len(s.WorldMarkerEvents.Events) && s.WorldMarkerEvents.Events[s.WorldMarkerEvents.Cursor].LocalTick <= tick {
 		event := s.WorldMarkerEvents.Events[s.WorldMarkerEvents.Cursor]
-		s.applyLog(ecs, tick, nil, event)
+		s.applyLog(ecs, nil, event)
 		s.WorldMarkerEvents.Cursor++
 	}
 
@@ -125,13 +125,13 @@ func (s *System) replayUpdate(ecs *ecs.ECS, tick int64) {
 		// consume all events until event that should not happen at this tick
 		for line.Cursor < len(line.Events) && line.Events[line.Cursor].LocalTick <= tick {
 			event := line.Events[line.Cursor]
-			s.applyLog(ecs, tick, e, event)
+			s.applyLog(ecs, e, event)
 			line.Cursor++
 		}
 	}
 }
 
-func (s *System) applyLog(ecs *ecs.ECS, tick int64, target *donburi.Entry, event fflogs.FFLogsEvent) {
+func (s *System) applyLog(ecs *ecs.ECS, target *donburi.Entry, event fflogs.FFLogsEvent) {
 	debug := entry.IsDebug(ecs)
 
 	if event.SourceID != nil && s.EntryMap[*event.SourceID] != nil {
