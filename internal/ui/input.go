@@ -23,6 +23,9 @@ type InputHandler struct {
 	runes         []rune
 	content       string
 	counter       int64
+	historyMode   bool
+	historyIndex  int
+	history       []string
 	CommitHandler func(string)
 }
 
@@ -76,6 +79,9 @@ func (i *InputHandler) Update(v *furex.View) {
 	currentWidth := v.MustGetByID("content").Width
 	if currentWidth+18 <= i.Width {
 		i.runes = ebiten.AppendInputChars(i.runes[:0])
+		if len(i.runes) > 0 {
+			i.historyMode = false
+		}
 		i.content += string(i.runes)
 	} else {
 		runes := []rune(i.content)
@@ -83,14 +89,40 @@ func (i *InputHandler) Update(v *furex.View) {
 	}
 	// If the enter key is pressed, commit this
 	if repeatingKeyPressed(ebiten.KeyEnter) || repeatingKeyPressed(ebiten.KeyNumpadEnter) {
+		i.historyMode = false
 		if i.CommitHandler != nil {
 			i.CommitHandler(i.content)
 		}
+		i.history = append(i.history, i.content)
 		i.content = ""
+	}
+
+	if repeatingKeyPressed(ebiten.KeyArrowUp) {
+		if !i.historyMode {
+			i.historyMode = true
+			i.historyIndex = len(i.history)
+		}
+		i.historyIndex -= 1
+		if i.historyIndex >= 0 {
+			i.content = i.history[i.historyIndex]
+		} else {
+			i.historyIndex++
+		}
+	}
+	if repeatingKeyPressed(ebiten.KeyArrowDown) {
+		if i.historyMode {
+			i.historyIndex += 1
+			if i.historyIndex < len(i.history) {
+				i.content = i.history[i.historyIndex]
+			} else {
+				i.historyIndex--
+			}
+		}
 	}
 
 	// If the backspace key is pressed, remove one character.
 	if repeatingKeyPressed(ebiten.KeyBackspace) {
+		i.historyMode = false
 		if len(i.content) >= 1 {
 			runes := []rune(i.content)
 			i.content = string(runes[:len(runes)-1])
