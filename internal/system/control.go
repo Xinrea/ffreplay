@@ -5,7 +5,6 @@ import (
 
 	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/entry"
-	"github.com/Xinrea/ffreplay/internal/tag"
 	"github.com/Xinrea/ffreplay/pkg/vector"
 	"github.com/Xinrea/ffreplay/util"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -47,11 +46,15 @@ func (s *System) ControlUpdate(ecs *ecs.ECS) {
 }
 
 func (s *System) playgroundControl(ecs *ecs.ECS) {
+	global := entry.GetGlobal(ecs)
 	camera := entry.GetCamera(ecs)
 	vel := vector.Vector{}
-	if player, ok := tag.Player.First(ecs.World); ok {
-		status := component.Status.Get(player)
-		obj := component.Sprite.Get(player).Instances[0]
+	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+		global.TargetPlayer = nil
+	}
+	if global.TargetPlayer != nil {
+		status := component.Status.Get(global.TargetPlayer)
+		obj := component.Sprite.Get(global.TargetPlayer).Instances[0]
 		if !status.IsDead() {
 			// remember that face is relative to north
 			if ebiten.IsKeyPressed(ebiten.KeyW) {

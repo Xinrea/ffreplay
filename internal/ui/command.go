@@ -136,6 +136,10 @@ func (c *CommandHandler) playerHandler(cmds []string) {
 		for p := range tag.Player.Iter(ecsInstance.World) {
 			status := component.Status.Get(p)
 			if strconv.Itoa(int(status.ID)) == cmds[1] {
+				global := entry.GetGlobal(ecsInstance)
+				if global.TargetPlayer == p {
+					global.TargetPlayer = nil
+				}
 				p.Remove()
 				c.AddResult("Player " + status.Name + " removed")
 				return
