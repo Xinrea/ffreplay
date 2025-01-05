@@ -48,7 +48,7 @@ func (c *CommandHandler) Execute(cmd string) {
 		c.AddResult("可用命令：")
 		c.AddResult("/map list - 查看地图列表")
 		c.AddResult("/map set <id> - 设置地图")
-		c.AddResult("/player add <name> <role> [player_hp] - 添加玩家")
+		c.AddResult("/player add <name> <role> - 添加玩家")
 		c.AddResult("/player remove <id> - 移除玩家")
 		c.AddResult("/clear - 清空记录")
 	case "/map":
@@ -96,6 +96,7 @@ func (c *CommandHandler) mapHandler(cmds []string) {
 }
 
 func (c *CommandHandler) playerHandler(cmds []string) {
+	global := entry.GetGlobal(ecsInstance)
 	if len(cmds) == 0 {
 		c.AddError("Invalid player command")
 		return
@@ -111,7 +112,13 @@ func (c *CommandHandler) playerHandler(cmds []string) {
 			c.AddError("Invalid player role")
 			break
 		}
-		p := entry.NewPlayer(ecsInstance, r, f64.Vec2{0, 0}, &fflogs.PlayerDetail{
+		initialPos := f64.Vec2{0, 0}
+		mapData := component.Map.Get(component.Map.MustFirst(ecsInstance.World))
+		if mapData.Config != nil {
+			current := mapData.Config.Maps[mapData.Config.CurrentMap]
+			initialPos = f64.Vec2{current.Offset.X * 25, current.Offset.Y * 25}
+		}
+		p := entry.NewPlayer(ecsInstance, r, initialPos, &fflogs.PlayerDetail{
 			ID:     c.player.idcnt,
 			Name:   fmt.Sprintf("[%d]%s", c.player.idcnt, cmds[1]),
 			Server: "ffreplay",
@@ -136,7 +143,6 @@ func (c *CommandHandler) playerHandler(cmds []string) {
 		for p := range tag.Player.Iter(ecsInstance.World) {
 			status := component.Status.Get(p)
 			if strconv.Itoa(int(status.ID)) == cmds[1] {
-				global := entry.GetGlobal(ecsInstance)
 				if global.TargetPlayer == p {
 					global.TargetPlayer = nil
 				}

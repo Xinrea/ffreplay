@@ -25,7 +25,7 @@ func NewPartyList(players []*donburi.Entry) *furex.View {
 	view.AddChild(&furex.View{
 		TagName:  "PartyListBG",
 		Width:    300,
-		Height:   48*len(players) + 20,
+		Height:   48*len(players) + 5,
 		Position: furex.PositionAbsolute,
 		Handler:  &Sprite{NineSliceTexture: texture.NewNineSlice(texture.NewTextureFromFile("asset/partylist_bg.png"), 5, 14, 0, 0)},
 	})
