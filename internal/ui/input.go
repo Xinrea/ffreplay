@@ -3,13 +3,14 @@ package ui
 import (
 	"image"
 	"image/color"
+	"strings"
 
 	"github.com/Xinrea/ffreplay/internal/entry"
 	"github.com/Xinrea/ffreplay/pkg/texture"
+	"github.com/Xinrea/ffreplay/util"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/yohamta/furex/v2"
-	"golang.design/x/clipboard"
 )
 
 var messageTextureAtlas = texture.NewTextureAtlasFromFile("asset/ui/message.xml")
@@ -95,11 +96,15 @@ func (i *InputHandler) Update(v *furex.View) {
 	if !i.focused {
 		return
 	}
+
+	if i.handlePaste() {
+		return
+	}
 	i.handleInput(v)
 	i.handleEnterKey()
 	i.handleArrowKeys()
 	i.handleBackspaceKey()
-	i.handlePaste()
+
 	i.counter += 1
 }
 
@@ -165,26 +170,24 @@ func (i *InputHandler) handleBackspaceKey() {
 	}
 }
 
-func (i *InputHandler) handlePaste() {
+func (i *InputHandler) handlePaste() bool {
 	// if windows, use ctrl+v
 	if inpututil.IsKeyJustPressed(ebiten.KeyV) && ebiten.IsKeyPressed(ebiten.KeyControl) {
-		err := clipboard.Init()
-		if err != nil {
-			return
-		}
 		i.historyMode = false
-		i.content += string(clipboard.Read(clipboard.FmtText))
+		clipboardContent := util.ReadClipboard()
+		i.content += strings.Split(clipboardContent, "\n")[0]
+		return true
 	}
 
 	// if mac, use cmd+v
 	if inpututil.IsKeyJustPressed(ebiten.KeyV) && ebiten.IsKeyPressed(ebiten.KeyMeta) {
-		err := clipboard.Init()
-		if err != nil {
-			return
-		}
 		i.historyMode = false
-		i.content += string(clipboard.Read(clipboard.FmtText))
+		clipboardContent := util.ReadClipboard()
+		i.content += strings.Split(clipboardContent, "\n")[0]
+		return true
 	}
+
+	return false
 }
 
 func (i *InputHandler) Content() string {
