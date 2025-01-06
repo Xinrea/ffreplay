@@ -1,8 +1,6 @@
 github.com/PuerkitoBio/goquery v1.9.2/go.mod h1:GHPCaP0ODyyxqcNoFGYlAprUFH81NuRPd0GX3Zu2Mvk=
 github.com/PuerkitoBio/goquery v1.10.1 h1:Y8JGYUkXWTGRB6Ars3+j3kN0xg1YqqlwvdTV8WTFQcU=
 github.com/PuerkitoBio/goquery v1.10.1/go.mod h1:IYiHrOMps66ag56LEH7QYDDupKXyo5A8qrjIx3ZtujY=
-github.com/Xinrea/furex/v2 v2.4.6-children h1:UujrPQAE/jTlGdlZUikLuMoAPJZ3jZ0zyjrRvbayxd4=
-github.com/Xinrea/furex/v2 v2.4.6-children/go.mod h1:hDe7A/HSbCFE2egqvfjM6OiY+oT0353weNSEuvjogyY=
 github.com/Xinrea/furex/v2 v2.5.0 h1:fll0QHgfXOsLzAtZN7lHLrrPPR41u3eKlmnlEZRFAZY=
 github.com/Xinrea/furex/v2 v2.5.0/go.mod h1:hDe7A/HSbCFE2egqvfjM6OiY+oT0353weNSEuvjogyY=
 github.com/andybalholm/cascadia v1.3.2/go.mod h1:7gtRlve5FxPPgIgX36uWBX58OdBsSS6lUvCFb+h7KvU=
@@ -131,7 +129,6 @@ golang.org/x/crypto v0.23.0/go.mod h1:CKFgDieR+mRhux2Lsu27y0fO304Db0wZe70UKqHu0v
 golang.org/x/crypto v0.27.0/go.mod h1:1Xngt8kV6Dvbssa53Ziq6Eqn0HqbZi5Z6R0ZpwQzt70=
 golang.org/x/crypto v0.31.0 h1:ihbySMvVjLAeSH1IbfcRTkD/iNscyz8rGzjF/E5hV6U=
 golang.org/x/crypto v0.31.0/go.mod h1:kDsLvtWBEx7MV9tJOj9bnXsPbxwJQ6csT/x4KIN4Ssk=
-golang.org/x/exp v0.0.0-20190731235908-ec7cb31e5a56 h1:estk1glOnSVeJ9tdEZZc5mAMDZk5lNJNyJ6DvrBkTEU=
 golang.org/x/exp/shiny v0.0.0-20250103183323-7d7fa50e5329 h1:Ug/T97FgR3Ddcsy4i6qNu6cvas+zS5aEgWYQ1CQW9hw=
 golang.org/x/exp/shiny v0.0.0-20250103183323-7d7fa50e5329/go.mod h1:3F+MieQB7dRYLTmnncoFbb1crS5lfQoTfDgQy6K4N0o=
 golang.org/x/image v0.23.0 h1:HseQ7c2OpPKTPVzNjG5fwJsOTCiiwS4QdsYi5XU6H68=

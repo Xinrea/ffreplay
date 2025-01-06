@@ -22,10 +22,13 @@ func QuerySkill(skill model.Skill) model.Skill {
 		if actionInfo == nil {
 			return skill
 		}
+
 		if !strings.HasPrefix(actionInfo.Name, "_rsv") {
 			skill.Name = actionInfo.Name
 		}
+
 		skill.IsGCD = actionInfo.IsGCD
+
 		return skill
 	}
 }

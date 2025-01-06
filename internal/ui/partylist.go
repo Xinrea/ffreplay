@@ -61,6 +61,7 @@ func NewPartyList(players []*donburi.Entry) *furex.View {
 	for _, p := range players {
 		view.AddChild(NewPlayerItem(p))
 	}
+
 	return view
 }
 
@@ -81,6 +82,7 @@ func (p *PlayerItem) Handler() furex.ViewHandler {
 	p.handler.MouseLeave = p.HandleMouseLeave
 	p.handler.JustPressedMouseButtonLeft = p.HandleJustPressedMouseButtonLeft
 	p.handler.JustReleasedMouseButtonLeft = p.HandleJustReleasedMouseButtonLeft
+
 	return p.handler
 }
 
@@ -92,6 +94,7 @@ func (p *PlayerItem) Update(v *furex.View) {
 	} else {
 		v.MustGetByID("hover").Attrs.Display = furex.DisplayNone
 	}
+
 	targetPlayer := entry.GetGlobal(ecsInstance).TargetPlayer
 	if targetPlayer == p.Player {
 		v.MustGetByID("selected").Attrs.Display = furex.DisplayFlex
@@ -111,6 +114,7 @@ func (p *PlayerItem) Update(v *furex.View) {
 
 func (p *PlayerItem) HandleJustPressedMouseButtonLeft(_ image.Rectangle, x, y int) bool {
 	entry.GetGlobal(ecsInstance).TargetPlayer = p.Player
+
 	return false
 }
 
@@ -119,6 +123,7 @@ func (p *PlayerItem) HandleJustReleasedMouseButtonLeft(_ image.Rectangle, x, y i
 
 func (p *PlayerItem) HandleMouseEnter(x, y int) bool {
 	p.Hovered = true
+
 	return true
 }
 
@@ -198,9 +203,11 @@ func NewPlayerItem(playerEntry *donburi.Entry) *furex.View {
 	statusView.AddChild(createHPMPBar(player))
 
 	view.AddChild(statusView)
+
 	bufflist := BuffListView(player.BuffList)
 	bufflist.SetMarginTop(BuffListOffsetY)
 	bufflist.SetMarginLeft(5)
+
 	view.AddChild(bufflist)
 
 	return view
@@ -245,6 +252,7 @@ func createCastingView(e *donburi.Entry) *furex.View {
 					if cast == nil {
 						return 0
 					}
+
 					return float64(util.TickToMS(entry.GetTick(ecsInstance)-cast.StartTick)) / float64(cast.Cast)
 				},
 				BG: castAtlas.GetNineSlice("casting_frame.png"),
@@ -257,6 +265,7 @@ func createCastingView(e *donburi.Entry) *furex.View {
 			if cast == nil {
 				return ""
 			}
+
 			return cast.Name
 		},
 		Color:        color.White,
@@ -277,6 +286,7 @@ func createHPMPBar(player *model.StatusData) *furex.View {
 
 	createBarView := func(bar *Bar, text *Text, w, h int) *furex.View {
 		const MarginTop = 3
+
 		return furex.NewView(
 			furex.Direction(furex.Column),
 			furex.AlignItems(furex.AlignItemEnd),

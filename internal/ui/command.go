@@ -8,19 +8,17 @@ import (
 	"strings"
 
 	"github.com/Xinrea/ffreplay/internal/component"
-	"github.com/Xinrea/ffreplay/internal/data/fflogs"
 	"github.com/Xinrea/ffreplay/internal/entry"
 	"github.com/Xinrea/ffreplay/internal/model"
-	"github.com/Xinrea/ffreplay/internal/model/role"
-	"github.com/Xinrea/ffreplay/internal/tag"
 	"github.com/Xinrea/ffreplay/pkg/vector"
 	"github.com/yohamta/furex/v2"
-	"golang.org/x/image/math/f64"
 )
 
-var ResultColor = color.NRGBA{24, 169, 248, 128}
-var PromptColor = color.NRGBA{255, 255, 255, 128}
-var ErrorColor = color.NRGBA{255, 0, 0, 128}
+var (
+	ResultColor = color.NRGBA{24, 169, 248, 128}
+	PromptColor = color.NRGBA{255, 255, 255, 128}
+	ErrorColor  = color.NRGBA{255, 0, 0, 128}
+)
 
 type CommandHandler struct {
 	wrap    *furex.View
@@ -37,11 +35,13 @@ func (c *CommandHandler) CommitCommand(cmd string) {
 	if cmd == "" {
 		return
 	}
+
 	c.Execute(cmd)
 }
 
 func (c *CommandHandler) Execute(cmd string) {
 	c.AddEcho(cmd)
+
 	commands := strings.Split(cmd, " ")
 	switch commands[0] {
 	case "/help":
@@ -66,15 +66,19 @@ func (c *CommandHandler) Execute(cmd string) {
 func (c *CommandHandler) mapHandler(cmds []string) {
 	if len(cmds) == 0 {
 		c.AddError("Invalid map command")
+
 		return
 	}
+
 	switch cmds[0] {
 	case "list":
 		mapids := []string{}
 		for k, m := range model.MapCache {
 			mapids = append(mapids, fmt.Sprintf("%d-%s", k, m.Path))
 		}
+
 		sort.Strings(mapids)
+
 		for _, m := range mapids {
 			c.AddResult(m)
 		}
@@ -82,89 +86,18 @@ func (c *CommandHandler) mapHandler(cmds []string) {
 		mapData := component.Map.Get(component.Map.MustFirst(ecsInstance.World))
 		cameraData := entry.GetCamera(ecsInstance)
 		id, _ := strconv.Atoi(cmds[1])
+
 		if m, ok := model.MapCache[id]; ok {
 			mapData.Config = m.Load()
 			current := mapData.Config.Maps[mapData.Config.CurrentMap]
 			cameraData.Position = vector.NewVector(current.Offset.X*25, current.Offset.Y*25)
+
 			c.AddResult("Setup map " + cmds[1])
 		} else {
 			c.AddError("Invalid map id")
 		}
 	default:
 		c.AddError("Invalid map command")
-	}
-}
-
-func (c *CommandHandler) playerHandler(cmds []string) {
-	global := entry.GetGlobal(ecsInstance)
-
-	if len(cmds) == 0 {
-		c.AddError("Invalid player command")
-
-		return
-	}
-
-	switch cmds[0] {
-	case "add":
-		if len(cmds) < 3 {
-			c.AddError("Invalid player add command")
-
-			break
-		}
-
-		r := role.StringToRole(cmds[2])
-		if r == -1 {
-			c.AddError("Invalid player role")
-
-			break
-		}
-
-		initialPos := f64.Vec2{0, 0}
-
-		mapData := component.Map.Get(component.Map.MustFirst(ecsInstance.World))
-		if mapData.Config != nil {
-			current := mapData.Config.Maps[mapData.Config.CurrentMap]
-			initialPos = f64.Vec2{current.Offset.X * 25, current.Offset.Y * 25}
-		}
-
-		p := entry.NewPlayer(ecsInstance, r, initialPos, &fflogs.PlayerDetail{
-			ID:     c.player.idcnt,
-			Name:   fmt.Sprintf("[%d]%s", c.player.idcnt, cmds[1]),
-			Server: "ffreplay",
-		})
-		root.FilterByTagName("PartyList")[0].AddChild(NewPlayerItem(p))
-		c.AddResult("Player " + cmds[1] + " added")
-		c.player.idcnt += 1
-	case "remove":
-		if len(cmds) < 2 {
-			c.AddError("Invalid player remove command")
-
-			break
-		}
-
-		for _, v := range root.FilterByTagName("PartyList") {
-			for _, p := range v.GetChildren() {
-				if p.Attrs.ID == cmds[1] {
-					v.RemoveChild(p)
-				}
-			}
-		}
-
-		for p := range tag.Player.Iter(ecsInstance.World) {
-			status := component.Status.Get(p)
-			if strconv.Itoa(int(status.ID)) == cmds[1] {
-				if global.TargetPlayer == p {
-					global.TargetPlayer = nil
-				}
-
-				p.Remove()
-				c.AddResult("Player " + status.Name + " removed")
-
-				return
-			}
-		}
-	default:
-		c.AddError("Invalid player command")
 	}
 }
 
@@ -220,13 +153,23 @@ func (c *CommandHandler) AddError(err string) {
 
 func CommandView() *furex.View {
 	handler := &CommandHandler{}
-	view := furex.NewView(furex.TagName("command"), furex.Width(400), furex.Direction(furex.Column), furex.Justify(furex.JustifyEnd))
+	view := furex.NewView(
+		furex.TagName("command"),
+		furex.Width(400),
+		furex.Direction(furex.Column),
+		furex.Justify(furex.JustifyEnd),
+	)
 
-	message := furex.NewView(furex.TagName("message"), furex.Direction(furex.Column), furex.Width(400), furex.Height(34), furex.Handler(&Sprite{
-		NineSliceTexture: messageTextureAtlas.GetNineSlice("message_bg.png"),
-		BlendAlpha:       true,
-		Alpha:            0.5,
-	}))
+	message := furex.NewView(
+		furex.TagName("message"),
+		furex.Direction(furex.Column),
+		furex.Width(400),
+		furex.Height(34),
+		furex.Handler(&Sprite{
+			NineSliceTexture: messageTextureAtlas.GetNineSlice("message_bg.png"),
+			BlendAlpha:       true,
+			Alpha:            0.5,
+		}))
 	text := &Text{
 		Align:   furex.AlignItemStart,
 		Content: "输入 /help 查看可用命令",
@@ -234,10 +177,12 @@ func CommandView() *furex.View {
 	}
 	message.AddChild(furex.NewView(furex.MarginLeft(10), furex.MarginTop(5), furex.Height(12), furex.Handler(text)))
 	view.AddChild(message)
+
 	input := InputView("> ", 400, handler.CommitCommand)
 	view.AddChild(input)
 	handler.wrap = view
 	handler.message = message
 	handler.input = input
+
 	return view
 }

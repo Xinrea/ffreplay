@@ -8,6 +8,7 @@ import (
 
 	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/entry"
+	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/internal/model/role"
 	"github.com/Xinrea/ffreplay/internal/tag"
 	"github.com/Xinrea/ffreplay/util"
@@ -41,7 +42,14 @@ func EnemyBarsView() *furex.View {
 func CreateEnemyBarView(i int, enemy *donburi.Entry) *furex.View {
 	sprite := component.Sprite.Get(enemy)
 	status := component.Status.Get(enemy)
-	view := furex.NewView(furex.Position(furex.PositionAbsolute), furex.Direction(furex.Column), furex.AlignItems(furex.AlignItemStart), furex.Right(520), furex.Top(20+100*i))
+
+	view := furex.NewView(
+		furex.Position(furex.PositionAbsolute),
+		furex.Direction(furex.Column),
+		furex.AlignItems(furex.AlignItemStart),
+		furex.Right(520),
+		furex.Top(20+100*i),
+	)
 	nameView := furex.NewView(furex.Height(13), furex.Handler(&Text{
 		Content:      status.Name,
 		Color:        color.NRGBA{252, 183, 190, 255},
@@ -50,8 +58,43 @@ func CreateEnemyBarView(i int, enemy *donburi.Entry) *furex.View {
 		ShadowOffset: 2,
 		ShadowColor:  color.NRGBA{0, 0, 0, 128},
 	}))
-	// add casting view
+
+	nameCast := furex.NewView(
+		furex.Width(500),
+		furex.Direction(furex.Row),
+		furex.Justify(furex.JustifySpaceBetween),
+		furex.AlignItems(furex.AlignItemEnd),
+	)
+	nameCast.AddChild(nameView)
+	nameCast.AddChild(createEnemyCastingView(sprite))
+	view.AddChild(nameCast)
+
+	view.AddChild(
+		furex.NewView(
+			furex.ID("bar"),
+			furex.Width(500),
+			furex.Height(10),
+			furex.MarginTop(5),
+			furex.Handler(&Bar{
+				Progress: float64(status.HP) / float64(status.MaxHP),
+				FG:       barAtlas.GetNineSlice("red_bar_fg.png"),
+				BG:       barAtlas.GetNineSlice("red_bar_bg.png"),
+			}),
+		))
+
+	view.AddChild(createEnemyHPTextView(status))
+
+	bufflist := BuffListView(status.BuffList.Buffs())
+	bufflist.Attrs.MarginTop = 5
+
+	view.AddChild(bufflist)
+
+	return view
+}
+
+func createEnemyCastingView(sprite *model.SpriteData) *furex.View {
 	castView := furex.NewView(furex.Height(24), furex.Direction(furex.Column), furex.AlignItems(furex.AlignItemEnd))
+
 	if sprite.Instances[0].GetCast() != nil {
 		cast := sprite.Instances[0].GetCast()
 		castView.AddChild(furex.NewView(furex.Width(210), furex.Height(12), furex.Handler(&Bar{
@@ -68,17 +111,11 @@ func CreateEnemyBarView(i int, enemy *donburi.Entry) *furex.View {
 			ShadowColor:  color.NRGBA{240, 152, 0, 128},
 		})))
 	}
-	nameCast := furex.NewView(furex.Width(500), furex.Direction(furex.Row), furex.Justify(furex.JustifySpaceBetween), furex.AlignItems(furex.AlignItemEnd))
-	nameCast.AddChild(nameView)
-	nameCast.AddChild(castView)
-	view.AddChild(nameCast)
-	view.AddChild(furex.NewView(furex.ID("bar"), furex.Width(500), furex.Height(10), furex.MarginTop(5), furex.Handler(&Bar{
-		Progress: float64(status.HP) / float64(status.MaxHP),
-		FG:       barAtlas.GetNineSlice("red_bar_fg.png"),
-		BG:       barAtlas.GetNineSlice("red_bar_bg.png"),
-	}),
-	))
 
+	return castView
+}
+
+func createEnemyHPTextView(status *model.StatusData) *furex.View {
 	hpView := furex.NewView(furex.Width(500), furex.Direction(furex.Row), furex.Justify(furex.JustifySpaceBetween))
 	hpView.AddChild(furex.NewView(furex.MarginTop(5), furex.Height(13), furex.Handler(&Text{
 		Content:      formatInt(status.HP) + " / " + formatInt(status.MaxHP),
@@ -96,14 +133,9 @@ func CreateEnemyBarView(i int, enemy *donburi.Entry) *furex.View {
 		Shadow:       true,
 		ShadowOffset: 2,
 		ShadowColor:  color.NRGBA{0, 0, 0, 128},
-	}),
-	))
+	})))
 
-	view.AddChild(hpView)
-	bufflist := BuffListView(status.BuffList.Buffs())
-	bufflist.Attrs.MarginTop = 5
-	view.AddChild(bufflist)
-	return view
+	return hpView
 }
 
 func formatInt(n int) string {
@@ -118,12 +150,15 @@ func formatInt(n int) string {
 
 	// 使用 strings.Builder 来构建结果字符串
 	var builder strings.Builder
+
 	for i, digit := range str {
 		// 每三位添加一个逗号
 		if i != 0 && (length-i)%3 == 0 {
 			builder.WriteRune(',')
 		}
+
 		builder.WriteRune(digit)
 	}
+
 	return builder.String()
 }

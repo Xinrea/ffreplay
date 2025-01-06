@@ -58,51 +58,7 @@ func CheckBoxView(size int, multiple bool, value *bool, label string, clickHandl
 		ClickHandler: clickHandler,
 	}))
 
-	if multiple {
-		view.AddChild(
-			furex.NewView(
-				furex.Position(furex.PositionAbsolute),
-				furex.Width(size),
-				furex.Height(size),
-				furex.Top(0),
-				furex.Left(0),
-				furex.Handler(&Sprite{
-					NineSliceTexture: multicheckboxTextureAtlas.GetNineSlice("checkbox_bg.png"),
-				})))
-		view.AddChild(
-			furex.NewView(furex.ID("checked"),
-				furex.Hidden(true),
-				furex.Position(furex.PositionAbsolute),
-				furex.Width(size),
-				furex.Height(size),
-				furex.Top(0),
-				furex.Left(0),
-				furex.Handler(&Sprite{
-					NineSliceTexture: multicheckboxTextureAtlas.GetNineSlice("checkbox_checked.png"),
-				})))
-	} else {
-		view.AddChild(
-			furex.NewView(
-				furex.Position(furex.PositionAbsolute),
-				furex.Width(size),
-				furex.Height(size),
-				furex.Top(0),
-				furex.Left(0),
-				furex.Handler(&Sprite{
-					NineSliceTexture: checkboxTextureAtlas.GetNineSlice("checkbox_bg.png"),
-				})))
-		view.AddChild(
-			furex.NewView(
-				furex.ID("checked"),
-				furex.Hidden(true),
-				furex.Position(furex.PositionAbsolute),
-				furex.Width(size), furex.Height(size),
-				furex.Top(0),
-				furex.Left(0),
-				furex.Handler(&Sprite{
-					NineSliceTexture: checkboxTextureAtlas.GetNineSlice("checkbox_checked.png"),
-				})))
-	}
+	addCheckBoxSprites(multiple, size, view)
 
 	view.AddChild(
 		furex.NewView(
@@ -119,4 +75,33 @@ func CheckBoxView(size int, multiple bool, value *bool, label string, clickHandl
 			})))
 
 	return view
+}
+
+func addCheckBoxSprites(multiple bool, size int, view *furex.View) {
+	atlas := checkboxTextureAtlas
+	if multiple {
+		atlas = multicheckboxTextureAtlas
+	}
+
+	view.AddChild(
+		furex.NewView(
+			furex.Position(furex.PositionAbsolute),
+			furex.Width(size),
+			furex.Height(size),
+			furex.Top(0),
+			furex.Left(0),
+			furex.Handler(&Sprite{
+				NineSliceTexture: atlas.GetNineSlice("checkbox_bg.png"),
+			})))
+	view.AddChild(
+		furex.NewView(furex.ID("checked"),
+			furex.Hidden(true),
+			furex.Position(furex.PositionAbsolute),
+			furex.Width(size),
+			furex.Height(size),
+			furex.Top(0),
+			furex.Left(0),
+			furex.Handler(&Sprite{
+				NineSliceTexture: atlas.GetNineSlice("checkbox_checked.png"),
+			})))
 }

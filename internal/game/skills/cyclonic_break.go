@@ -23,19 +23,33 @@ func NewCyclonicBreak() model.Skill {
 					Offset:      0,
 					DisplayTime: 200,
 					EffectRange: object.NewFanObject(object.DefaultNegativeSkillRangeOption, vector.Vector{}, 20, 20*METER),
-					Finish: func(ecs *ecs.ECS, rangeObj object.Object, caster *donburi.Entry, casterInstance int, target *donburi.Entry, targetInstance int) {
+					Finish: func(
+						ecs *ecs.ECS,
+						rangeObj object.Object,
+						caster *donburi.Entry,
+						casterInstance int,
+						target *donburi.Entry,
+						targetInstance int,
+					) {
 						casterPos := component.Sprite.Get(caster).Instances[casterInstance].Object.Position()
 						targetPos := component.Sprite.Get(target).Instances[targetInstance].Object.Position()
 						radian := targetPos.Sub(casterPos).Radian()
 						rangeObj.UpdateRotate(radian)
 					},
 				},
-				// at the same time, postion the range object to the target
+				// at the same time, position the range object to the target.
 				{
 					Offset:      0,
 					DisplayTime: 2000,
 					EffectRange: object.NewFanObject(object.DefaultNegativeSkillRangeOption, vector.Vector{}, 20, 20*METER),
-					Finish: func(ecs *ecs.ECS, rangeObj object.Object, caster *donburi.Entry, casterInstance int, target *donburi.Entry, targetInstance int) {
+					Finish: func(
+						ecs *ecs.ECS,
+						rangeObj object.Object,
+						caster *donburi.Entry,
+						casterInstance int,
+						target *donburi.Entry,
+						targetInstance int,
+					) {
 						casterPos := component.Sprite.Get(caster).Instances[casterInstance].Object.Position()
 						targetPos := component.Sprite.Get(target).Instances[targetInstance].Object.Position()
 						radian := targetPos.Sub(casterPos).Radian()
@@ -46,7 +60,14 @@ func NewCyclonicBreak() model.Skill {
 					Offset:      2000,
 					DisplayTime: 2000,
 					EffectRange: object.NewFanObject(object.DefaultNegativeSkillRangeOption, vector.Vector{}, 20, 20*METER),
-					Finish: func(ecs *ecs.ECS, rangeObj object.Object, caster *donburi.Entry, casterInstance int, target *donburi.Entry, targetInstance int) {
+					Finish: func(
+						ecs *ecs.ECS,
+						rangeObj object.Object,
+						caster *donburi.Entry,
+						casterInstance int,
+						target *donburi.Entry,
+						targetInstance int,
+					) {
 						casterPos := component.Sprite.Get(caster).Instances[casterInstance].Object.Position()
 						targetPos := component.Sprite.Get(target).Instances[targetInstance].Object.Position()
 						radian := targetPos.Sub(casterPos).Radian()
@@ -57,7 +78,14 @@ func NewCyclonicBreak() model.Skill {
 					Offset:      4000,
 					DisplayTime: 2000,
 					EffectRange: object.NewFanObject(object.DefaultNegativeSkillRangeOption, vector.Vector{}, 20, 20*METER),
-					Finish: func(ecs *ecs.ECS, rangeObj object.Object, caster *donburi.Entry, casterInstance int, target *donburi.Entry, targetInstance int) {
+					Finish: func(
+						ecs *ecs.ECS,
+						rangeObj object.Object,
+						caster *donburi.Entry,
+						casterInstance int,
+						target *donburi.Entry,
+						targetInstance int,
+					) {
 						casterPos := component.Sprite.Get(caster).Instances[casterInstance].Object.Position()
 						targetPos := component.Sprite.Get(target).Instances[targetInstance].Object.Position()
 						radian := targetPos.Sub(casterPos).Radian()

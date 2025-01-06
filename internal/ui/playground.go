@@ -35,11 +35,14 @@ func NewPlaygroundUI(ecs *ecs.ECS) *PlaygroundUI {
 				fh.SetFocus(false)
 			}
 		}
+
 		entry.GetGlobal(ecsInstance).UIFocus = false
+
 		return false
 	}
 
 	root.AddChild(baseWrap)
+
 	return &PlaygroundUI{
 		base: baseWrap,
 	}
@@ -50,15 +53,16 @@ func (p *PlaygroundUI) Update(w, h int) {
 	if global.Loaded.Load() {
 		p.once.Do(func() {
 			command := CommandView()
-			command.Attrs.MarginBottom = 20
-			command.Attrs.MarginLeft = 20
+			command.Attrs.MarginBottom = UIPadding
+			command.Attrs.MarginLeft = UIPadding
 			partyList := NewPartyList(nil)
 			partyList.Attrs.MarginTop = 40
-			partyList.Attrs.MarginLeft = 20
+			partyList.Attrs.MarginLeft = UIPadding
 			p.base.AddChild(partyList)
 			p.base.AddChild(command)
 		})
 	}
+
 	s := ebiten.Monitor().DeviceScaleFactor()
 	furex.GlobalScale = s
 

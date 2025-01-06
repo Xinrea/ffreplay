@@ -58,40 +58,53 @@ func FetchLogEvents(c *fflogs.FFLogsClient, code string, fight fflogs.ReportFigh
 			if _, ok := status[sourceID]; !ok {
 				status[sourceID] = make(InstanceStatus)
 			}
+
 			instanceID := 1
+
 			if events[i].SourceInstance != nil {
 				instanceID = int(*events[i].SourceInstance)
 			}
+
 			newStatus := extractSourceStatusFromEvent(events[i])
-			if len(status[sourceID][instanceID]) == 0 || status[sourceID][instanceID][len(status[sourceID][instanceID])-1].Tick != events[i].LocalTick {
+
+			if len(status[sourceID][instanceID]) == 0 ||
+				status[sourceID][instanceID][len(status[sourceID][instanceID])-1].Tick != events[i].LocalTick {
 				status[sourceID][instanceID] = append(status[sourceID][instanceID], newStatus)
 			} else {
 				status[sourceID][instanceID][len(status[sourceID][instanceID])-1] = newStatus
 			}
 		}
+
 		if events[i].TargetID != nil && events[i].TargetResources != nil {
 			targetID := *events[i].TargetID
 			if _, ok := status[targetID]; !ok {
 				status[targetID] = make(InstanceStatus)
 			}
+
 			instanceID := 1
+
 			if events[i].TargetInstance != nil {
 				instanceID = int(*events[i].TargetInstance)
 			}
+
 			newStatus := extractTargetStatusFromEvent(events[i])
-			if len(status[targetID][instanceID]) == 0 || status[targetID][instanceID][len(status[targetID][instanceID])-1].Tick != events[i].LocalTick {
+
+			if len(status[targetID][instanceID]) == 0 ||
+				status[targetID][instanceID][len(status[targetID][instanceID])-1].Tick != events[i].LocalTick {
 				status[targetID][instanceID] = append(status[targetID][instanceID], newStatus)
 			} else {
 				status[targetID][instanceID][len(status[targetID][instanceID])-1] = newStatus
 			}
 		}
 	}
+
 	return status, events
 }
 
 func PreloadAbilityInfo(events []fflogs.FFLogsEvent, counter *atomic.Int32) {
 	for i := range events {
 		counter.Add(1)
+
 		if events[i].Ability != nil {
 			_ = texture.NewAbilityTexture(events[i].Ability.AbilityIcon)
 			_ = model.GetAction(events[i].Ability.Guid)

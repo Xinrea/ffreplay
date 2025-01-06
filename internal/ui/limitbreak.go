@@ -2,7 +2,6 @@ package ui
 
 import (
 	"image"
-	"log"
 	"sync"
 
 	"github.com/Xinrea/ffreplay/pkg/texture"
@@ -36,6 +35,7 @@ func (l *LimitBreak) Handler() furex.ViewHandler {
 	l.handler.Extra = l
 	l.handler.Update = l.update
 	l.handler.Draw = l.draw
+
 	return l.handler
 }
 
@@ -59,6 +59,7 @@ func (l *LimitBreak) draw(screen *ebiten.Image, frame image.Rectangle, view *fur
 
 			continue
 		}
+
 		l.RenderLimitbreakSingleBar(screen, x+float64(i)*150*s, y, value)
 		value = 0
 	}
@@ -80,16 +81,16 @@ func (l *LimitBreak) RenderLimitbreakSingleBar(canvas *ebiten.Image, x, y float6
 		fg := limitbreakTexture.GetNineSlice("limitbreak_fg.png").Texture
 		fgValidWidth := float64(fg.Bounds().Dx()) - SingleBarPadding*2*widthScale
 		fgWidth := float64(value)/SingleBarMaxValue*fgValidWidth + SingleBarPadding*widthScale
+
 		subImg := fg.SubImage(image.Rect(0, 0, int(fgWidth*widthScale), fg.Bounds().Dy()))
-		subFG, ok := subImg.(*ebiten.Image)
-		if !ok {
-			log.Fatal("failed to convert sub image to ebiten.Image")
+		if subFG, ok := subImg.(*ebiten.Image); ok {
+			op := &ebiten.DrawImageOptions{}
+			op.GeoM.Scale(s, s*widthScale)
+			op.GeoM.Translate(x, y)
+			canvas.DrawImage(subFG, op)
 		}
-		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Scale(s, s*widthScale)
-		op.GeoM.Translate(x, y)
-		canvas.DrawImage(subFG, op)
 	}
+
 	frame := limitbreakTexture.GetNineSlice("limitbreak_frame.png")
 	frame.Draw(canvas,
 		image.Rect(int(x), int(y), int(x+float64(frame.Width)*s*widthScale), int(y+float64(frame.Height)*s)),

@@ -14,9 +14,16 @@ import (
 	"github.com/yohamta/furex/v2"
 )
 
-var ecsInstance *ecs.ECS
-var barAtlas = texture.NewTextureAtlasFromFile("asset/ui/bar.xml")
-var castAtlas = texture.NewTextureAtlasFromFile("asset/ui/casting.xml")
+var (
+	ecsInstance *ecs.ECS
+	barAtlas    = texture.NewTextureAtlasFromFile("asset/ui/bar.xml")
+	castAtlas   = texture.NewTextureAtlasFromFile("asset/ui/casting.xml")
+)
+
+const (
+	UIHalf    = 0.5
+	UIPadding = 20
+)
 
 type FFUI struct {
 	view *furex.View
@@ -24,8 +31,8 @@ type FFUI struct {
 }
 
 type UI interface {
-	Update(int, int)
-	Draw(*ebiten.Image)
+	Update(w int, h int)
+	Draw(screen *ebiten.Image)
 }
 
 var _ UI = (*FFUI)(nil)
@@ -33,8 +40,19 @@ var _ UI = (*FFUI)(nil)
 func NewReplayUI(ecs *ecs.ECS) *FFUI {
 	ecsInstance = ecs
 	view := furex.NewView(furex.Direction(furex.Row))
-	view.AddChild(furex.NewView(
-		furex.ID("left"), furex.Grow(0.5), furex.MarginTop(20), furex.MarginLeft(20), furex.MarginBottom(20), furex.AlignItems(furex.AlignItemStart), furex.AlignContent(furex.AlignContentSpaceBetween), furex.Direction(furex.Column)))
+	view.AddChild(
+		furex.NewView(
+			furex.ID("left"),
+			furex.Grow(UIHalf),
+			furex.MarginTop(UIPadding),
+			furex.MarginLeft(UIPadding),
+			furex.MarginBottom(UIPadding),
+			furex.AlignItems(furex.AlignItemStart),
+			furex.AlignContent(furex.AlignContentSpaceBetween),
+			furex.Direction(furex.Column),
+		),
+	)
+
 	return &FFUI{
 		view: view,
 	}
@@ -45,6 +63,7 @@ func (f *FFUI) Update(w, h int) {
 	if !global.Loaded.Load() {
 		return
 	}
+
 	f.once.Do(func() {
 		lview := f.view.MustGetByID("left")
 		tlview := furex.NewView(furex.AlignItems(furex.AlignItemStart), furex.Direction(furex.Column))
@@ -53,15 +72,17 @@ func (f *FFUI) Update(w, h int) {
 			BarNumber: &global.Bar,
 		})))
 
-		// TODO Considering party member changes (remove/add)
 		memberList := []*donburi.Entry{}
+
 		tag.PartyMember.Each(ecsInstance.World, func(e *donburi.Entry) {
 			status := component.Status.Get(e)
 			if status.Role == role.Pet {
 				return
 			}
+
 			memberList = append(memberList, e)
 		})
+
 		tlview.AddChild(NewPartyList(memberList))
 		lview.AddChild(tlview)
 
@@ -71,7 +92,9 @@ func (f *FFUI) Update(w, h int) {
 		playProgressView := ProgressBarView()
 		f.view.AddChild(playProgressView)
 	})
+
 	furex.GlobalScale = ebiten.Monitor().DeviceScaleFactor()
+
 	f.view.UpdateWithSize(w, h)
 }
 

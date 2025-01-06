@@ -4,7 +4,6 @@ import (
 	"log"
 
 	"github.com/Xinrea/ffreplay/internal/component"
-	"github.com/Xinrea/ffreplay/internal/entry"
 	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/internal/tag"
 	"github.com/Xinrea/ffreplay/pkg/texture"
@@ -17,35 +16,30 @@ func (r *Renderer) BackgroundRender(ecs *ecs.ECS, screen *ebiten.Image) {
 	if !global.Loaded.Load() {
 		return
 	}
+
 	camera := component.Camera.Get(tag.Camera.MustFirst(ecs.World))
+
 	g, ok := tag.Background.First(ecs.World)
 	if !ok {
 		return
 	}
+
 	ground := component.Map.Get(g)
 	if ground.Config == nil {
 		return
 	}
-	// only auto update phase in replay mode
-	if global.ReplayMode {
-		if len(ground.Config.Phases) > 0 {
-			// find current phase
-			p := entry.GetPhase(ecs)
-			if p < 0 || p >= len(ground.Config.Phases) {
-				p = 0
-			}
-			ground.Config.CurrentPhase = p
-		}
-	}
+
 	// phase is setted
 	if ground.Config.CurrentPhase >= 0 {
 		r.mapRender(camera, screen, ground.Config.Phases[ground.Config.CurrentPhase])
+
 		return
 	}
 	// have no choice
 	if len(ground.Config.Maps) == 1 {
 		for _, m := range ground.Config.Maps {
 			r.mapRender(camera, screen, m)
+
 			return
 		}
 	}
@@ -62,9 +56,12 @@ func (r *Renderer) mapRender(camera *model.CameraData, screen *ebiten.Image, m m
 	if m.Scale > 0 {
 		geoM.Scale(m.Scale, m.Scale)
 	}
+
 	geoM.Translate(m.Offset.X*25, m.Offset.Y*25)
+
 	wordM := camera.WorldMatrixInverted()
 	geoM.Concat(wordM)
+
 	screen.DrawImage(m.Texture, &ebiten.DrawImageOptions{
 		Filter: ebiten.FilterLinear,
 		GeoM:   geoM,

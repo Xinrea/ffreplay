@@ -17,63 +17,30 @@ func (s *System) WorldMarkerUpdate(ecs *ecs.ECS) {
 	if entry.GetGlobal(s.ecs).ReplayMode {
 		return
 	}
+
 	camera := component.Camera.Get(tag.Camera.MustFirst(ecs.World))
+
 	if ebiten.IsKeyPressed(ebiten.KeyControl) {
-		if inpututil.IsKeyJustPressed(ebiten.Key1) {
-			// create marker at cursor
-			x, y := ebiten.CursorPosition()
-			wx, wy := camera.ScreenToWorld(float64(x), float64(y))
-			entry.NewWorldMarker(ecs, model.WorldMarker1, f64.Vec2{wx, wy})
-			log.Println("Create marker at", wx, wy)
-		}
-		if inpututil.IsKeyJustPressed(ebiten.Key2) {
-			// create marker at cursor
-			x, y := ebiten.CursorPosition()
-			wx, wy := camera.ScreenToWorld(float64(x), float64(y))
-			entry.NewWorldMarker(ecs, model.WorldMarker2, f64.Vec2{wx, wy})
-			log.Println("Create marker at", wx, wy)
-		}
-		if inpututil.IsKeyJustPressed(ebiten.Key3) {
-			// create marker at cursor
-			x, y := ebiten.CursorPosition()
-			wx, wy := camera.ScreenToWorld(float64(x), float64(y))
-			entry.NewWorldMarker(ecs, model.WorldMarker3, f64.Vec2{wx, wy})
-			log.Println("Create marker at", wx, wy)
-		}
-		if inpututil.IsKeyJustPressed(ebiten.Key4) {
-			// create marker at cursor
-			x, y := ebiten.CursorPosition()
-			wx, wy := camera.ScreenToWorld(float64(x), float64(y))
-			entry.NewWorldMarker(ecs, model.WorldMarker4, f64.Vec2{wx, wy})
-			log.Println("Create marker at", wx, wy)
-		}
-		if inpututil.IsKeyJustPressed(ebiten.Key5) {
-			// create marker at cursor
-			x, y := ebiten.CursorPosition()
-			wx, wy := camera.ScreenToWorld(float64(x), float64(y))
-			entry.NewWorldMarker(ecs, model.WorldMarkerA, f64.Vec2{wx, wy})
-			log.Println("Create marker at", wx, wy)
-		}
-		if inpututil.IsKeyJustPressed(ebiten.Key6) {
-			// create marker at cursor
-			x, y := ebiten.CursorPosition()
-			wx, wy := camera.ScreenToWorld(float64(x), float64(y))
-			entry.NewWorldMarker(ecs, model.WorldMarkerB, f64.Vec2{wx, wy})
-			log.Println("Create marker at", wx, wy)
-		}
-		if inpututil.IsKeyJustPressed(ebiten.Key7) {
-			// create marker at cursor
-			x, y := ebiten.CursorPosition()
-			wx, wy := camera.ScreenToWorld(float64(x), float64(y))
-			entry.NewWorldMarker(ecs, model.WorldMarkerC, f64.Vec2{wx, wy})
-			log.Println("Create marker at", wx, wy)
-		}
-		if inpututil.IsKeyJustPressed(ebiten.Key8) {
-			// create marker at cursor
-			x, y := ebiten.CursorPosition()
-			wx, wy := camera.ScreenToWorld(float64(x), float64(y))
-			entry.NewWorldMarker(ecs, model.WorldMarkerD, f64.Vec2{wx, wy})
-			log.Println("Create marker at", wx, wy)
+		for key, marker := range map[ebiten.Key]model.WorldMarkerType{
+			ebiten.Key1: model.WorldMarker1,
+			ebiten.Key2: model.WorldMarker2,
+			ebiten.Key3: model.WorldMarker3,
+			ebiten.Key4: model.WorldMarker4,
+			ebiten.Key5: model.WorldMarkerA,
+			ebiten.Key6: model.WorldMarkerB,
+			ebiten.Key7: model.WorldMarkerC,
+			ebiten.Key8: model.WorldMarkerD,
+		} {
+			if inpututil.IsKeyJustPressed(key) {
+				createMarkerAtCursor(ecs, camera, marker)
+			}
 		}
 	}
+}
+
+func createMarkerAtCursor(ecs *ecs.ECS, camera *model.CameraData, marker model.WorldMarkerType) {
+	x, y := ebiten.CursorPosition()
+	wx, wy := camera.ScreenToWorld(float64(x), float64(y))
+	entry.NewWorldMarker(ecs, marker, f64.Vec2{wx, wy})
+	log.Println("Create marker at", wx, wy)
 }

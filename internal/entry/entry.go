@@ -36,13 +36,20 @@ var (
 		component.Sprite,
 		component.Status,
 	)
+	Enemy = newArchetype(
+		tag.GameObject,
+		tag.Enemy,
+		tag.Buffable,
+		component.Velocity,
+		component.Sprite,
+		component.Status,
+	)
+	Background  = newArchetype(tag.Background, component.Map)
+	Camera      = newArchetype(tag.Camera, component.Camera)
+	Timeline    = newArchetype(tag.Timeline, component.Timeline)
+	WorldMarker = newArchetype(tag.WorldMarker, component.WorldMarker)
+	Global      = newArchetype(tag.Global, component.Global)
 )
-var Enemy = newArchetype(tag.GameObject, tag.Enemy, tag.Buffable, component.Velocity, component.Sprite, component.Status)
-var Background = newArchetype(tag.Background, component.Map)
-var Camera = newArchetype(tag.Camera, component.Camera)
-var Timeline = newArchetype(tag.Timeline, component.Timeline)
-var WorldMarker = newArchetype(tag.WorldMarker, component.WorldMarker)
-var Global = newArchetype(tag.Global, component.Global)
 
 type archetype struct {
 	components []donburi.IComponentType
@@ -59,17 +66,20 @@ func (a *archetype) Spawn(ecs *ecs.ECS, cs ...donburi.IComponentType) *donburi.E
 		layer.Default,
 		append(a.components, cs...)...,
 	))
+
 	return e
 }
 
-// boss gameID is unique in ffxiv, id is used in events
+// boss gameID is unique in ffxiv, id is used in events.
 func NewEnemy(ecs *ecs.ECS, pos f64.Vec2, ringSize float64, gameID int64, id int64, name string, isBoss bool, instanceCount int) *donburi.Entry {
 	enemy := Enemy.Spawn(ecs)
 	textureRing := texture.NewTextureFromFile("asset/target_enemy.png")
+
 	erole := role.Boss
 	if !isBoss {
 		erole = role.NPC
 	}
+
 	instances := []*model.Instance{}
 	for i := 0; i < instanceCount; i++ {
 		instances = append(instances, &model.Instance{
@@ -78,6 +88,7 @@ func NewEnemy(ecs *ecs.ECS, pos f64.Vec2, ringSize float64, gameID int64, id int
 			LastActive: -1,
 		})
 	}
+
 	component.Sprite.Set(enemy, &model.SpriteData{
 		Texture:     textureRing,
 		Scale:       ringSize,
@@ -95,11 +106,13 @@ func NewEnemy(ecs *ecs.ECS, pos f64.Vec2, ringSize float64, gameID int64, id int
 		MaxMana:  10000,
 		BuffList: model.NewBuffList(),
 	})
+
 	return enemy
 }
 
 func NewPet(ecs *ecs.ECS, gameID int64, id int64, name string, instanceCount int) *donburi.Entry {
 	pet := Pet.Spawn(ecs)
+
 	instances := []*model.Instance{}
 	for i := 0; i < instanceCount; i++ {
 		instances = append(instances, &model.Instance{
@@ -108,6 +121,7 @@ func NewPet(ecs *ecs.ECS, gameID int64, id int64, name string, instanceCount int
 			LastActive: -1,
 		})
 	}
+
 	component.Sprite.Set(pet, &model.SpriteData{
 		Texture:     nil,
 		Scale:       0,
@@ -125,18 +139,23 @@ func NewPet(ecs *ecs.ECS, gameID int64, id int64, name string, instanceCount int
 		MaxMana:  10000,
 		BuffList: model.NewBuffList(),
 	})
+
 	return pet
 }
 
 func NewPlayer(ecs *ecs.ECS, role role.RoleType, pos f64.Vec2, detail *fflogs.PlayerDetail) *donburi.Entry {
 	player := Player.Spawn(ecs)
+
 	var id int64 = 0
+
 	name := "测试玩家"
+
 	if detail != nil {
 		id = detail.ID
 		name = fmt.Sprintf("%s @%s", detail.Name, detail.Server)
 		log.Println("Player:", name)
 	}
+
 	obj := object.NewPointObject(vector.NewVector(pos[0], pos[1]))
 	// this scales target ring into size 50pixel, which means 1m in game
 	component.Sprite.Set(player, &model.SpriteData{
@@ -180,6 +199,7 @@ func NewGlobal(ecs *ecs.ECS) *donburi.Entry {
 		Tick:  0,
 		Speed: 10,
 	})
+
 	return global
 }
 
@@ -189,12 +209,14 @@ func NewCamera(ecs *ecs.ECS) *donburi.Entry {
 		ZoomFactor: 0,
 		Rotation:   0,
 	})
+
 	return camera
 }
 
 func NewTimeline(ecs *ecs.ECS, data *model.TimelineData) *donburi.Entry {
 	timeline := Timeline.Spawn(ecs)
 	component.Timeline.Set(timeline, data)
+
 	return timeline
 }
 
@@ -204,14 +226,17 @@ func NewWorldMarker(ecs *ecs.ECS, markerType model.WorldMarkerType, pos f64.Vec2
 		marker := component.WorldMarker.Get(m)
 		if marker.Type == markerType {
 			marker.Position = pos
+
 			return m
 		}
 	}
+
 	marker := WorldMarker.Spawn(ecs)
 	component.WorldMarker.Set(marker, &model.WorldMarkerData{
 		Type:     markerType,
 		Position: pos,
 	})
+
 	return marker
 }
 
@@ -247,5 +272,6 @@ func GetPhase(ecs *ecs.ECS) int {
 			return i - 1
 		}
 	}
+
 	return len(global.Phases) - 1
 }

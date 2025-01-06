@@ -100,6 +100,7 @@ func (i *InputHandler) Update(v *furex.View) {
 	if i.handlePaste() {
 		return
 	}
+
 	i.handleInput(v)
 	i.handleEnterKey()
 	i.handleArrowKeys()
@@ -115,6 +116,7 @@ func (i *InputHandler) handleInput(v *furex.View) {
 		if len(i.runes) > 0 {
 			i.historyMode = false
 		}
+
 		i.content += string(i.runes)
 	} else {
 		runes := []rune(i.content)
@@ -140,6 +142,7 @@ func (i *InputHandler) handleArrowKeys() {
 			i.historyMode = true
 			i.historyIndex = len(i.history)
 		}
+
 		i.historyIndex -= 1
 		if i.historyIndex >= 0 {
 			i.content = i.history[i.historyIndex]
@@ -176,6 +179,7 @@ func (i *InputHandler) handlePaste() bool {
 		i.historyMode = false
 		clipboardContent := util.ReadClipboard()
 		i.content += strings.Split(clipboardContent, "\n")[0]
+
 		return true
 	}
 
@@ -184,6 +188,7 @@ func (i *InputHandler) handlePaste() bool {
 		i.historyMode = false
 		clipboardContent := util.ReadClipboard()
 		i.content += strings.Split(clipboardContent, "\n")[0]
+
 		return true
 	}
 
@@ -225,6 +230,7 @@ func InputView(prefix string, width int, commitHandler func(string)) *furex.View
 					if handler.focused && handler.counter%60 > 30 {
 						return prefix + handler.Content() + "|"
 					}
+
 					return prefix + handler.Content()
 				},
 				Color:        color.White,
@@ -232,5 +238,6 @@ func InputView(prefix string, width int, commitHandler func(string)) *furex.View
 				ShadowOffset: 2,
 				ShadowColor:  color.NRGBA{0, 0, 0, 128},
 			})))
+
 	return view
 }

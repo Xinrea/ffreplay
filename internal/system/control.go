@@ -31,7 +31,9 @@ func (s *System) ControlUpdate(ecs *ecs.ECS) {
 		global.Debug = !global.Debug
 		furex.Debug = !furex.Debug
 	}
+
 	_, dy := ebiten.Wheel()
+
 	if util.IsWasm() {
 		camera.ZoomFactor -= int(dy)
 	} else {
@@ -49,26 +51,32 @@ func (s *System) playgroundControl(ecs *ecs.ECS) {
 	global := entry.GetGlobal(ecs)
 	camera := entry.GetCamera(ecs)
 	vel := vector.Vector{}
+
 	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
 		global.TargetPlayer = nil
 	}
+
 	if global.TargetPlayer != nil {
-		status := component.Status.Get(global.TargetPlayer)
 		obj := component.Sprite.Get(global.TargetPlayer).Instances[0]
+
+		status := component.Status.Get(global.TargetPlayer)
 		if !status.IsDead() {
 			// remember that face is relative to north
 			if ebiten.IsKeyPressed(ebiten.KeyW) {
 				vel[1] = -MaxVelocity * math.Cos(obj.Face)
 				vel[0] = MaxVelocity * math.Sin(obj.Face)
 			}
+
 			if ebiten.IsKeyPressed(ebiten.KeyS) {
 				vel[1] = MaxVelocity * math.Cos(obj.Face)
 				vel[0] = -MaxVelocity * math.Sin(obj.Face)
 			}
+
 			if ebiten.IsKeyPressed(ebiten.KeyD) {
 				vel[1] = MaxVelocity * math.Sin(obj.Face)
 				vel[0] = MaxVelocity * math.Cos(obj.Face)
 			}
+
 			if ebiten.IsKeyPressed(ebiten.KeyA) {
 				vel[1] = -MaxVelocity * math.Sin(obj.Face)
 				vel[0] = -MaxVelocity * math.Cos(obj.Face)
@@ -80,12 +88,14 @@ func (s *System) playgroundControl(ecs *ecs.ECS) {
 					obj.Face -= 2 * math.Pi
 				}
 			}
+
 			if ebiten.IsKeyPressed(ebiten.KeyQ) {
 				obj.Face -= 0.05
 				if obj.Face < -math.Pi {
 					obj.Face += 2 * math.Pi
 				}
 			}
+
 			obj.Object.Translate(vel)
 			// bind camera on player
 			camera.Position = obj.Object.Position()
@@ -103,13 +113,17 @@ func (s *System) replayModeControl(ecs *ecs.ECS) {
 		s.Pause = !s.Pause
 		global.Speed = 10
 	}
+
 	if inpututil.IsKeyJustPressed(ebiten.KeyArrowUp) {
 		if global.Speed == 5 {
 			global.Speed = 10
+
 			return
 		}
+
 		global.Speed = min(global.Speed+10, 50)
 	}
+
 	if inpututil.IsKeyJustPressed(ebiten.KeyArrowDown) {
 		if global.Speed > 10 {
 			global.Speed -= 10
@@ -117,11 +131,13 @@ func (s *System) replayModeControl(ecs *ecs.ECS) {
 			global.Speed = 5
 		}
 	}
+
 	if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) {
 		global.Tick -= 60 * 10 // 1s tick
 		global.Tick = max(0, global.Tick)
 		global.Reset.Store(true)
 	}
+
 	if ebiten.IsKeyPressed(ebiten.KeyArrowRight) {
 		global.Tick += 60 * 10 // 1s tick
 		global.Tick = min(global.Tick, util.MSToTick(global.FightDuration.Load())*10)
@@ -129,30 +145,39 @@ func (s *System) replayModeControl(ecs *ecs.ECS) {
 
 	// lock view of player
 	newTarget := -1
+
 	if inpututil.IsKeyJustPressed(ebiten.Key1) {
 		newTarget = 1
 	}
+
 	if inpututil.IsKeyJustPressed(ebiten.Key2) {
 		newTarget = 2
 	}
+
 	if inpututil.IsKeyJustPressed(ebiten.Key3) {
 		newTarget = 3
 	}
+
 	if inpututil.IsKeyJustPressed(ebiten.Key4) {
 		newTarget = 4
 	}
+
 	if inpututil.IsKeyJustPressed(ebiten.Key5) {
 		newTarget = 5
 	}
+
 	if inpututil.IsKeyJustPressed(ebiten.Key6) {
 		newTarget = 6
 	}
+
 	if inpututil.IsKeyJustPressed(ebiten.Key7) {
 		newTarget = 7
 	}
+
 	if inpututil.IsKeyJustPressed(ebiten.Key8) {
 		newTarget = 8
 	}
+
 	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
 		newTarget = 0
 	}
@@ -180,27 +205,32 @@ func (s *System) replayModeControl(ecs *ecs.ECS) {
 	}
 
 	// if view not locked
-	if global.TargetPlayer == nil {
-		if ebiten.IsKeyPressed(ebiten.KeyW) {
-			vel[1] = -MaxVelocity * math.Cos(camera.Rotation) * 2
-			vel[0] = MaxVelocity * math.Sin(camera.Rotation) * 2
-		}
-		if ebiten.IsKeyPressed(ebiten.KeyS) {
-			vel[1] = MaxVelocity * math.Cos(camera.Rotation) * 2
-			vel[0] = -MaxVelocity * math.Sin(camera.Rotation) * 2
-		}
-		if ebiten.IsKeyPressed(ebiten.KeyD) {
-			vel[1] = MaxVelocity * math.Sin(camera.Rotation) * 2
-			vel[0] = MaxVelocity * math.Cos(camera.Rotation) * 2
-		}
-		if ebiten.IsKeyPressed(ebiten.KeyA) {
-			vel[1] = -MaxVelocity * math.Sin(camera.Rotation) * 2
-			vel[0] = -MaxVelocity * math.Cos(camera.Rotation) * 2
-		}
-		camera.Position = camera.Position.Add(vel.Scale(math.Pow(1.01, float64(camera.ZoomFactor))))
-	} else {
+	if global.TargetPlayer != nil {
 		// bind camera on target player
 		camera.Position = component.Sprite.Get(global.TargetPlayer).Instances[0].Object.Position()
+
+		return
 	}
 
+	if ebiten.IsKeyPressed(ebiten.KeyW) {
+		vel[1] = -MaxVelocity * math.Cos(camera.Rotation) * 2
+		vel[0] = MaxVelocity * math.Sin(camera.Rotation) * 2
+	}
+
+	if ebiten.IsKeyPressed(ebiten.KeyS) {
+		vel[1] = MaxVelocity * math.Cos(camera.Rotation) * 2
+		vel[0] = -MaxVelocity * math.Sin(camera.Rotation) * 2
+	}
+
+	if ebiten.IsKeyPressed(ebiten.KeyD) {
+		vel[1] = MaxVelocity * math.Sin(camera.Rotation) * 2
+		vel[0] = MaxVelocity * math.Cos(camera.Rotation) * 2
+	}
+
+	if ebiten.IsKeyPressed(ebiten.KeyA) {
+		vel[1] = -MaxVelocity * math.Sin(camera.Rotation) * 2
+		vel[0] = -MaxVelocity * math.Cos(camera.Rotation) * 2
+	}
+
+	camera.Position = camera.Position.Add(vel.Scale(math.Pow(1.01, float64(camera.ZoomFactor))))
 }

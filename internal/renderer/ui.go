@@ -26,11 +26,29 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 	x, y := ebiten.CursorPosition()
 	wx, wy := camera.ScreenToWorld(float64(x), float64(y))
 	w, h := camera.WindowSize()
+
 	ebitenutil.DebugPrintAt(screen, fmt.Sprintf("Cursor: %f, %f, Debug: %t", wx, wy, global.Debug), 0, 0)
-	ebitenutil.DebugPrintAt(screen, fmt.Sprintf("Tick: %d, Time: %d, TPS: %.2f, FPS: %.2f", entry.GetTick(ecs), util.TickToMS(entry.GetTick(ecs)), ebiten.ActualTPS(), ebiten.ActualFPS()), 0, 15)
+	ebitenutil.DebugPrintAt(
+		screen,
+		fmt.Sprintf(
+			"Tick: %d, Time: %d, TPS: %.2f, FPS: %.2f",
+			entry.GetTick(ecs),
+			util.TickToMS(entry.GetTick(ecs)),
+			ebiten.ActualTPS(),
+			ebiten.ActualFPS(),
+		), 0, 15)
 
 	if !global.Loaded.Load() {
-		ui.DrawText(screen, fmt.Sprintf("预处理中: %d/%d", global.LoadCount.Load(), global.LoadTotal), 28*s, w/2*s, h/2*s, color.White, furex.AlignItemCenter, textShdowOpt)
+		ui.DrawText(
+			screen,
+			fmt.Sprintf("预处理中: %d/%d", global.LoadCount.Load(), global.LoadTotal),
+			28*s,
+			w/2*s,
+			h/2*s,
+			color.White,
+			furex.AlignItemCenter,
+			textShdowOpt)
+
 		return
 	}
 
@@ -38,10 +56,12 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 	if global.TargetPlayer != nil {
 		player := component.Sprite.Get(global.TargetPlayer)
 		casts := player.Instances[0].GetHistoryCast(tick)
+
 		currentCasting := player.Instances[0].GetCast()
 		if currentCasting != nil {
 			casts = append(casts, currentCasting)
 		}
+
 		sk := NewSkillTimeline(casts)
 		sk.Render(global.Debug, screen, w/2, h-200, tick)
 	}

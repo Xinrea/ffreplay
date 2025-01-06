@@ -5,11 +5,13 @@ import (
 	"github.com/yohamta/donburi"
 )
 
-var Camera = donburi.NewComponentType[model.CameraData]()
-var Status = donburi.NewComponentType[model.StatusData]()
-var WorldMarker = donburi.NewComponentType[model.WorldMarkerData]()
-var Sprite = donburi.NewComponentType[model.SpriteData]()
-var Timeline = donburi.NewComponentType[model.TimelineData]()
-var Velocity = donburi.NewComponentType[model.VelocityData]()
-var Global = donburi.NewComponentType[model.GlobalData]()
-var Map = donburi.NewComponentType[model.MapData]()
+var (
+	Camera      = donburi.NewComponentType[model.CameraData]()
+	Status      = donburi.NewComponentType[model.StatusData]()
+	WorldMarker = donburi.NewComponentType[model.WorldMarkerData]()
+	Sprite      = donburi.NewComponentType[model.SpriteData]()
+	Timeline    = donburi.NewComponentType[model.TimelineData]()
+	Velocity    = donburi.NewComponentType[model.VelocityData]()
+	Global      = donburi.NewComponentType[model.GlobalData]()
+	Map         = donburi.NewComponentType[model.MapData]()
+)

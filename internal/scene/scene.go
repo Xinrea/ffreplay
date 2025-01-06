@@ -7,7 +7,7 @@ import (
 type Scene interface {
 	Reset()
 	Update()
-	Layout(int, int)
+	Layout(w int, h int)
 	Draw(screen *ebiten.Image)
 }
 

@@ -47,7 +47,7 @@ require (
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	github.com/vanng822/css v1.0.1 // indirect
 	github.com/vanng822/go-premailer v1.22.0 // indirect
-	golang.design/x/clipboard v0.7.0 // indirect
+	golang.design/x/clipboard v0.7.0
 	golang.org/x/arch v0.12.0 // indirect
 	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/exp/shiny v0.0.0-20250103183323-7d7fa50e5329 // indirect

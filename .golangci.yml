@@ -3,4 +3,5 @@ linters:
   disable:
     - depguard
     - godox
+    - mnd
   fast: true

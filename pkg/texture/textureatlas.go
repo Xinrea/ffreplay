@@ -22,6 +22,7 @@ func (a *TextureAtlas) GetNineSlice(name string) *NineSlice {
 			a.seachMap[sub.Name] = sub.NiceSlice
 		}
 	}
+
 	return a.seachMap[name]
 }
 
@@ -44,24 +45,31 @@ func NewTextureAtlasFromFile(file string) *TextureAtlas {
 	if atlas, ok := atlasCache[file]; ok {
 		return atlas
 	}
+
 	bytes, err := asset.AssetFS.ReadFile(file)
 	if err != nil {
 		panic(err)
 	}
+
 	// parse xml
 	textureAtlas := &TextureAtlas{}
+
 	err = xml.Unmarshal(bytes, textureAtlas)
 	if err != nil {
 		log.Println(string(bytes))
 		panic(err)
 	}
+
 	// load main texture
 	pngFile := file[:len(file)-len("xml")] + "png"
+
 	textureAtlas.MainTexture = NewTextureFromFile(pngFile)
 	for i := range textureAtlas.SubTextures {
 		textureAtlas.SubTextures[i].InitNineSlice(textureAtlas.MainTexture)
 	}
+
 	atlasCache[file] = textureAtlas
+
 	return textureAtlas
 }
 

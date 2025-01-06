@@ -11,13 +11,16 @@ func main() {
 	r := gin.Default()
 	r.GET("/markers/:code/:id", func(c *gin.Context) {
 		code := c.Param("code")
+
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			c.JSON(401, gin.H{
 				"message": "invalid fight id",
 			})
+
 			return
 		}
+
 		markers := markers.QueryWorldMarkers(code, id)
 		c.JSON(200, gin.H{
 			"data": markers,
