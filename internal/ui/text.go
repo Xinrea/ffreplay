@@ -36,12 +36,21 @@ func init() {
 
 // Content must be string or func() string
 type Text struct {
-	Align        furex.AlignItem
+	Align        furex.FlexAlignItem
 	Content      any
 	Color        color.Color
 	Shadow       bool
 	ShadowOffset float64
 	ShadowColor  color.Color
+
+	handler furex.ViewHandler
+}
+
+func (t *Text) Handler() furex.ViewHandler {
+	t.handler.Extra = t
+	t.handler.Draw = t.draw
+	t.handler.Update = t.update
+	return t.handler
 }
 
 func (t *Text) Measure(fontSize float64) (float64, float64) {
@@ -56,12 +65,12 @@ func (t *Text) Measure(fontSize float64) (float64, float64) {
 	return text.Measure(content, fontFace, 0)
 }
 
-func (t *Text) Update(v *furex.View) {
-	w, _ := t.Measure(float64(v.Height))
+func (t *Text) update(v *furex.View) {
+	w, _ := t.Measure(float64(v.Attrs.Height))
 	v.SetWidth(int(w))
 }
 
-func (t *Text) Draw(screen *ebiten.Image, frame image.Rectangle, view *furex.View) {
+func (t *Text) draw(screen *ebiten.Image, frame image.Rectangle, view *furex.View) {
 	content := ""
 	if v, ok := t.Content.(string); ok {
 		content = v
@@ -94,7 +103,7 @@ type ShadowOpt struct {
 
 var textCache = make(map[string]*ebiten.Image)
 
-func DrawText(screen *ebiten.Image, content string, fontSize float64, x, y float64, clr color.Color, align furex.AlignItem, opt *ShadowOpt) {
+func DrawText(screen *ebiten.Image, content string, fontSize float64, x, y float64, clr color.Color, align furex.FlexAlignItem, opt *ShadowOpt) {
 	if content == "" {
 		return
 	}

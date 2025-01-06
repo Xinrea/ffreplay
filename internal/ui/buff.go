@@ -11,48 +11,29 @@ import (
 
 func BuffView(buff *model.Buff) *furex.View {
 	view := &furex.View{
-		Direction: furex.Column,
+		Attrs: furex.ViewAttrs{
+			Direction: furex.Column,
+		},
 	}
-	view.AddChild(&furex.View{
-		Width:  24,
-		Height: 32,
-		Handler: &Sprite{
-			Texture: buff.Texture(),
-		}})
+	view.AddChild(furex.NewView(furex.Width(24), furex.Height(32), furex.Handler(&Sprite{Texture: buff.Texture()})))
 	if buff.Stacks > 1 {
-		// view.AddChild(&furex.View{
-		// 	Position: furex.PositionAbsolute,
-		// 	Width:    24,
-		// 	Height:   32,
-		// 	Handler: &Sprite{
-		// 		Texture: texture.NewNineSlice(model.BuffStackBG, 0, 0, 0, 0),
-		// 	}})
-		view.AddChild(&furex.View{
-			Position: furex.PositionAbsolute,
-			Width:    13,
-			Height:   13,
-			Top:      2,
-			Left:     9,
-			Handler: &Text{
-				Align:        furex.AlignItemEnd,
-				Content:      strconv.Itoa(buff.Stacks),
-				Color:        color.White,
-				Shadow:       true,
-				ShadowOffset: 4,
-				ShadowColor:  color.NRGBA{0, 0, 0, 200},
-			}})
-	}
-	view.AddChild(&furex.View{
-		MarginTop: -6,
-		Height:    12,
-		Handler: &Text{
-			Align:        furex.AlignItemCenter,
-			Content:      formatSeconds(buff.Remain),
+		view.AddChild(furex.NewView(furex.Position(furex.PositionAbsolute), furex.Width(13), furex.Height(13), furex.Top(2), furex.Left(9), furex.Handler(&Text{
+			Align:        furex.AlignItemEnd,
+			Content:      strconv.Itoa(buff.Stacks),
 			Color:        color.White,
 			Shadow:       true,
-			ShadowOffset: 1,
-			ShadowColor:  color.NRGBA{0, 0, 0, 128},
-		}})
+			ShadowOffset: 4,
+			ShadowColor:  color.NRGBA{0, 0, 0, 200},
+		})))
+	}
+	view.AddChild(furex.NewView(furex.MarginTop(-6), furex.Height(12), furex.Handler(&Text{
+		Align:        furex.AlignItemCenter,
+		Content:      formatSeconds(buff.Remain),
+		Color:        color.White,
+		Shadow:       true,
+		ShadowOffset: 1,
+		ShadowColor:  color.NRGBA{0, 0, 0, 128},
+	})))
 	return view
 }
 

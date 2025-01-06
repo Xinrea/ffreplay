@@ -11,39 +11,41 @@ import (
 
 func ProgressBarView() *furex.View {
 	global := entry.GetGlobal(ecsInstance)
-	newHandler := furex.NewHandler(furex.HandlerOpts{
+	newHandler := furex.ViewHandler{
 		Update: func(v *furex.View) {
 			current := float64(entry.GetTick(ecsInstance)) / 60
 			progress := 0.0
 			if global.FightDuration.Load() > 0 {
 				progress = current / (float64(global.FightDuration.Load()) / 1000)
 			}
-			v.MustGetByID("bar").Handler.(*Bar).Progress = progress
-			v.MustGetByID("progress").Handler.(*Text).Content = fmt.Sprintf("%s / %s", formatDuration(current), formatDuration(float64(global.FightDuration.Load())/1000))
-			v.MustGetByID("speed").Handler.(*Text).Content = fmt.Sprintf("当前速度：%.1f", float64(global.Speed)/10)
+			v.MustGetByID("bar").Handler.Extra.(*Bar).Progress = progress
+			v.MustGetByID("progress").Handler.Extra.(*Text).Content = fmt.Sprintf("%s / %s", formatDuration(current), formatDuration(float64(global.FightDuration.Load())/1000))
+			v.MustGetByID("speed").Handler.Extra.(*Text).Content = fmt.Sprintf("当前速度：%.1f", float64(global.Speed)/10)
 		},
-	})
-	view := &furex.View{
-		Position:   furex.PositionAbsolute,
-		Direction:  furex.Column,
-		AlignItems: furex.AlignItemEnd,
-		Justify:    furex.JustifyEnd,
-		Handler:    newHandler,
 	}
-	view.SetBottom(20)
-	view.SetRight(20)
-	view.AddChild(&furex.View{
-		ID:     "progress",
-		Height: 13,
-		Handler: &Text{
+	view := furex.NewView(
+		furex.Position(furex.PositionAbsolute),
+		furex.Direction(furex.Column),
+		furex.AlignItems(furex.AlignItemEnd),
+		furex.Justify(furex.JustifyEnd),
+		furex.Handler(newHandler),
+		furex.Bottom(20),
+		furex.Right(20),
+	)
+
+	view.AddChild(furex.NewView(
+		furex.ID("progress"),
+		furex.Height(13),
+		furex.Handler(&Text{
 			Align:        furex.AlignItemEnd,
 			Color:        color.White,
 			Content:      "00:00 / 00:00",
 			Shadow:       true,
 			ShadowOffset: 2,
 			ShadowColor:  color.NRGBA{22, 45, 87, 128},
-		},
-	})
+		}),
+	))
+
 	// progress segments from phases
 	segments := []float64{}
 	for _, phase := range global.Phases {
@@ -55,13 +57,13 @@ func ProgressBarView() *furex.View {
 	if len(segments) > 0 && segments[len(segments)-1] < 1 {
 		segments = append(segments, 1)
 	}
-	view.AddChild(&furex.View{
-		ID:           "bar",
-		Width:        250,
-		Height:       13,
-		MarginTop:    5,
-		MarginBottom: 5,
-		Handler: &Bar{
+	view.AddChild(furex.NewView(
+		furex.ID("bar"),
+		furex.Width(250),
+		furex.Height(13),
+		furex.MarginTop(5),
+		furex.MarginBottom(5),
+		furex.Handler(&Bar{
 			FG:           barAtlas.GetNineSlice("normal_bar_fg.png"),
 			BG:           barAtlas.GetNineSlice("normal_bar_bg.png"),
 			Segments:     segments,
@@ -72,69 +74,41 @@ func ProgressBarView() *furex.View {
 					global.Reset.Store(true)
 				}
 			},
-		},
-	})
-	view.AddChild(&furex.View{
-		ID:     "speed",
-		Height: 13,
-		Handler: &Text{
+		}),
+	))
+
+	view.AddChild(furex.NewView(
+		furex.ID("speed"),
+		furex.Height(13),
+		furex.Handler(&Text{
 			Align:        furex.AlignItemEnd,
 			Color:        color.White,
 			Content:      "当前速度：1.0",
 			Shadow:       true,
 			ShadowOffset: 2,
 			ShadowColor:  color.NRGBA{22, 45, 87, 128},
-		},
-	})
+		}),
+	))
 
-	view.AddChild(&furex.View{
-		MarginTop: 10,
-		Height:    13,
-		Handler: &Text{
-			Align:        furex.AlignItemEnd,
-			Content:      "快退: 方向键左 | 快进: 方向键右 | 点击进度条跳转",
-			Color:        color.White,
-			Shadow:       true,
-			ShadowOffset: 2,
-			ShadowColor:  color.NRGBA{22, 45, 87, 128},
-		},
-	})
-	view.AddChild(&furex.View{
-		MarginTop: 5,
-		Height:    13,
-		Handler: &Text{
-			Align:        furex.AlignItemEnd,
-			Content:      "移动视角 W/A/S/D | 旋转视角: E/Q | 调试模式：`",
-			Color:        color.White,
-			Shadow:       true,
-			ShadowOffset: 2,
-			ShadowColor:  color.NRGBA{22, 45, 87, 128},
-		},
-	})
-	view.AddChild(&furex.View{
-		MarginTop: 5,
-		Height:    13,
-		Handler: &Text{
-			Align:        furex.AlignItemEnd,
-			Content:      "暂停: SPACE | 播放速度: 方向键（上下）| 重置: R",
-			Color:        color.White,
-			Shadow:       true,
-			ShadowOffset: 2,
-			ShadowColor:  color.NRGBA{22, 45, 87, 128},
-		},
-	})
-	view.AddChild(&furex.View{
-		MarginTop: 5,
-		Height:    13,
-		Handler: &Text{
-			Align:        furex.AlignItemEnd,
-			Content:      "锁定玩家: 1-8 | 点击小队列表锁定 | 解除锁定: ESC",
-			Color:        color.White,
-			Shadow:       true,
-			ShadowOffset: 2,
-			ShadowColor:  color.NRGBA{22, 45, 87, 128},
-		},
-	})
+	addTextLine := func(top int, content string) {
+		view.AddChild(furex.NewView(
+			furex.MarginTop(top),
+			furex.Height(13),
+			furex.Handler(&Text{
+				Align:        furex.AlignItemEnd,
+				Content:      content,
+				Color:        color.White,
+				Shadow:       true,
+				ShadowOffset: 2,
+				ShadowColor:  color.NRGBA{22, 45, 87, 128},
+			}),
+		))
+	}
+
+	addTextLine(10, "快退: 方向键左 | 快进: 方向键右 | 点击进度条跳转")
+	addTextLine(5, "移动视角 W/A/S/D | 旋转视角: E/Q | 调试模式：`")
+	addTextLine(5, "暂停: SPACE | 播放速度: 方向键（上下）| 重置: R")
+	addTextLine(5, "锁定玩家: 1-8 | 点击小队列表锁定 | 解除锁定: ESC")
 	return view
 }
 

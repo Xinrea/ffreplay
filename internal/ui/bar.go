@@ -15,6 +15,18 @@ type Bar struct {
 	Segments     []float64
 	Interactable bool
 	ClickAt      func(c float64, p float64)
+
+	handler furex.ViewHandler
+}
+
+func (b *Bar) Handler() furex.ViewHandler {
+	b.handler.Extra = b
+	b.handler.Draw = b.Draw
+	b.handler.JustReleasedMouseButtonLeft = b.HandleJustReleasedMouseButtonLeft
+	b.handler.JustPressedMouseButtonLeft = b.HandleJustPressedMouseButtonLeft
+	b.handler.MouseEnter = b.HandleMouseEnter
+	b.handler.MouseLeave = b.HandleMouseLeave
+	return b.handler
 }
 
 func (b *Bar) HandleJustPressedMouseButtonLeft(frame image.Rectangle, x, y int) bool {

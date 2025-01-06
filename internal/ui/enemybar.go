@@ -16,134 +16,92 @@ import (
 )
 
 func EnemyBarsView() *furex.View {
-	view := &furex.View{
-		Position: furex.PositionAbsolute,
-		Handler: furex.NewHandler(furex.HandlerOpts{
-			Update: func(v *furex.View) {
-				v.SetRight(0)
-				v.SetTop(0)
-				v.RemoveAll()
-				cnt := 0
-				for e := range tag.Enemy.Iter(ecsInstance.World) {
-					sprite := component.Sprite.Get(e)
-					if !sprite.Initialized {
-						continue
-					}
-					enemy := component.Status.Get(e)
-					if enemy.Role != role.Boss || !sprite.Instances[0].IsActive(entry.GetTick(ecsInstance)) {
-						continue
-					}
-					v.AddChild(CreateEnemyBarView(cnt, e))
-					cnt++
+	return furex.NewView(furex.Position(furex.PositionAbsolute), furex.Handler(furex.ViewHandler{
+		Update: func(v *furex.View) {
+			v.SetRight(0)
+			v.SetTop(0)
+			v.RemoveAll()
+			cnt := 0
+			for e := range tag.Enemy.Iter(ecsInstance.World) {
+				sprite := component.Sprite.Get(e)
+				if !sprite.Initialized {
+					continue
 				}
-			},
-		}),
-	}
-	return view
+				enemy := component.Status.Get(e)
+				if enemy.Role != role.Boss || !sprite.Instances[0].IsActive(entry.GetTick(ecsInstance)) {
+					continue
+				}
+				v.AddChild(CreateEnemyBarView(cnt, e))
+				cnt++
+			}
+		},
+	}))
 }
 
 func CreateEnemyBarView(i int, enemy *donburi.Entry) *furex.View {
 	sprite := component.Sprite.Get(enemy)
 	status := component.Status.Get(enemy)
-	view := &furex.View{
-		Position:   furex.PositionAbsolute,
-		Direction:  furex.Column,
-		AlignItems: furex.AlignItemStart,
-	}
-	view.SetRight(520)
-	view.SetTop(20 + 100*i)
-	nameView := &furex.View{
-		Height: 13,
-		Handler: &Text{
-			Content:      status.Name,
-			Color:        color.NRGBA{252, 183, 190, 255},
-			Align:        furex.AlignItemStart,
-			Shadow:       true,
-			ShadowOffset: 2,
-			ShadowColor:  color.NRGBA{0, 0, 0, 128},
-		},
-	}
+	view := furex.NewView(furex.Position(furex.PositionAbsolute), furex.Direction(furex.Column), furex.AlignItems(furex.AlignItemStart), furex.Right(520), furex.Top(20+100*i))
+	nameView := furex.NewView(furex.Height(13), furex.Handler(&Text{
+		Content:      status.Name,
+		Color:        color.NRGBA{252, 183, 190, 255},
+		Align:        furex.AlignItemStart,
+		Shadow:       true,
+		ShadowOffset: 2,
+		ShadowColor:  color.NRGBA{0, 0, 0, 128},
+	}))
 	// add casting view
-	castView := &furex.View{
-		Height:     24,
-		Direction:  furex.Column,
-		AlignItems: furex.AlignItemEnd,
-	}
+	castView := furex.NewView(furex.Height(24), furex.Direction(furex.Column), furex.AlignItems(furex.AlignItemEnd))
 	if sprite.Instances[0].GetCast() != nil {
 		cast := sprite.Instances[0].GetCast()
-		castView.AddChild(&furex.View{
-			Width:  210,
-			Height: 12,
-			Handler: &Bar{
-				Progress: float64(util.TickToMS(entry.GetTick(ecsInstance)-cast.StartTick)) / float64(cast.Cast),
-				BG:       castAtlas.GetNineSlice("casting_frame.png"),
-				FG:       castAtlas.GetNineSlice("casting_fg.png"),
-			},
-		})
-		castView.AddChild(&furex.View{
-			Height:    12,
-			MarginTop: -5,
-			Handler: &Text{
-				Align:        furex.AlignItemEnd,
-				Content:      cast.Name,
-				Color:        color.White,
-				Shadow:       true,
-				ShadowOffset: 1,
-				ShadowColor:  color.NRGBA{240, 152, 0, 128},
-			}})
+		castView.AddChild(furex.NewView(furex.Width(210), furex.Height(12), furex.Handler(&Bar{
+			Progress: float64(util.TickToMS(entry.GetTick(ecsInstance)-cast.StartTick)) / float64(cast.Cast),
+			BG:       castAtlas.GetNineSlice("casting_frame.png"),
+			FG:       castAtlas.GetNineSlice("casting_fg.png"),
+		})))
+		castView.AddChild(furex.NewView(furex.Height(12), furex.MarginTop(-5), furex.Handler(&Text{
+			Align:        furex.AlignItemEnd,
+			Content:      cast.Name,
+			Color:        color.White,
+			Shadow:       true,
+			ShadowOffset: 1,
+			ShadowColor:  color.NRGBA{240, 152, 0, 128},
+		})))
 	}
-	nameCast := &furex.View{
-		Width:      500,
-		Direction:  furex.Row,
-		Justify:    furex.JustifySpaceBetween,
-		AlignItems: furex.AlignItemEnd,
-	}
+	nameCast := furex.NewView(furex.Width(500), furex.Direction(furex.Row), furex.Justify(furex.JustifySpaceBetween), furex.AlignItems(furex.AlignItemEnd))
 	nameCast.AddChild(nameView)
 	nameCast.AddChild(castView)
 	view.AddChild(nameCast)
-	view.AddChild(&furex.View{
-		ID:        "bar",
-		Width:     500,
-		Height:    10,
-		MarginTop: 5,
-		Handler: &Bar{
-			Progress: float64(status.HP) / float64(status.MaxHP),
-			FG:       barAtlas.GetNineSlice("red_bar_fg.png"),
-			BG:       barAtlas.GetNineSlice("red_bar_bg.png"),
-		},
-	})
-	hpView := &furex.View{
-		Width:     500,
-		Direction: furex.Row,
-		Justify:   furex.JustifySpaceBetween,
-	}
-	hpView.AddChild(&furex.View{
-		MarginTop: 5,
-		Height:    13,
-		Handler: &Text{
-			Content:      formatInt(status.HP) + " / " + formatInt(status.MaxHP),
-			Color:        color.NRGBA{252, 183, 190, 255},
-			Align:        furex.AlignItemStart,
-			Shadow:       true,
-			ShadowOffset: 2,
-			ShadowColor:  color.NRGBA{0, 0, 0, 128},
-		},
-	})
-	hpView.AddChild(&furex.View{
-		MarginTop: 5,
-		Height:    13,
-		Handler: &Text{
-			Content:      fmt.Sprintf("%.2f%%", float64(status.HP)/float64(status.MaxHP)*100),
-			Color:        color.NRGBA{252, 183, 190, 255},
-			Align:        furex.AlignItemEnd,
-			Shadow:       true,
-			ShadowOffset: 2,
-			ShadowColor:  color.NRGBA{0, 0, 0, 128},
-		},
-	})
+	view.AddChild(furex.NewView(furex.ID("bar"), furex.Width(500), furex.Height(10), furex.MarginTop(5), furex.Handler(&Bar{
+		Progress: float64(status.HP) / float64(status.MaxHP),
+		FG:       barAtlas.GetNineSlice("red_bar_fg.png"),
+		BG:       barAtlas.GetNineSlice("red_bar_bg.png"),
+	}),
+	))
+
+	hpView := furex.NewView(furex.Width(500), furex.Direction(furex.Row), furex.Justify(furex.JustifySpaceBetween))
+	hpView.AddChild(furex.NewView(furex.MarginTop(5), furex.Height(13), furex.Handler(&Text{
+		Content:      formatInt(status.HP) + " / " + formatInt(status.MaxHP),
+		Color:        color.NRGBA{252, 183, 190, 255},
+		Align:        furex.AlignItemStart,
+		Shadow:       true,
+		ShadowOffset: 2,
+		ShadowColor:  color.NRGBA{0, 0, 0, 128},
+	}),
+	))
+	hpView.AddChild(furex.NewView(furex.MarginTop(5), furex.Height(13), furex.Handler(&Text{
+		Content:      fmt.Sprintf("%.2f%%", float64(status.HP)/float64(status.MaxHP)*100),
+		Color:        color.NRGBA{252, 183, 190, 255},
+		Align:        furex.AlignItemEnd,
+		Shadow:       true,
+		ShadowOffset: 2,
+		ShadowColor:  color.NRGBA{0, 0, 0, 128},
+	}),
+	))
+
 	view.AddChild(hpView)
 	bufflist := BuffListView(status.BuffList.Buffs())
-	bufflist.MarginTop = 5
+	bufflist.Attrs.MarginTop = 5
 	view.AddChild(bufflist)
 	return view
 }
@@ -168,20 +126,4 @@ func formatInt(n int) string {
 		builder.WriteRune(digit)
 	}
 	return builder.String()
-}
-
-func AppendHandler(view *furex.View, f func(v *furex.View)) {
-	Original := view.Handler
-	view.AddChild(&furex.View{
-		Handler: furex.NewHandler(furex.HandlerOpts{
-			Update: func(v *furex.View) {
-				if Original != nil {
-					if u, ok := Original.(furex.Updater); ok {
-						u.Update(v)
-					}
-				}
-				f(v)
-			},
-		}),
-	})
 }

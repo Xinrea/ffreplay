@@ -123,9 +123,7 @@ func (c *CommandHandler) playerHandler(cmds []string) {
 			Name:   fmt.Sprintf("[%d]%s", c.player.idcnt, cmds[1]),
 			Server: "ffreplay",
 		})
-		for _, v := range root.FilterByTagName("PartyList") {
-			v.AddChild(NewPlayerItem(p))
-		}
+		root.FilterByTagName("PartyList")[0].AddChild(NewPlayerItem(p))
 		c.AddResult("Player " + cmds[1] + " added")
 		c.player.idcnt += 1
 	case "remove":
@@ -135,7 +133,7 @@ func (c *CommandHandler) playerHandler(cmds []string) {
 		}
 		for _, v := range root.FilterByTagName("PartyList") {
 			for _, p := range v.GetChildren() {
-				if p.ID == cmds[1] {
+				if p.Attrs.ID == cmds[1] {
 					v.RemoveChild(p)
 				}
 			}
@@ -163,13 +161,8 @@ func (c *CommandHandler) AddEcho(cmd string) {
 		Content: "> " + cmd,
 		Color:   color.White,
 	}
-	c.message.AddChild(&furex.View{
-		MarginLeft: 10,
-		MarginTop:  5,
-		Height:     12,
-		Handler:    text,
-	})
-	c.message.SetHeight(c.message.Height + 12 + 5)
+	c.message.AddChild(furex.NewView(furex.MarginLeft(10), furex.MarginTop(5), furex.Height(12), furex.Handler(text)))
+	c.message.SetHeight(c.message.Attrs.Height + 12 + 5)
 }
 
 func (c *CommandHandler) AddResult(result string) {
@@ -182,13 +175,8 @@ func (c *CommandHandler) AddResult(result string) {
 		ShadowOffset: 1,
 		ShadowColor:  ResultColor,
 	}
-	c.message.AddChild(&furex.View{
-		MarginLeft: 10,
-		MarginTop:  5,
-		Height:     12,
-		Handler:    text,
-	})
-	c.message.SetHeight(c.message.Height + 12 + 5)
+	c.message.AddChild(furex.NewView(furex.MarginLeft(10), furex.MarginTop(5), furex.Height(12), furex.Handler(text)))
+	c.message.SetHeight(c.message.Attrs.Height + 12 + 5)
 }
 
 func (c *CommandHandler) AddPrompt(prompt string) {
@@ -198,13 +186,8 @@ func (c *CommandHandler) AddPrompt(prompt string) {
 		Content: prompt,
 		Color:   PromptColor,
 	}
-	c.message.AddChild(&furex.View{
-		MarginLeft: 10,
-		MarginTop:  5,
-		Height:     12,
-		Handler:    text,
-	})
-	c.message.SetHeight(c.message.Height + 12 + 5)
+	c.message.AddChild(furex.NewView(furex.MarginLeft(10), furex.MarginTop(5), furex.Height(12), furex.Handler(text)))
+	c.message.SetHeight(c.message.Attrs.Height + 12 + 5)
 }
 
 func (c *CommandHandler) AddError(err string) {
@@ -217,45 +200,25 @@ func (c *CommandHandler) AddError(err string) {
 		ShadowOffset: 1,
 		ShadowColor:  ErrorColor,
 	}
-	c.message.AddChild(&furex.View{
-		MarginLeft: 10,
-		MarginTop:  5,
-		Height:     12,
-		Handler:    text,
-	})
-	c.message.SetHeight(c.message.Height + 12 + 5)
+	c.message.AddChild(furex.NewView(furex.MarginLeft(10), furex.MarginTop(5), furex.Height(12), furex.Handler(text)))
+	c.message.SetHeight(c.message.Attrs.Height + 12 + 5)
 }
 
 func CommandView() *furex.View {
-	view := &furex.View{
-		Direction: furex.Column,
-		Justify:   furex.JustifyEnd,
-	}
 	handler := &CommandHandler{}
-	view.Handler = handler
+	view := furex.NewView(furex.TagName("command"), furex.Width(400), furex.Direction(furex.Column), furex.Justify(furex.JustifyEnd))
 
-	view.Width = 400
-	message := &furex.View{
-		Direction: furex.Column,
-		Width:     400,
-		Height:    34,
-		Handler: &Sprite{
-			NineSliceTexture: messageTextureAtlas.GetNineSlice("message_bg.png"),
-			BlendAlpha:       true,
-			Alpha:            0.5,
-		},
-	}
+	message := furex.NewView(furex.TagName("message"), furex.Direction(furex.Column), furex.Width(400), furex.Height(34), furex.Handler(&Sprite{
+		NineSliceTexture: messageTextureAtlas.GetNineSlice("message_bg.png"),
+		BlendAlpha:       true,
+		Alpha:            0.5,
+	}))
 	text := &Text{
 		Align:   furex.AlignItemStart,
 		Content: "输入 /help 查看可用命令",
 		Color:   PromptColor,
 	}
-	message.AddChild(&furex.View{
-		MarginLeft: 10,
-		MarginTop:  10,
-		Height:     12,
-		Handler:    text,
-	})
+	message.AddChild(furex.NewView(furex.MarginLeft(10), furex.MarginTop(5), furex.Height(12), furex.Handler(text)))
 	view.AddChild(message)
 	input := InputView("> ", 400, handler.CommitCommand)
 	view.AddChild(input)

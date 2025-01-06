@@ -16,16 +16,27 @@ type LimitBreak struct {
 	Value     *int
 	BarNumber *int
 	once      sync.Once
+
+	handler furex.ViewHandler
 }
 
-func (l *LimitBreak) Update(v *furex.View) {
+var _ furex.HandlerProvider = (*LimitBreak)(nil)
+
+func (l *LimitBreak) Handler() furex.ViewHandler {
+	l.handler.Extra = l
+	l.handler.Update = l.update
+	l.handler.Draw = l.draw
+	return l.handler
+}
+
+func (l *LimitBreak) update(v *furex.View) {
 	l.once.Do(func() {
 		v.SetWidth(150 * *l.BarNumber)
 		v.SetHeight(13)
 	})
 }
 
-func (l *LimitBreak) Draw(screen *ebiten.Image, frame image.Rectangle, view *furex.View) {
+func (l *LimitBreak) draw(screen *ebiten.Image, frame image.Rectangle, view *furex.View) {
 	s := ebiten.Monitor().DeviceScaleFactor()
 	x := float64(frame.Min.X)
 	y := float64(frame.Min.Y)

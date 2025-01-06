@@ -32,20 +32,8 @@ var _ UI = (*FFUI)(nil)
 
 func NewReplayUI(ecs *ecs.ECS) *FFUI {
 	ecsInstance = ecs
-	view := &furex.View{
-		Direction: furex.Row,
-		Wrap:      furex.Wrap,
-	}
-	view.AddChild(&furex.View{
-		ID:           "left",
-		Direction:    furex.Column,
-		AlignItems:   furex.AlignItemStart,
-		AlignContent: furex.AlignContentSpaceBetween,
-		MarginTop:    20,
-		MarginLeft:   20,
-		MarginBottom: 20,
-		Grow:         0.5,
-	})
+	view := furex.NewView(furex.Direction(furex.Row))
+	view.AddChild(furex.NewView(furex.ID("left"), furex.Grow(0.5), furex.MarginTop(20), furex.MarginLeft(20), furex.MarginBottom(20), furex.AlignItems(furex.AlignItemStart), furex.AlignContent(furex.AlignContentSpaceBetween), furex.Direction(furex.Column)))
 	return &FFUI{
 		view: view,
 	}
@@ -58,16 +46,12 @@ func (f *FFUI) Update(w, h int) {
 	}
 	f.once.Do(func() {
 		lview := f.view.MustGetByID("left")
-		tlview := &furex.View{
-			Direction:  furex.Column,
-			AlignItems: furex.AlignItemStart,
-		}
-		tlview.AddChild(&furex.View{
-			Handler: &LimitBreak{
-				Value:     &global.LimitBreak,
-				BarNumber: &global.Bar,
-			},
-		})
+		tlview := furex.NewView(furex.AlignItems(furex.AlignItemStart), furex.Direction(furex.Column))
+		tlview.AddChild(furex.NewView(furex.Handler(&LimitBreak{
+			Value:     &global.LimitBreak,
+			BarNumber: &global.Bar,
+		})))
+
 		// TODO Considering party member changes (remove/add)
 		memberList := []*donburi.Entry{}
 		tag.PartyMember.Each(ecsInstance.World, func(e *donburi.Entry) {

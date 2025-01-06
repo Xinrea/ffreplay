@@ -27,6 +27,18 @@ type InputHandler struct {
 	historyIndex  int
 	history       []string
 	CommitHandler func(string)
+
+	handler furex.ViewHandler
+}
+
+func (i *InputHandler) Handler() furex.ViewHandler {
+	i.handler.Extra = i
+	i.handler.Update = i.Update
+	i.handler.JustPressedMouseButtonLeft = i.HandleJustPressedMouseButtonLeft
+	i.handler.JustReleasedMouseButtonLeft = i.HandleJustReleasedMouseButtonLeft
+	i.handler.MouseEnter = i.HandleMouseEnter
+	i.handler.MouseLeave = i.HandleMouseLeave
+	return i.handler
 }
 
 // HandleMouseEnter implements furex.MouseEnterLeaveHandler.
@@ -76,7 +88,7 @@ func (i *InputHandler) Update(v *furex.View) {
 	if !i.focused {
 		return
 	}
-	currentWidth := v.MustGetByID("content").Width
+	currentWidth := v.MustGetByID("content").Attrs.Width
 	if currentWidth+18 <= i.Width {
 		i.runes = ebiten.AppendInputChars(i.runes[:0])
 		if len(i.runes) > 0 {
@@ -137,45 +149,28 @@ func (i *InputHandler) Content() string {
 }
 
 var _ Focusable = (*InputHandler)(nil)
-var _ furex.MouseLeftButtonHandler = (*InputHandler)(nil)
-var _ furex.MouseEnterLeaveHandler = (*InputHandler)(nil)
 
 func InputView(prefix string, width int, commitHandler func(string)) *furex.View {
 	handler := &InputHandler{
 		Width:         width,
 		CommitHandler: commitHandler,
 	}
-	view := &furex.View{
-		TagName:   "input",
-		Direction: furex.Column,
-		Handler:   handler,
-	}
-	view.AddChild(&furex.View{
-		Height: 28,
-		Width:  width,
-		Handler: &Sprite{
-			NineSliceTexture: messageTextureAtlas.GetNineSlice("input_bg.png"),
+	view := furex.NewView(furex.TagName("input"), furex.Direction(furex.Column), furex.Handler(handler))
+	view.AddChild(furex.NewView(furex.Height(28), furex.Width(width), furex.Handler(&Sprite{
+		NineSliceTexture: messageTextureAtlas.GetNineSlice("input_bg.png"),
+	})))
+	view.AddChild(furex.NewView(furex.ID("content"), furex.Position(furex.PositionAbsolute), furex.Top(8), furex.Left(6), furex.Height(12), furex.Handler(&Text{
+		Align: furex.AlignItemStart,
+		Content: func() string {
+			if handler.focused && handler.counter%60 > 30 {
+				return prefix + handler.Content() + "|"
+			}
+			return prefix + handler.Content()
 		},
-	})
-	view.AddChild(&furex.View{
-		ID:       "content",
-		Position: furex.PositionAbsolute,
-		Top:      8,
-		Left:     6,
-		Height:   12,
-		Handler: &Text{
-			Align: furex.AlignItemStart,
-			Content: func() string {
-				if handler.focused && handler.counter%60 > 30 {
-					return prefix + handler.Content() + "|"
-				}
-				return prefix + handler.Content()
-			},
-			Color:        color.White,
-			Shadow:       true,
-			ShadowOffset: 2,
-			ShadowColor:  color.NRGBA{0, 0, 0, 128},
-		},
-	})
+		Color:        color.White,
+		Shadow:       true,
+		ShadowOffset: 2,
+		ShadowColor:  color.NRGBA{0, 0, 0, 128},
+	})))
 	return view
 }

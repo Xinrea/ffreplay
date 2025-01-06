@@ -13,9 +13,17 @@ type Sprite struct {
 	Texture          *ebiten.Image
 	BlendAlpha       bool
 	Alpha            float32
+
+	handler furex.ViewHandler
 }
 
-func (s *Sprite) Draw(screen *ebiten.Image, frame image.Rectangle, view *furex.View) {
+func (s *Sprite) Handler() furex.ViewHandler {
+	s.handler.Extra = s
+	s.handler.Draw = s.draw
+	return s.handler
+}
+
+func (s *Sprite) draw(screen *ebiten.Image, frame image.Rectangle, view *furex.View) {
 	if s.Texture != nil {
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Scale(float64(frame.Dx())/float64(s.Texture.Bounds().Dx()), float64(frame.Dy())/float64(s.Texture.Bounds().Dy()))
