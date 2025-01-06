@@ -97,27 +97,36 @@ func (c *CommandHandler) mapHandler(cmds []string) {
 
 func (c *CommandHandler) playerHandler(cmds []string) {
 	global := entry.GetGlobal(ecsInstance)
+
 	if len(cmds) == 0 {
 		c.AddError("Invalid player command")
+
 		return
 	}
+
 	switch cmds[0] {
 	case "add":
 		if len(cmds) < 3 {
 			c.AddError("Invalid player add command")
+
 			break
 		}
+
 		r := role.StringToRole(cmds[2])
 		if r == -1 {
 			c.AddError("Invalid player role")
+
 			break
 		}
+
 		initialPos := f64.Vec2{0, 0}
+
 		mapData := component.Map.Get(component.Map.MustFirst(ecsInstance.World))
 		if mapData.Config != nil {
 			current := mapData.Config.Maps[mapData.Config.CurrentMap]
 			initialPos = f64.Vec2{current.Offset.X * 25, current.Offset.Y * 25}
 		}
+
 		p := entry.NewPlayer(ecsInstance, r, initialPos, &fflogs.PlayerDetail{
 			ID:     c.player.idcnt,
 			Name:   fmt.Sprintf("[%d]%s", c.player.idcnt, cmds[1]),
@@ -129,8 +138,10 @@ func (c *CommandHandler) playerHandler(cmds []string) {
 	case "remove":
 		if len(cmds) < 2 {
 			c.AddError("Invalid player remove command")
+
 			break
 		}
+
 		for _, v := range root.FilterByTagName("PartyList") {
 			for _, p := range v.GetChildren() {
 				if p.Attrs.ID == cmds[1] {
@@ -138,14 +149,17 @@ func (c *CommandHandler) playerHandler(cmds []string) {
 				}
 			}
 		}
+
 		for p := range tag.Player.Iter(ecsInstance.World) {
 			status := component.Status.Get(p)
 			if strconv.Itoa(int(status.ID)) == cmds[1] {
 				if global.TargetPlayer == p {
 					global.TargetPlayer = nil
 				}
+
 				p.Remove()
 				c.AddResult("Player " + status.Name + " removed")
+
 				return
 			}
 		}

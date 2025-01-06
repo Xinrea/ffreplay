@@ -27,6 +27,7 @@ func NewPlaygroundUI(ecs *ecs.ECS) *PlaygroundUI {
 		furex.ID("Playground"),
 		furex.Direction(furex.Column),
 		furex.Justify(furex.JustifySpaceBetween),
+		furex.Grow(1),
 	)
 	baseWrap.Handler.JustPressedMouseButtonLeft = func(frame image.Rectangle, x int, y int) bool {
 		for _, c := range baseWrap.FilterByTagName("input") {
@@ -60,6 +61,7 @@ func (p *PlaygroundUI) Update(w, h int) {
 	}
 	s := ebiten.Monitor().DeviceScaleFactor()
 	furex.GlobalScale = s
+
 	root.UpdateWithSize(w, h)
 }
 

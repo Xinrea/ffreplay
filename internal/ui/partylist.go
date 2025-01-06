@@ -7,6 +7,7 @@ import (
 
 	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/entry"
+	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/pkg/texture"
 	"github.com/Xinrea/ffreplay/util"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -14,10 +15,49 @@ import (
 	"github.com/yohamta/furex/v2"
 )
 
-func NewPartyList(players []*donburi.Entry) *furex.View {
-	view := furex.NewView(furex.TagName("PartyList"), furex.MarginTop(10), furex.Direction(furex.Column), furex.AlignItems(furex.AlignItemStart), furex.Justify(furex.JustifyStart))
+const (
+	PartyListWidth   = 300
+	PartyListBGExtra = 20
+)
 
-	view.AddChild(furex.NewView(furex.TagName("PartyListBG"), furex.Width(300), furex.Height(48), furex.Position(furex.PositionAbsolute), furex.Handler(&Sprite{NineSliceTexture: texture.NewNineSlice(texture.NewTextureFromFile("asset/partylist_bg.png"), 5, 14, 0, 0)})))
+var PartyListBGNineSliceConfig = [4]int{5, 14, 0, 0}
+
+func NewPartyList(players []*donburi.Entry) *furex.View {
+	view := furex.NewView(
+		furex.TagName("PartyList"),
+		furex.MarginTop(10),
+		furex.Direction(furex.Column),
+		furex.AlignItems(furex.AlignItemStart),
+		furex.Justify(furex.JustifyStart),
+		furex.Handler(furex.ViewHandler{
+			Update: func(v *furex.View) {
+				playerItemLen := v.Len() - 1
+				bg := v.First()
+				expectHeight := playerItemLen*PlayerItemHeight + PartyListBGExtra
+				// TODO view.SetHeight should be able to handle this
+				if bg.Attrs.Height != expectHeight {
+					bg.SetHeight(expectHeight)
+				}
+			},
+		}),
+	)
+
+	view.AddChild(
+		furex.NewView(
+			furex.TagName("PartyListBG"),
+			furex.Width(PartyListWidth),
+			furex.Position(furex.PositionAbsolute),
+			furex.Handler(&Sprite{
+				NineSliceTexture: texture.NewNineSlice(
+					texture.NewTextureFromFile("asset/partylist_bg.png"),
+					PartyListBGNineSliceConfig[0],
+					PartyListBGNineSliceConfig[1],
+					PartyListBGNineSliceConfig[2],
+					PartyListBGNineSliceConfig[3]),
+			}),
+		),
+	)
+
 	for _, p := range players {
 		view.AddChild(NewPlayerItem(p))
 	}
@@ -71,7 +111,7 @@ func (p *PlayerItem) Update(v *furex.View) {
 
 func (p *PlayerItem) HandleJustPressedMouseButtonLeft(_ image.Rectangle, x, y int) bool {
 	entry.GetGlobal(ecsInstance).TargetPlayer = p.Player
-	return true
+	return false
 }
 
 func (p *PlayerItem) HandleJustReleasedMouseButtonLeft(_ image.Rectangle, x, y int) {
@@ -84,8 +124,33 @@ func (p *PlayerItem) HandleMouseEnter(x, y int) bool {
 
 func (p *PlayerItem) HandleMouseLeave() {
 	p.Hovered = false
+
 	ebiten.SetCursorShape(ebiten.CursorShapeDefault)
 }
+
+const (
+	PlayerItemHeight = 48
+	StatusPartWidth  = 210
+	JobIconSize      = 38
+
+	HoverSpriteWidth  = 275
+	HoverSpriteHeight = 40
+	HoverSpriteTop    = 10
+	HoverSpriteLeft   = 30
+
+	CastNameTextSize = 12
+	NameTextSize     = 13
+	HMPTextSize      = 14
+
+	CastBarWidth = 100
+	BarHeight    = 12
+
+	HPBarWidth   = 125
+	MPBarWidth   = 75
+	HMPBarHeight = 8
+
+	BuffListOffsetY = 20
+)
 
 func NewPlayerItem(playerEntry *donburi.Entry) *furex.View {
 	item := &PlayerItem{
@@ -94,34 +159,101 @@ func NewPlayerItem(playerEntry *donburi.Entry) *furex.View {
 	player := component.Status.Get(playerEntry)
 	view := furex.NewView(
 		furex.ID(strconv.Itoa(int(player.ID))),
-		furex.Height(48), furex.Direction(furex.Row),
+		furex.Height(PlayerItemHeight), furex.Direction(furex.Row),
 		furex.AlignItems(furex.AlignItemCenter),
 		furex.Justify(furex.JustifyStart),
 		furex.Handler(item),
 	)
-	view.AddChild(furex.NewView(furex.ID("hover"), furex.Position(furex.PositionAbsolute), furex.Top(10), furex.Left(30), furex.Width(275), furex.Height(40), furex.Handler(&Sprite{Texture: texture.NewTextureFromFile("asset/partylist_hover.png")})))
-	view.AddChild(furex.NewView(furex.ID("selected"), furex.Position(furex.PositionAbsolute), furex.Top(10), furex.Left(30), furex.Width(275), furex.Height(40), furex.Handler(&Sprite{Texture: texture.NewTextureFromFile("asset/partylist_selected.png")})))
+
+	// add hover/select sprite
+	addHoverSprite(view)
 
 	// add job icon
-	view.AddChild(furex.NewView(furex.Width(38), furex.Height(38), furex.Handler(&Sprite{Texture: player.RoleTexture()})))
+	view.AddChild(
+		furex.NewView(
+			furex.Width(JobIconSize),
+			furex.Height(JobIconSize),
+			furex.Handler(&Sprite{Texture: player.RoleTexture()})))
+
+	// statusView contains name, hp, mp, cast
 	statusView := furex.NewView(furex.MarginLeft(5), furex.MarginTop(10), furex.Direction(furex.Column))
 	// add casting view
-	castView := furex.NewView(furex.ID("cast"), furex.MarginTop(5), furex.Direction(furex.Column), furex.AlignItems(furex.AlignItemEnd))
-	castView.AddChild(furex.NewView(furex.Width(210), furex.Height(12), furex.Handler(&Bar{
-		Progress: func() float64 {
-			cast := component.Sprite.Get(playerEntry).Instances[0].GetCast()
-			if cast == nil {
-				return 0
-			}
-			return float64(util.TickToMS(entry.GetTick(ecsInstance)-cast.StartTick)) / float64(cast.Cast)
-		},
-		BG: castAtlas.GetNineSlice("casting_frame.png"),
-		FG: castAtlas.GetNineSlice("casting_fg.png"),
-	})))
-	castView.AddChild(furex.NewView(furex.Height(12), furex.Width(100), furex.Handler(&Text{
+	statusView.AddChild(createCastingView(playerEntry))
+	// add name
+	statusView.AddChild(
+		furex.NewView(
+			furex.ID("name"),
+			furex.MarginTop(-12),
+			furex.Height(NameTextSize),
+			furex.Handler(&Text{
+				Align:        furex.AlignItemStart,
+				Content:      player.Name,
+				Color:        color.White,
+				Shadow:       true,
+				ShadowOffset: 2,
+				ShadowColor:  color.NRGBA{22, 45, 87, 128},
+			})))
+
+	// view for hp and mp
+	statusView.AddChild(createHPMPBar(player))
+
+	view.AddChild(statusView)
+	bufflist := BuffListView(player.BuffList)
+	bufflist.SetMarginTop(BuffListOffsetY)
+	bufflist.SetMarginLeft(5)
+	view.AddChild(bufflist)
+
+	return view
+}
+
+func addHoverSprite(view *furex.View) {
+	view.AddChild(
+		furex.NewView(
+			furex.ID("hover"),
+			furex.Position(furex.PositionAbsolute),
+			furex.Top(HoverSpriteTop),
+			furex.Left(HoverSpriteLeft),
+			furex.Width(HoverSpriteWidth),
+			furex.Height(HoverSpriteHeight),
+			furex.Handler(&Sprite{
+				Texture: texture.NewTextureFromFile("asset/partylist_hover.png"),
+			})))
+	view.AddChild(
+		furex.NewView(
+			furex.ID("selected"),
+			furex.Position(furex.PositionAbsolute),
+			furex.Top(HoverSpriteTop),
+			furex.Left(HoverSpriteLeft),
+			furex.Width(HoverSpriteWidth),
+			furex.Height(HoverSpriteHeight),
+			furex.Handler(&Sprite{Texture: texture.NewTextureFromFile("asset/partylist_selected.png")})))
+}
+
+func createCastingView(e *donburi.Entry) *furex.View {
+	castView := furex.NewView(
+		furex.ID("cast"),
+		furex.MarginTop(5),
+		furex.Direction(furex.Column),
+		furex.AlignItems(furex.AlignItemEnd))
+	castView.AddChild(
+		furex.NewView(
+			furex.Width(StatusPartWidth),
+			furex.Height(BarHeight),
+			furex.Handler(&Bar{
+				Progress: func() float64 {
+					cast := component.Sprite.Get(e).Instances[0].GetCast()
+					if cast == nil {
+						return 0
+					}
+					return float64(util.TickToMS(entry.GetTick(ecsInstance)-cast.StartTick)) / float64(cast.Cast)
+				},
+				BG: castAtlas.GetNineSlice("casting_frame.png"),
+				FG: castAtlas.GetNineSlice("casting_fg.png"),
+			})))
+	castView.AddChild(furex.NewView(furex.Height(CastNameTextSize), furex.Handler(&Text{
 		Align: furex.AlignItemStart,
 		Content: func() string {
-			cast := component.Sprite.Get(playerEntry).Instances[0].GetCast()
+			cast := component.Sprite.Get(e).Instances[0].GetCast()
 			if cast == nil {
 				return ""
 			}
@@ -133,26 +265,40 @@ func NewPlayerItem(playerEntry *donburi.Entry) *furex.View {
 		ShadowColor:  color.NRGBA{240, 152, 0, 128},
 	})))
 
-	statusView.AddChild(castView)
-	// add name
-	statusView.AddChild(furex.NewView(furex.ID("name"), furex.MarginTop(-12), furex.Width(100), furex.Height(13), furex.Handler(&Text{
-		Align:        furex.AlignItemStart,
-		Content:      player.Name,
-		Color:        color.White,
-		Shadow:       true,
-		ShadowOffset: 2,
-		ShadowColor:  color.NRGBA{22, 45, 87, 128},
-	})))
+	return castView
+}
 
-	// view for hp and mp
-	hm := furex.NewView(furex.Direction(furex.Row), furex.Justify(furex.JustifySpaceBetween), furex.Width(210))
-	hm.AddChild(furex.NewView(furex.Direction(furex.Column), furex.AlignItems(furex.AlignItemEnd)).AddChild(furex.NewView(furex.MarginTop(3), furex.Width(125), furex.Height(8), furex.Handler(&Bar{
+func createHPMPBar(player *model.StatusData) *furex.View {
+	hm := furex.NewView(
+		furex.Direction(furex.Row),
+		furex.Justify(furex.JustifySpaceBetween),
+		furex.Width(StatusPartWidth),
+	)
+
+	createBarView := func(bar *Bar, text *Text, w, h int) *furex.View {
+		const MarginTop = 3
+		return furex.NewView(
+			furex.Direction(furex.Column),
+			furex.AlignItems(furex.AlignItemEnd),
+		).AddChild(
+			furex.NewView(
+				furex.MarginTop(MarginTop),
+				furex.Width(w),
+				furex.Height(h),
+				furex.Handler(bar))).AddChild(
+			furex.NewView(
+				furex.Height(HMPTextSize),
+				furex.MarginTop(-3),
+				furex.Handler(text)))
+	}
+
+	createBarView(&Bar{
 		Progress: func() float64 {
 			return float64(player.HP) / float64(player.MaxHP)
 		},
 		FG: barAtlas.GetNineSlice("normal_bar_fg.png"),
 		BG: barAtlas.GetNineSlice("normal_bar_bg.png"),
-	}))).AddChild(furex.NewView(furex.Height(14), furex.MarginTop(-3), furex.Handler(&Text{
+	}, &Text{
 		Align: furex.AlignItemEnd,
 		Content: func() string {
 			return strconv.Itoa(player.HP)
@@ -161,15 +307,15 @@ func NewPlayerItem(playerEntry *donburi.Entry) *furex.View {
 		Shadow:       true,
 		ShadowOffset: 2,
 		ShadowColor:  color.NRGBA{22, 45, 87, 128},
-	}))))
+	}, HPBarWidth, HMPBarHeight).AddTo(hm)
 
-	hm.AddChild(furex.NewView(furex.Direction(furex.Column), furex.AlignItems(furex.AlignItemEnd)).AddChild(furex.NewView(furex.MarginTop(3), furex.Width(75), furex.Height(8), furex.Handler(&Bar{
+	createBarView(&Bar{
 		Progress: func() float64 {
 			return float64(player.Mana) / float64(player.MaxMana)
 		},
 		FG: barAtlas.GetNineSlice("normal_bar_fg.png"),
 		BG: barAtlas.GetNineSlice("normal_bar_bg.png"),
-	}))).AddChild(furex.NewView(furex.Height(14), furex.MarginTop(-3), furex.Handler(&Text{
+	}, &Text{
 		Align: furex.AlignItemEnd,
 		Content: func() string {
 			return strconv.Itoa(player.Mana)
@@ -178,13 +324,7 @@ func NewPlayerItem(playerEntry *donburi.Entry) *furex.View {
 		Shadow:       true,
 		ShadowOffset: 2,
 		ShadowColor:  color.NRGBA{22, 45, 87, 128},
-	}))))
+	}, MPBarWidth, HMPBarHeight).AddTo(hm)
 
-	statusView.AddChild(hm)
-	view.AddChild(statusView)
-	bufflist := BuffListView(player.BuffList)
-	bufflist.SetMarginTop(20)
-	bufflist.SetMarginLeft(5)
-	view.AddChild(bufflist)
-	return view
+	return hm
 }
