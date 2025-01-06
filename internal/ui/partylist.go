@@ -61,11 +61,11 @@ func (p *PlayerItem) Update(v *furex.View) {
 
 	// if player is casting, hide name
 	if component.Sprite.Get(p.Player).Instances[0].GetCast() != nil {
-		v.MustGetByID("name").Attrs.Display = furex.DisplayNone
-		v.MustGetByID("cast").Attrs.Display = furex.DisplayFlex
+		v.MustGetByID("name").Attrs.Hidden = true
+		v.MustGetByID("cast").Attrs.Hidden = false
 	} else {
-		v.MustGetByID("name").Attrs.Display = furex.DisplayFlex
-		v.MustGetByID("cast").Attrs.Display = furex.DisplayNone
+		v.MustGetByID("name").Attrs.Hidden = false
+		v.MustGetByID("cast").Attrs.Hidden = true
 	}
 }
 
@@ -98,7 +98,7 @@ func NewPlayerItem(playerEntry *donburi.Entry) *furex.View {
 
 	// add job icon
 	view.AddChild(furex.NewView(furex.Width(38), furex.Height(38), furex.Handler(&Sprite{Texture: player.RoleTexture()})))
-	statusView := furex.NewView(furex.MarginLeft(5), furex.Direction(furex.Column))
+	statusView := furex.NewView(furex.MarginLeft(5), furex.MarginTop(10), furex.Direction(furex.Column))
 	// add casting view
 	castView := furex.NewView(furex.ID("cast"), furex.MarginTop(5), furex.Direction(furex.Column), furex.AlignItems(furex.AlignItemEnd))
 	castView.AddChild(furex.NewView(furex.Width(210), furex.Height(12), furex.Handler(&Bar{
@@ -112,7 +112,7 @@ func NewPlayerItem(playerEntry *donburi.Entry) *furex.View {
 		BG: castAtlas.GetNineSlice("casting_frame.png"),
 		FG: castAtlas.GetNineSlice("casting_fg.png"),
 	})))
-	castView.AddChild(furex.NewView(furex.Height(12), furex.MarginTop(-5), furex.Width(100), furex.Handler(&Text{
+	castView.AddChild(furex.NewView(furex.Height(12), furex.Width(100), furex.Handler(&Text{
 		Align: furex.AlignItemStart,
 		Content: func() string {
 			cast := component.Sprite.Get(playerEntry).Instances[0].GetCast()
@@ -129,7 +129,7 @@ func NewPlayerItem(playerEntry *donburi.Entry) *furex.View {
 
 	statusView.AddChild(castView)
 	// add name
-	statusView.AddChild(furex.NewView(furex.ID("name"), furex.MarginTop(10), furex.Width(100), furex.Height(13), furex.Handler(&Text{
+	statusView.AddChild(furex.NewView(furex.ID("name"), furex.MarginTop(-12), furex.Width(100), furex.Height(13), furex.Handler(&Text{
 		Align:        furex.AlignItemStart,
 		Content:      player.Name,
 		Color:        color.White,
