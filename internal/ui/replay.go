@@ -33,7 +33,8 @@ var _ UI = (*FFUI)(nil)
 func NewReplayUI(ecs *ecs.ECS) *FFUI {
 	ecsInstance = ecs
 	view := furex.NewView(furex.Direction(furex.Row))
-	view.AddChild(furex.NewView(furex.ID("left"), furex.Grow(0.5), furex.MarginTop(20), furex.MarginLeft(20), furex.MarginBottom(20), furex.AlignItems(furex.AlignItemStart), furex.AlignContent(furex.AlignContentSpaceBetween), furex.Direction(furex.Column)))
+	view.AddChild(furex.NewView(
+		furex.ID("left"), furex.Grow(0.5), furex.MarginTop(20), furex.MarginLeft(20), furex.MarginBottom(20), furex.AlignItems(furex.AlignItemStart), furex.AlignContent(furex.AlignContentSpaceBetween), furex.Direction(furex.Column)))
 	return &FFUI{
 		view: view,
 	}

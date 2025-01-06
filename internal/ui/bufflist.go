@@ -14,11 +14,14 @@ func BuffListView(buffs any) *furex.View {
 		for _, b := range buffs {
 			view.AddChild(BuffView(b))
 		}
+
 		return view
 	}
+
 	if buffs, ok := buffs.(*model.BuffList); ok {
 		return furex.NewView(furex.ID("bufflist:dynamic"), furex.Handler(&BuffListHandler{Buffs: buffs}))
 	}
+
 	return nil
 }
 
@@ -31,6 +34,7 @@ type BuffListHandler struct {
 func (bl *BuffListHandler) Handler() furex.ViewHandler {
 	bl.handler.Extra = bl
 	bl.handler.Update = bl.update
+
 	return bl.handler
 }
 
@@ -38,7 +42,9 @@ func (bl *BuffListHandler) update(v *furex.View) {
 	if bl.Buffs == nil {
 		return
 	}
+
 	v.RemoveAll()
+
 	for _, b := range bl.Buffs.Buffs() {
 		v.AddChild(BuffView(b))
 	}

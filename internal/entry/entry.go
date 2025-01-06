@@ -18,8 +18,25 @@ import (
 	"golang.org/x/image/math/f64"
 )
 
-var Player = newArchetype(tag.GameObject, tag.Player, tag.PartyMember, tag.Buffable, component.Velocity, component.Sprite, component.Status)
-var Pet = newArchetype(tag.GameObject, tag.Pet, tag.PartyMember, tag.Buffable, component.Velocity, component.Sprite, component.Status)
+var (
+	Player = newArchetype(
+		tag.GameObject,
+		tag.Player,
+		tag.PartyMember,
+		tag.Buffable,
+		component.Velocity,
+		component.Sprite,
+		component.Status,
+	)
+	Pet = newArchetype(tag.GameObject,
+		tag.Pet,
+		tag.PartyMember,
+		tag.Buffable,
+		component.Velocity,
+		component.Sprite,
+		component.Status,
+	)
+)
 var Enemy = newArchetype(tag.GameObject, tag.Enemy, tag.Buffable, component.Velocity, component.Sprite, component.Status)
 var Background = newArchetype(tag.Background, component.Map)
 var Camera = newArchetype(tag.Camera, component.Camera)

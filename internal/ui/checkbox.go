@@ -8,8 +8,10 @@ import (
 	"github.com/yohamta/furex/v2"
 )
 
-var checkboxTextureAtlas = texture.NewTextureAtlasFromFile("asset/ui/checkbox.xml")
-var multicheckboxTextureAtlas = texture.NewTextureAtlasFromFile("asset/ui/multicheckbox.xml")
+var (
+	checkboxTextureAtlas      = texture.NewTextureAtlasFromFile("asset/ui/checkbox.xml")
+	multicheckboxTextureAtlas = texture.NewTextureAtlasFromFile("asset/ui/multicheckbox.xml")
+)
 
 type CheckBoxHandler struct {
 	Size         int
@@ -24,11 +26,13 @@ func (c *CheckBoxHandler) Handler() furex.ViewHandler {
 	c.handler.Update = c.Update
 	c.handler.JustPressedMouseButtonLeft = c.HandleJustPressedMouseButtonLeft
 	c.handler.JustReleasedMouseButtonLeft = c.HandleJustReleasedMouseButtonLeft
+
 	return c.handler
 }
 
 func (c *CheckBoxHandler) Update(v *furex.View) {
 	v.SetWidth(v.Last().Attrs.Width + 5 + c.Size)
+
 	if *c.Checked {
 		v.NthChild(1).Attrs.Hidden = false
 	} else {
@@ -41,12 +45,11 @@ func (c *CheckBoxHandler) HandleJustPressedMouseButtonLeft(frame image.Rectangle
 	if c.ClickHandler != nil {
 		c.ClickHandler(*c.Checked)
 	}
+
 	return true
 }
 
-func (c *CheckBoxHandler) HandleJustReleasedMouseButtonLeft(frame image.Rectangle, x, y int) {
-
-}
+func (c *CheckBoxHandler) HandleJustReleasedMouseButtonLeft(frame image.Rectangle, x, y int) {}
 
 func CheckBoxView(size int, multiple bool, value *bool, label string, clickHandler func(bool)) *furex.View {
 	view := furex.NewView(furex.Height(size), furex.AlignItems(furex.AlignItemCenter), furex.Handler(&CheckBoxHandler{
@@ -54,28 +57,66 @@ func CheckBoxView(size int, multiple bool, value *bool, label string, clickHandl
 		Checked:      value,
 		ClickHandler: clickHandler,
 	}))
+
 	if multiple {
-		view.AddChild(furex.NewView(furex.Position(furex.PositionAbsolute), furex.Width(size), furex.Height(size), furex.Top(0), furex.Left(0), furex.Handler(&Sprite{
-			NineSliceTexture: multicheckboxTextureAtlas.GetNineSlice("checkbox_bg.png"),
-		})))
-		view.AddChild(furex.NewView(furex.ID("checked"), furex.Hidden(true), furex.Position(furex.PositionAbsolute), furex.Width(size), furex.Height(size), furex.Top(0), furex.Left(0), furex.Handler(&Sprite{
-			NineSliceTexture: multicheckboxTextureAtlas.GetNineSlice("checkbox_checked.png"),
-		})))
+		view.AddChild(
+			furex.NewView(
+				furex.Position(furex.PositionAbsolute),
+				furex.Width(size),
+				furex.Height(size),
+				furex.Top(0),
+				furex.Left(0),
+				furex.Handler(&Sprite{
+					NineSliceTexture: multicheckboxTextureAtlas.GetNineSlice("checkbox_bg.png"),
+				})))
+		view.AddChild(
+			furex.NewView(furex.ID("checked"),
+				furex.Hidden(true),
+				furex.Position(furex.PositionAbsolute),
+				furex.Width(size),
+				furex.Height(size),
+				furex.Top(0),
+				furex.Left(0),
+				furex.Handler(&Sprite{
+					NineSliceTexture: multicheckboxTextureAtlas.GetNineSlice("checkbox_checked.png"),
+				})))
 	} else {
-		view.AddChild(furex.NewView(furex.Position(furex.PositionAbsolute), furex.Width(size), furex.Height(size), furex.Top(0), furex.Left(0), furex.Handler(&Sprite{
-			NineSliceTexture: checkboxTextureAtlas.GetNineSlice("checkbox_bg.png"),
-		})))
-		view.AddChild(furex.NewView(furex.ID("checked"), furex.Hidden(true), furex.Position(furex.PositionAbsolute), furex.Width(size), furex.Height(size), furex.Top(0), furex.Left(0), furex.Handler(&Sprite{
-			NineSliceTexture: checkboxTextureAtlas.GetNineSlice("checkbox_checked.png"),
-		})))
+		view.AddChild(
+			furex.NewView(
+				furex.Position(furex.PositionAbsolute),
+				furex.Width(size),
+				furex.Height(size),
+				furex.Top(0),
+				furex.Left(0),
+				furex.Handler(&Sprite{
+					NineSliceTexture: checkboxTextureAtlas.GetNineSlice("checkbox_bg.png"),
+				})))
+		view.AddChild(
+			furex.NewView(
+				furex.ID("checked"),
+				furex.Hidden(true),
+				furex.Position(furex.PositionAbsolute),
+				furex.Width(size), furex.Height(size),
+				furex.Top(0),
+				furex.Left(0),
+				furex.Handler(&Sprite{
+					NineSliceTexture: checkboxTextureAtlas.GetNineSlice("checkbox_checked.png"),
+				})))
 	}
-	view.AddChild(furex.NewView(furex.ID("label"), furex.MarginLeft(int(float64(size)*1.2)), furex.Height(int(float64(size)*0.8)), furex.Handler(&Text{
-		Align:        furex.AlignItemStart,
-		Content:      label,
-		Color:        color.White,
-		Shadow:       true,
-		ShadowOffset: 2,
-		ShadowColor:  color.NRGBA{0, 0, 0, 128},
-	})))
+
+	view.AddChild(
+		furex.NewView(
+			furex.ID("label"),
+			furex.MarginLeft(int(float64(size))),
+			furex.Height(int(float64(size))),
+			furex.Handler(&Text{
+				Align:        furex.AlignItemStart,
+				Content:      label,
+				Color:        color.White,
+				Shadow:       true,
+				ShadowOffset: 2,
+				ShadowColor:  color.NRGBA{0, 0, 0, 128},
+			})))
+
 	return view
 }

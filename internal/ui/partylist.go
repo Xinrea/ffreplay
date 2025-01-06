@@ -92,7 +92,13 @@ func NewPlayerItem(playerEntry *donburi.Entry) *furex.View {
 		Player: playerEntry,
 	}
 	player := component.Status.Get(playerEntry)
-	view := furex.NewView(furex.ID(strconv.Itoa(int(player.ID))), furex.Height(48), furex.Direction(furex.Row), furex.AlignItems(furex.AlignItemCenter), furex.Justify(furex.JustifyStart), furex.Handler(item))
+	view := furex.NewView(
+		furex.ID(strconv.Itoa(int(player.ID))),
+		furex.Height(48), furex.Direction(furex.Row),
+		furex.AlignItems(furex.AlignItemCenter),
+		furex.Justify(furex.JustifyStart),
+		furex.Handler(item),
+	)
 	view.AddChild(furex.NewView(furex.ID("hover"), furex.Position(furex.PositionAbsolute), furex.Top(10), furex.Left(30), furex.Width(275), furex.Height(40), furex.Handler(&Sprite{Texture: texture.NewTextureFromFile("asset/partylist_hover.png")})))
 	view.AddChild(furex.NewView(furex.ID("selected"), furex.Position(furex.PositionAbsolute), furex.Top(10), furex.Left(30), furex.Width(275), furex.Height(40), furex.Handler(&Sprite{Texture: texture.NewTextureFromFile("asset/partylist_selected.png")})))
 

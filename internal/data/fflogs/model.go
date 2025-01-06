@@ -59,6 +59,7 @@ type GameMap struct {
 
 func (t *BearerAuthTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req.Header.Set("Authorization", "Bearer "+t.Token)
+
 	return http.DefaultTransport.RoundTrip(req)
 }
 
