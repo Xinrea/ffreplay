@@ -196,8 +196,9 @@ func NewMap(ecs *ecs.ECS, m *model.MapConfig) *donburi.Entry {
 func NewGlobal(ecs *ecs.ECS) *donburi.Entry {
 	global := Global.Spawn(ecs)
 	component.Global.Set(global, &model.GlobalData{
-		Tick:  0,
-		Speed: 10,
+		Tick:                0,
+		Speed:               10,
+		WorldMarkerSelected: -1,
 	})
 
 	return global

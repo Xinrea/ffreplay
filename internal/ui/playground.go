@@ -4,10 +4,13 @@ import (
 	"image"
 	"sync"
 
+	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/entry"
+	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/yohamta/donburi/ecs"
 	"github.com/yohamta/furex/v2"
+	"golang.org/x/image/math/f64"
 )
 
 // Due to the design of furex.View, root view cannot handle any events,
@@ -55,10 +58,18 @@ func (p *PlaygroundUI) Update(w, h int) {
 			command := CommandView()
 			command.Attrs.MarginBottom = UIPadding
 			command.Attrs.MarginLeft = UIPadding
+
+			hotbar := HotBarView(2, 8)
+			hotbar.Attrs.MarginLeft = UIPadding
+
+			p.SetupHotBar(hotbar, 2, 8)
+
 			partyList := NewPartyList(nil)
 			partyList.Attrs.MarginTop = 40
 			partyList.Attrs.MarginLeft = UIPadding
+
 			p.base.AddChild(partyList)
+			p.base.AddChild(hotbar)
 			p.base.AddChild(command)
 		})
 	}
@@ -71,4 +82,42 @@ func (p *PlaygroundUI) Update(w, h int) {
 
 func (p *PlaygroundUI) Draw(screen *ebiten.Image) {
 	root.Draw(screen)
+}
+
+func (p *PlaygroundUI) SetupHotBar(v *furex.View, w, h int) {
+	newWorldMarkerHotBarItem := func(marker model.WorldMarkerType) *furex.View {
+		return HotbarItemView(&HotBarItemConfig{
+			Name: "test",
+			Icon: model.WorldMarkerConfigs[marker].Texture,
+			ClickHandler: func() {
+				global := entry.GetGlobal(ecsInstance)
+				camera := entry.GetCamera(ecsInstance)
+				// if marker exists, remove it
+				for markerEntry := range component.WorldMarker.Iter(ecsInstance.World) {
+					markerData := component.WorldMarker.Get(markerEntry)
+					if markerData.Type == marker {
+						markerEntry.Remove()
+
+						return
+					}
+				}
+
+				x, y := ebiten.CursorPosition()
+				wx, wy := camera.ScreenToWorld(float64(x), float64(y))
+				entry.NewWorldMarker(ecsInstance, marker, f64.Vec2{wx, wy})
+				global.WorldMarkerSelected = int(marker)
+			},
+		})
+	}
+
+	for i := 0; i < h; i++ {
+		for j := 0; j < w; j++ {
+			marker := model.WorldMarkerType(i*w + j)
+			if marker > model.WorldMarker4 {
+				return
+			}
+
+			v.NthChild(i).NthChild(j).ReplaceWith(newWorldMarkerHotBarItem(marker))
+		}
+	}
 }

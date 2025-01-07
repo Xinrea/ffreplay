@@ -1,0 +1,6 @@
+<TextureAtlas>
+    <SubTexture name="hotbar_empty.png" x="0" y="96" w="48" h="48"/>
+    <SubTexture name="hotbar_fg.png" x="0" y="0" w="48" h="48"/>
+    <SubTexture name="hotbar_disabled.png" x="48" y="0" w="48" h="48"/>
+    <SubTexture name="hotbar_clicked.png" x="48" y="96" w="48" h="48"/>
+</TextureAtlas>

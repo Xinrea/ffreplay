@@ -13,7 +13,7 @@ import (
 	"github.com/yohamta/furex/v2"
 )
 
-const MaxVelocity = 8
+const MaxVelocity = 4
 
 func (s *System) ControlUpdate(ecs *ecs.ECS) {
 	camera := entry.GetCamera(s.ecs)
@@ -27,6 +27,7 @@ func (s *System) ControlUpdate(ecs *ecs.ECS) {
 	if global.UIFocus {
 		return
 	}
+
 	if inpututil.IsKeyJustPressed(ebiten.KeyBackquote) {
 		global.Debug = !global.Debug
 		furex.Debug = !furex.Debug

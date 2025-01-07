@@ -24,6 +24,8 @@ type GlobalData struct {
 	Loaded        atomic.Bool
 	LoadCount     atomic.Int32
 	LoadTotal     int
+	// WorldMarker selected
+	WorldMarkerSelected int
 	// marker for system reset
 	Reset atomic.Bool
 }
