@@ -60,16 +60,25 @@ func (p *PlaygroundUI) Update(w, h int) {
 			command.Attrs.MarginLeft = UIPadding
 
 			hotbar := HotBarView(2, 8)
-			hotbar.Attrs.MarginLeft = UIPadding
+			hotbar.Attrs.MarginTop = UIPadding
+			hotbar.Attrs.MarginRight = UIPadding
 
 			p.SetupHotBar(hotbar, 2, 8)
+
+			topView := furex.NewView(
+				furex.Grow(1),
+				furex.Direction(furex.Row),
+				furex.Justify(furex.JustifySpaceBetween),
+			)
 
 			partyList := NewPartyList(nil)
 			partyList.Attrs.MarginTop = 40
 			partyList.Attrs.MarginLeft = UIPadding
 
-			p.base.AddChild(partyList)
-			p.base.AddChild(hotbar)
+			topView.AddChild(partyList)
+			topView.AddChild(hotbar)
+
+			p.base.AddChild(topView)
 			p.base.AddChild(command)
 		})
 	}
