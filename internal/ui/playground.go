@@ -59,12 +59,6 @@ func (p *PlaygroundUI) Update(w, h int) {
 			command.Attrs.MarginBottom = UIPadding
 			command.Attrs.MarginLeft = UIPadding
 
-			hotbar := HotBarView(2, 8)
-			hotbar.Attrs.MarginTop = UIPadding
-			hotbar.Attrs.MarginRight = UIPadding
-
-			p.SetupHotBar(hotbar, 2, 8)
-
 			topView := furex.NewView(
 				furex.Grow(1),
 				furex.Direction(furex.Row),
@@ -75,8 +69,25 @@ func (p *PlaygroundUI) Update(w, h int) {
 			partyList.Attrs.MarginTop = 40
 			partyList.Attrs.MarginLeft = UIPadding
 
+			topRightView := furex.NewView(
+				furex.Direction(furex.Column),
+				furex.AlignItems(furex.AlignItemEnd),
+				furex.MarginRight(UIPadding),
+				furex.MarginTop(UIPadding),
+			)
+
+			hotbar := HotBarView(2, 8)
+
+			p.SetupHotBar(hotbar, 2, 8)
+
+			checkBox := CheckBoxView(14, true, &global.ShowTargetRing, "显示目标圈", nil)
+			checkBox.Attrs.MarginTop = 50
+
+			topRightView.AddChild(hotbar)
+			topRightView.AddChild(checkBox)
+
 			topView.AddChild(partyList)
-			topView.AddChild(hotbar)
+			topView.AddChild(topRightView)
 
 			p.base.AddChild(topView)
 			p.base.AddChild(command)

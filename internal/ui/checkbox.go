@@ -52,7 +52,7 @@ func (c *CheckBoxHandler) HandleJustPressedMouseButtonLeft(frame image.Rectangle
 func (c *CheckBoxHandler) HandleJustReleasedMouseButtonLeft(frame image.Rectangle, x, y int) {}
 
 func CheckBoxView(size int, multiple bool, value *bool, label string, clickHandler func(bool)) *furex.View {
-	view := furex.NewView(furex.Height(size), furex.AlignItems(furex.AlignItemCenter), furex.Handler(&CheckBoxHandler{
+	view := furex.NewView(furex.Height(size), furex.Handler(&CheckBoxHandler{
 		Size:         size,
 		Checked:      value,
 		ClickHandler: clickHandler,

@@ -19,11 +19,12 @@ type GlobalData struct {
 	// should not process any event when UI is on focus
 	UIFocus bool
 	// Phases is a tick array for phase change
-	Phases        []int64
-	FightDuration atomic.Int64
-	Loaded        atomic.Bool
-	LoadCount     atomic.Int32
-	LoadTotal     int
+	Phases         []int64
+	FightDuration  atomic.Int64
+	Loaded         atomic.Bool
+	LoadCount      atomic.Int32
+	LoadTotal      int
+	ShowTargetRing bool
 	// WorldMarker selected
 	WorldMarkerSelected int
 	// marker for system reset
