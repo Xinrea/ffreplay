@@ -174,7 +174,6 @@ func CommandView() *furex.View {
 	handler := &CommandHandler{}
 	view := furex.NewView(
 		furex.TagName("command"),
-		furex.Width(400),
 		furex.Direction(furex.Column),
 		furex.Justify(furex.JustifyEnd),
 	)

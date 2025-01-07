@@ -20,10 +20,12 @@ type Focusable interface {
 }
 
 type InputHandler struct {
-	Width         int
+	View          *furex.View
+	MinWidth      int
 	focused       bool
 	runes         []rune
 	content       string
+	briefLen      int
 	counter       int64
 	historyMode   bool
 	historyIndex  int
@@ -101,7 +103,8 @@ func (i *InputHandler) Update(v *furex.View) {
 		return
 	}
 
-	i.handleInput(v)
+	i.handleWidthChange(v)
+	i.handleInput()
 	i.handleEnterKey()
 	i.handleArrowKeys()
 	i.handleBackspaceKey()
@@ -109,19 +112,20 @@ func (i *InputHandler) Update(v *furex.View) {
 	i.counter += 1
 }
 
-func (i *InputHandler) handleInput(v *furex.View) {
-	currentWidth := v.MustGetByID("content").Attrs.Width
-	if currentWidth+18 <= i.Width {
-		i.runes = ebiten.AppendInputChars(i.runes[:0])
-		if len(i.runes) > 0 {
-			i.historyMode = false
-		}
+func (i *InputHandler) handleWidthChange(v *furex.View) {
+	content := v.MustGetByID("content")
 
-		i.content += string(i.runes)
-	} else {
-		runes := []rune(i.content)
-		i.content = string(runes[:len(runes)-1])
+	newWidth := max(content.Attrs.Width+24, i.MinWidth)
+	v.SetWidth(newWidth)
+}
+
+func (i *InputHandler) handleInput() {
+	i.runes = ebiten.AppendInputChars(i.runes[:0])
+	if len(i.runes) > 0 {
+		i.historyMode = false
 	}
+
+	i.content += string(i.runes)
 }
 
 func (i *InputHandler) handleEnterKey() {
@@ -208,13 +212,13 @@ const (
 	InputTextHeight = 12
 )
 
-func InputView(prefix string, width int, commitHandler func(string)) *furex.View {
+func InputView(prefix string, minWidth int, commitHandler func(string)) *furex.View {
 	handler := &InputHandler{
-		Width:         width,
+		MinWidth:      minWidth,
 		CommitHandler: commitHandler,
 	}
-	view := furex.NewView(furex.TagName("input"), furex.Direction(furex.Column), furex.Handler(handler))
-	view.AddChild(furex.NewView(furex.Height(InputHeight), furex.Width(width), furex.Handler(&Sprite{
+	view := furex.NewView(furex.TagName("input"), furex.Direction(furex.Column), furex.Width(minWidth), furex.Handler(handler))
+	view.AddChild(furex.NewView(furex.ID("input-bg"), furex.Height(InputHeight), furex.Handler(&Sprite{
 		NineSliceTexture: messageTextureAtlas.GetNineSlice("input_bg.png"),
 	})))
 	view.AddChild(
@@ -238,6 +242,8 @@ func InputView(prefix string, width int, commitHandler func(string)) *furex.View
 				ShadowOffset: 2,
 				ShadowColor:  color.NRGBA{0, 0, 0, 128},
 			})))
+
+	handler.View = view
 
 	return view
 }
