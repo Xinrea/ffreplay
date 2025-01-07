@@ -46,12 +46,18 @@ func (c *CommandHandler) Execute(cmd string) {
 	switch commands[0] {
 	case "/help":
 		c.AddResult("可用命令：")
-		c.AddResult("/map list - 查看地图列表")
-		c.AddResult("/map phase <id> - 查看地图分段")
-		c.AddResult("/map set <id> [phase] - 设置地图")
-		c.AddResult("/player add <name> <role> - 添加玩家")
-		c.AddResult("/player remove <id> - 移除玩家")
-		c.AddResult("/clear - 清空记录")
+		c.AddResult("- /map list")
+		c.AddResult("查看地图列表")
+		c.AddResult("- /map phase <id>")
+		c.AddResult("查看地图分段，例如 /map phase 77")
+		c.AddResult("- /map set <id> [phase]")
+		c.AddResult("设置地图，例如 /map set 77 4")
+		c.AddResult("- /player add <name> <role>")
+		c.AddResult("添加玩家，例如 /player add Xinrea Scholar")
+		c.AddResult("- /player remove <id>")
+		c.AddResult("移除玩家，例如 /player remove 1")
+		c.AddResult("- /clear")
+		c.AddResult("清空消息")
 	case "/map":
 		c.mapHandler(commands[1:])
 	case "/player":
