@@ -47,7 +47,8 @@ func (c *CommandHandler) Execute(cmd string) {
 	case "/help":
 		c.AddResult("可用命令：")
 		c.AddResult("/map list - 查看地图列表")
-		c.AddResult("/map set <id> - 设置地图")
+		c.AddResult("/map phase <id> - 查看地图分段")
+		c.AddResult("/map set <id> [phase] - 设置地图")
 		c.AddResult("/player add <name> <role> - 添加玩家")
 		c.AddResult("/player remove <id> - 移除玩家")
 		c.AddResult("/clear - 清空记录")
@@ -82,6 +83,15 @@ func (c *CommandHandler) mapHandler(cmds []string) {
 		for _, m := range mapids {
 			c.AddResult(m)
 		}
+	case "phase":
+		id, _ := strconv.Atoi(cmds[1])
+		if m, ok := model.MapCache[id]; ok {
+			for i := range m.Phases {
+				c.AddResult(fmt.Sprintf("Phase %d", i))
+			}
+		} else {
+			c.AddError("Invalid map id")
+		}
 	case "set":
 		mapData := component.Map.Get(component.Map.MustFirst(ecsInstance.World))
 		cameraData := entry.GetCamera(ecsInstance)
@@ -93,6 +103,15 @@ func (c *CommandHandler) mapHandler(cmds []string) {
 			cameraData.Position = vector.NewVector(current.Offset.X*25, current.Offset.Y*25)
 
 			c.AddResult("Setup map " + cmds[1])
+
+			if len(cmds) > 2 {
+				phase, _ := strconv.Atoi(cmds[2])
+				if phase < len(mapData.Config.Phases) && phase >= 0 {
+					mapData.Config.CurrentPhase = phase
+
+					c.AddResult("Setup phase " + cmds[2])
+				}
+			}
 		} else {
 			c.AddError("Invalid map id")
 		}
