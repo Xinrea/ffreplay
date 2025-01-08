@@ -4,6 +4,5 @@ linters:
     - depguard
     - godox
     - mnd
-    - gomnd
     - gomoddirectives
   fast: true
