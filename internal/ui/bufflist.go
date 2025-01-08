@@ -9,31 +9,42 @@ import (
 // You can provide a model.BuffList to update buffs dynamically,
 // or just a list of model.Buff to display static buffs.
 func BuffListView(buffs any) *furex.View {
-	view := &furex.View{}
 	if buffs, ok := buffs.([]*model.Buff); ok {
-		view.ID = "bufflist:static"
+		view := furex.NewView(furex.ID("bufflist:static"))
 		for _, b := range buffs {
 			view.AddChild(BuffView(b))
 		}
+
+		return view
 	}
+
 	if buffs, ok := buffs.(*model.BuffList); ok {
-		view.ID = "bufflist:dynamic"
-		view.Handler = &BuffListHandler{
-			Buffs: buffs,
-		}
+		return furex.NewView(furex.ID("bufflist:dynamic"), furex.Handler(&BuffListHandler{Buffs: buffs}))
 	}
-	return view
+
+	return nil
 }
 
 type BuffListHandler struct {
 	Buffs *model.BuffList
+
+	handler furex.ViewHandler
 }
 
-func (bl *BuffListHandler) Update(v *furex.View) {
+func (bl *BuffListHandler) Handler() furex.ViewHandler {
+	bl.handler.Extra = bl
+	bl.handler.Update = bl.update
+
+	return bl.handler
+}
+
+func (bl *BuffListHandler) update(v *furex.View) {
 	if bl.Buffs == nil {
 		return
 	}
+
 	v.RemoveAll()
+
 	for _, b := range bl.Buffs.Buffs() {
 		v.AddChild(BuffView(b))
 	}

@@ -24,11 +24,14 @@ func (r *Renderer) PlayerRender(ecs *ecs.ECS, screen *ebiten.Image) {
 func (r *Renderer) renderPlayer(ecs *ecs.ECS, camera *model.CameraData, screen *ebiten.Image, player *donburi.Entry) {
 	tick := entry.GetTick(ecs)
 	global := component.Global.Get(component.Global.MustFirst(ecs.World))
+
 	sprite := component.Sprite.Get(player)
 	if !sprite.Initialized {
 		return
 	}
+
 	status := component.Status.Get(player)
+
 	worldM := camera.WorldMatrixInverted()
 
 	// render target ring
@@ -43,9 +46,12 @@ func (r *Renderer) renderPlayer(ecs *ecs.ECS, camera *model.CameraData, screen *
 	geoM.Rotate(sprite.Instances[0].Face)
 	geoM.Translate(pos[0], pos[1])
 	geoM.Concat(worldM)
-	op := &colorm.DrawImageOptions{}
-	op.GeoM = geoM
-	colorm.DrawImage(screen, sprite.Texture, c, op)
+
+	if global.ShowTargetRing {
+		op := &colorm.DrawImageOptions{}
+		op.GeoM = geoM
+		colorm.DrawImage(screen, sprite.Texture, c, op)
+	}
 
 	c = colorm.ColorM{}
 	if status.IsDead() {
@@ -57,7 +63,8 @@ func (r *Renderer) renderPlayer(ecs *ecs.ECS, camera *model.CameraData, screen *
 	geoM.Rotate(camera.Rotation)
 	geoM.Translate(pos[0], pos[1])
 	geoM.Concat(worldM)
-	op = &colorm.DrawImageOptions{}
+
+	op := &colorm.DrawImageOptions{}
 	op.GeoM = geoM
 	colorm.DrawImage(screen, status.RoleTexture(), c, op)
 

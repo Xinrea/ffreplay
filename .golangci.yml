@@ -1,0 +1,8 @@
+linters:
+  enable-all: true
+  disable:
+    - depguard
+    - godox
+    - mnd
+    - gomoddirectives
+  fast: true

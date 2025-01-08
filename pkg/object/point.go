@@ -8,7 +8,7 @@ type PointObject struct {
 	DefaultObject
 }
 
-// make sure PointObject implements Object interface
+// make sure PointObject implements Object interface.
 var _ Object = (*PointObject)(nil)
 
 func NewPointObject(pos Vector) *PointObject {

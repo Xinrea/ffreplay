@@ -8,14 +8,16 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// RangeLimit v into [-m, m], m should be positive
+// RangeLimit v into [-m, m], m should be positive.
 func RangeLimit(v, m float64) float64 {
 	if v < -m {
 		return -m
 	}
+
 	if v > m {
 		return m
 	}
+
 	return v
 }
 
@@ -36,6 +38,7 @@ func NormalizeAngle(angle float64) float64 {
 	if normalized < 0 {
 		normalized += 360
 	}
+
 	return normalized
 }
 
@@ -43,9 +46,11 @@ func NormalizeRadians(radian float64) float64 {
 	for radian < 0 {
 		radian += 2 * math.Pi
 	}
+
 	for radian > 2*math.Pi {
 		radian -= 2 * math.Pi
 	}
+
 	return radian
 }
 
@@ -54,6 +59,7 @@ func LerpRadians(a, b, t float64) float64 {
 	b = NormalizeRadians(b)
 	// make diff into [-pi, pi]
 	diff := math.Mod(((b-a)+math.Pi), (2*math.Pi)) - math.Pi
+
 	return Lerpf(a, a+diff, t)
 }
 
@@ -67,6 +73,7 @@ func MSToTick(ms int64) int64 {
 
 func ScaleFrame(frame image.Rectangle) image.Rectangle {
 	s := ebiten.Monitor().DeviceScaleFactor()
+
 	return image.Rect(
 		int(float64(frame.Min.X)*s),
 		int(float64(frame.Min.Y)*s),

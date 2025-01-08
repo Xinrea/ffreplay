@@ -38,6 +38,7 @@ func (v Vector) Rotate(r float64) Vector {
 	sin := math.Sin(r)
 	x := v[0]*cos - v[1]*sin
 	y := v[0]*sin + v[1]*cos
+
 	return Vector{x, y}
 }
 
@@ -62,8 +63,10 @@ func (v Vector) Cross(v2 Vector) float64 {
 func (v Vector) Lerp(v2 Vector, t float64) Vector {
 	x := v[0] + (v2[0]-v[0])*t
 	y := v[1] + (v2[1]-v[1])*t
+
 	return Vector{x, y}
 }
+
 func (v *Vector) Set(v2 Vector) {
 	v[0] = v2[0]
 	v[1] = v2[1]
@@ -85,5 +88,6 @@ func (v Vector) Distance(v2 Vector) float64 {
 
 func (v Vector) Apply(matrix ebiten.GeoM) Vector {
 	x, y := matrix.Apply(v[0], v[1])
+
 	return Vector{x, y}
 }

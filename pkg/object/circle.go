@@ -13,7 +13,7 @@ type CircleObject struct {
 	radius float64
 }
 
-// make sure CircleObject implements Object interface
+// make sure CircleObject implements Object interface.
 var _ Object = (*CircleObject)(nil)
 
 func NewCircleObject(opt ObjectOption, pos Vector, radius float64) *CircleObject {
@@ -38,7 +38,13 @@ func NewCircleObject(opt ObjectOption, pos Vector, radius float64) *CircleObject
 
 	texture := ebiten.NewImage(int(w), int(h))
 	vector.DrawFilledCircle(texture, float32(w/2), float32(h/2), float32(radius), opt.FillColor, true)
-	vector.StrokeCircle(texture, float32(w/2), float32(h/2), float32(radius), float32(opt.StrokeWidth), opt.StrokeColor, true)
+	vector.StrokeCircle(
+		texture,
+		float32(w/2),
+		float32(h/2),
+		float32(radius),
+		float32(opt.StrokeWidth),
+		opt.StrokeColor, true)
 
 	objectTextureCache[hashStr] = texture
 

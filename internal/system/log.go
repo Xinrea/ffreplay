@@ -11,6 +11,7 @@ import (
 	"github.com/Xinrea/ffreplay/internal/entry"
 	"github.com/Xinrea/ffreplay/internal/game/skills"
 	"github.com/Xinrea/ffreplay/internal/model"
+	"github.com/Xinrea/ffreplay/internal/model/role"
 	"github.com/Xinrea/ffreplay/internal/tag"
 	"github.com/Xinrea/ffreplay/util"
 	"github.com/fogleman/ease"
@@ -43,348 +44,372 @@ func (s *System) replayUpdate(ecs *ecs.ECS, tick int64) {
 
 	// map event
 	gamemap := component.Map.Get(component.Map.MustFirst(ecs.World))
-	index = sort.Search(len(s.MapChangeEvents), func(i int) bool {
-		return s.MapChangeEvents[i].LocalTick > tick
-	})
-	if index > 0 {
-		gamemap.Config.CurrentMap = *s.MapChangeEvents[index-1].MapID
+	if gamemap.Config != nil {
+		index = sort.Search(len(s.MapChangeEvents), func(i int) bool {
+			return s.MapChangeEvents[i].LocalTick > tick
+		})
+		if index > 0 {
+			gamemap.Config.CurrentMap = *s.MapChangeEvents[index-1].MapID
+		}
 	}
 
 	// marker event
-	for s.WorldMarkerEvents.Cursor < len(s.WorldMarkerEvents.Events) && s.WorldMarkerEvents.Events[s.WorldMarkerEvents.Cursor].LocalTick <= tick {
+	for s.WorldMarkerEvents.Cursor < len(s.WorldMarkerEvents.Events) &&
+		s.WorldMarkerEvents.Events[s.WorldMarkerEvents.Cursor].LocalTick <= tick {
 		event := s.WorldMarkerEvents.Events[s.WorldMarkerEvents.Cursor]
-		s.applyLog(ecs, tick, nil, event)
+		s.applyLog(ecs, nil, event)
+
 		s.WorldMarkerEvents.Cursor++
 	}
 
+	s.handleFFlogsEvents(ecs, tick)
+}
+
+func (s *System) handleFFlogsEvents(ecs *ecs.ECS, tick int64) {
 	for e := range tag.GameObject.Iter(ecs.World) {
 		id := component.Status.Get(e).ID
+
 		line := s.EventLines[id]
-		if line == nil {
+		if line == nil || line.Cursor >= len(line.Events) {
 			continue
 		}
-		if line.Cursor >= len(line.Events) {
-			continue
-		}
-		// face and object is owned by instances, but they share status
-		for i, sprite := range component.Sprite.Get(e).Instances {
-			instanceID := i + 1
-			// binary find the status event in line.Status
-			index := sort.Search(len(line.Status[instanceID]), func(i int) bool {
-				return line.Status[instanceID][i].Tick >= tick
-			})
-			// if not found, skip
-			if index == len(line.Status[instanceID]) {
-				continue
-			}
 
-			normalUpdate := func(status data.StatusEvent) {
-				facing := status.Face + math.Pi/2
-				sprite.Face = facing
-				sprite.Object.UpdatePosition(status.Position)
-				component.Status.Get(e).HP = status.HP
-				component.Status.Get(e).MaxHP = status.MaxHP
-				component.Status.Get(e).Mana = status.MP
-				component.Status.Get(e).MaxMana = status.MaxMP
-			}
-			lerpUpdate := func(previous, status data.StatusEvent) {
-				// lerping between two status event
-				t := float64(tick - previous.Tick)
-				d := float64(status.Tick - previous.Tick)
-				if d == 0 {
-					d = t
-				}
-				pos := previous.Position.Lerp(status.Position, ease.InOutSine(t/d))
-				facing := math.Pi/2 + util.LerpRadians(previous.Face, status.Face, ease.InOutSine(t/d))
-				sprite.Face = facing
-				sprite.Object.UpdatePosition(pos)
-				component.Status.Get(e).HP = status.HP
-				component.Status.Get(e).MaxHP = status.MaxHP
-				component.Status.Get(e).Mana = status.MP
-				component.Status.Get(e).MaxMana = status.MaxMP
-			}
-			// apply status event
-			// if is last event, just apply it
-			status := line.Status[instanceID][index]
-			if index == 0 || component.Status.Get(e).IsDead() {
-				normalUpdate(status)
+		s.updateInstances(e, line, tick)
+		s.consumeEvents(ecs, e, line, tick)
+	}
+}
+
+func (s *System) updateInstances(e *donburi.Entry, line *EventLine, tick int64) {
+	for i, sprite := range component.Sprite.Get(e).Instances {
+		instanceID := i + 1
+		index := sort.Search(len(line.Status[instanceID]), func(i int) bool {
+			return line.Status[instanceID][i].Tick >= tick
+		})
+
+		if index == len(line.Status[instanceID]) {
+			continue
+		}
+
+		status := line.Status[instanceID][index]
+		if index == 0 || component.Status.Get(e).IsDead() {
+			s.normalUpdate(e, sprite, status)
+		} else {
+			previous := line.Status[instanceID][index-1]
+			if component.Status.Get(e).Role == role.NPC {
+				s.normalUpdate(e, sprite, previous)
 			} else {
-				// not lerping for npc (normally invisible object in game)
-				previous := line.Status[instanceID][index-1]
-				if component.Status.Get(e).Role == model.NPC {
-					normalUpdate(previous)
-				} else {
-					lerpUpdate(previous, status)
-				}
+				s.lerpUpdate(e, sprite, previous, status, tick)
 			}
-		}
-
-		// consume all events until event that should not happen at this tick
-		for line.Cursor < len(line.Events) && line.Events[line.Cursor].LocalTick <= tick {
-			event := line.Events[line.Cursor]
-			s.applyLog(ecs, tick, e, event)
-			line.Cursor++
 		}
 	}
 }
 
-func (s *System) applyLog(ecs *ecs.ECS, tick int64, target *donburi.Entry, event fflogs.FFLogsEvent) {
-	debug := entry.IsDebug(ecs)
+func (s *System) normalUpdate(e *donburi.Entry, sprite *model.Instance, status data.StatusEvent) {
+	facing := status.Face + math.Pi/2
+	sprite.Face = facing
+	sprite.Object.UpdatePosition(status.Position)
+	component.Status.Get(e).HP = status.HP
+	component.Status.Get(e).MaxHP = status.MaxHP
+	component.Status.Get(e).Mana = status.MP
+	component.Status.Get(e).MaxMana = status.MaxMP
+}
 
+func (s *System) lerpUpdate(e *donburi.Entry, sprite *model.Instance, previous, status data.StatusEvent, tick int64) {
+	t := float64(tick - previous.Tick)
+	d := float64(status.Tick - previous.Tick)
+
+	if d == 0 {
+		d = t
+	}
+
+	pos := previous.Position.Lerp(status.Position, ease.InOutSine(t/d))
+	facing := math.Pi/2 + util.LerpRadians(previous.Face, status.Face, ease.InOutSine(t/d))
+	sprite.Face = facing
+	sprite.Object.UpdatePosition(pos)
+
+	component.Status.Get(e).HP = status.HP
+	component.Status.Get(e).MaxHP = status.MaxHP
+	component.Status.Get(e).Mana = status.MP
+	component.Status.Get(e).MaxMana = status.MaxMP
+}
+
+func (s *System) consumeEvents(ecs *ecs.ECS, e *donburi.Entry, line *EventLine, tick int64) {
+	for line.Cursor < len(line.Events) && line.Events[line.Cursor].LocalTick <= tick {
+		event := line.Events[line.Cursor]
+		s.applyLog(ecs, e, event)
+
+		line.Cursor++
+	}
+}
+
+type EventHandler func(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent)
+
+var EventHandlerMap = map[fflogs.EventType]EventHandler{
+	fflogs.Combatantinfo:      handleCombatantinfo,
+	fflogs.Applybuff:          handleApplyBuff,
+	fflogs.Applydebuff:        handleApplyDebuff,
+	fflogs.Refreshbuff:        handleRefreshBuff,
+	fflogs.Removebuff:         handleRemoveBuff,
+	fflogs.RemoveDebuff:       handleRemoveDebuff,
+	fflogs.Begincast:          handleBeginCast,
+	fflogs.Cast:               handleCast,
+	fflogs.Death:              handleDeath,
+	fflogs.WorldMarkerRemoved: handleWorldMarkerRemoved,
+	fflogs.WorldMarkerPlaced:  handleWorldMarkerPlaced,
+	fflogs.Applybuffstack:     handleApplyBuffStack,
+	fflogs.Removebuffstack:    handleRemoveBuffStack,
+}
+
+func (s *System) applyLog(ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
 	if event.SourceID != nil && s.EntryMap[*event.SourceID] != nil {
-		instanceID := 0
-		if event.SourceInstance != nil {
-			instanceID = int(*event.SourceInstance) - 1
-		}
-		source := component.Sprite.Get(s.EntryMap[*event.SourceID])
-		status := component.Status.Get(s.EntryMap[*event.SourceID])
-		source.Instances[instanceID].LastActive = event.LocalTick
-		if event.SourceMarker != nil {
-			status.Marker = *event.SourceMarker
-		} else {
-			status.Marker = 0
-		}
+		s.updateEventSourceStatus(event)
 	}
 
 	if event.TargetID != nil && s.EntryMap[*event.TargetID] != nil {
-		instanceID := 0
-		if event.TargetInstance != nil {
-			instanceID = int(*event.TargetInstance) - 1
-		}
-		status := component.Status.Get(s.EntryMap[*event.TargetID])
-		target := component.Sprite.Get(s.EntryMap[*event.TargetID])
-		target.Instances[instanceID].LastActive = event.LocalTick
-		if event.TargetMarker != nil {
-			status.Marker = *event.TargetMarker
-		} else {
-			status.Marker = 0
-		}
+		s.updateEventTargetStatus(event)
 	}
-	// {
-	// "timestamp": 4134160,
-	// "type": "combatantinfo",
-	// "fight": 9,
-	// "sourceID": 7,
-	// "gear": [],
-	// "auras": [
-	// 	{
-	// 		"source": 7,
-	// 		"ability": 1000048,
-	// 		"stacks": 1,
-	// 		"icon": "216000-216202.png",
-	// 		"name": "进食"
-	// 	}
-	// 	"level": 100,
-	//  "simulatedCrit": 0.23880764904386953,
-	//  "simulatedDirectHit": 0.3048368953880765
-	// ]}
-	if event.Type == fflogs.Combatantinfo {
-		status := component.Status.Get(target)
-		status.BuffList.SetBuffs(aurasToBuffs(event.Auras))
+
+	if handler, ok := EventHandlerMap[event.Type]; ok {
+		handler(s, ecs, eventSource, event)
+
 		return
 	}
-	// {
-	// 	"timestamp": 4136478,
-	// 	"type": "applybuff",
-	// 	"sourceID": 7,
-	// 	"targetID": 7,
-	// 	"abilityGameID": 1003671,
-	// 	"fight": 9,
-	// 	"extraAbilityGameID": 34647,
-	// 	"duration": 30000
-	// }
-	if event.Type == fflogs.Applybuff {
-		buffTarget := s.EntryMap[*event.TargetID]
-		if buffTarget == nil {
-			return
-		}
-		status := component.Status.Get(buffTarget)
-		ability := (*event.Ability).ToBuff()
-		ability.ApplyTick = event.LocalTick
-		ability.Duration = *event.Duration
-		status.BuffList.Add(ability)
-		// TODO implement buff effect(removeCallback) to do this work
-		if ability.ID == 1000418 {
-			status.SetDeath(false)
-		}
+}
+
+func handleCombatantinfo(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+	status := component.Status.Get(eventSource)
+	status.BuffList.SetBuffs(aurasToBuffs(event.Auras))
+
+	return
+}
+
+func handleRefreshBuff(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+	buffTarget := s.EntryMap[*event.TargetID]
+	if buffTarget == nil {
 		return
 	}
 
-	if event.Type == fflogs.Applydebuff {
-		sourceTarget := s.EntryMap[*event.SourceID]
-		buffTarget := s.EntryMap[*event.TargetID]
-		if buffTarget == nil {
-			return
-		}
-		status := component.Status.Get(buffTarget)
-		ability := (*event.Ability).ToBuff()
-		ability.ECS = ecs
-		ability.Source = sourceTarget
-		ability.Target = buffTarget
-		ability.RemoveCallback = buffRemoveDB[ability.ID]
-		ability.Type = model.Debuff
-		ability.ApplyTick = event.LocalTick
-		ability.Duration = *event.Duration
-		status.BuffList.Add(ability)
+	status := component.Status.Get(buffTarget)
+	ability := (*event.Ability).ToBuff()
+	ability.ApplyTick = event.LocalTick
+	ability.Duration = *event.Duration
+	status.BuffList.Add(ability)
+
+	return
+}
+
+func handleRemoveBuffStack(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+	buffTarget := s.EntryMap[*event.TargetID]
+	if buffTarget == nil {
 		return
 	}
 
-	// 	{
-	// 	"timestamp": 4142892,
-	// 	"type": "refreshbuff",
-	// 	"sourceID": 6,
-	// 	"targetID": 6,
-	// 	"abilityGameID": 1002677,
-	// 	"fight": 9,
-	// 	"duration": 40000
-	// }
-	if event.Type == fflogs.Refreshbuff {
-		buffTarget := s.EntryMap[*event.TargetID]
-		if buffTarget == nil {
-			return
-		}
-		status := component.Status.Get(buffTarget)
-		ability := (*event.Ability).ToBuff()
-		ability.ApplyTick = event.LocalTick
-		ability.Duration = *event.Duration
-		status.BuffList.Add(ability)
-		return
-	}
-	// {
-	// 	"timestamp": 4139459,
-	// 	"type": "removebuff",
-	// 	"sourceID": 7,
-	// 	"targetID": 7,
-	// 	"abilityGameID": 1003658,
-	// 	"fight": 9
-	// }
-	if event.Type == fflogs.Removebuff {
-		buffTarget := s.EntryMap[*event.TargetID]
-		if buffTarget == nil {
-			return
-		}
-		status := component.Status.Get(buffTarget)
-		ability := (*event.Ability).ToBuff()
-		status.BuffList.Remove(ability)
+	status := component.Status.Get(buffTarget)
+	status.BuffList.UpdateStack(event.Ability.Guid, int(*event.Stack))
+
+	return
+}
+
+func handleApplyBuffStack(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+	buffTarget := s.EntryMap[*event.TargetID]
+	if buffTarget == nil {
 		return
 	}
 
-	if event.Type == fflogs.RemoveDebuff {
-		buffTarget := s.EntryMap[*event.TargetID]
-		if buffTarget == nil {
-			return
-		}
-		status := component.Status.Get(buffTarget)
-		ability := (*event.Ability).ToBuff()
-		status.BuffList.Remove(ability)
+	status := component.Status.Get(buffTarget)
+	status.BuffList.UpdateStack(event.Ability.Guid, int(*event.Stack))
+
+	return
+}
+
+func handleRemoveBuff(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+	buffTarget := s.EntryMap[*event.TargetID]
+	if buffTarget == nil {
 		return
 	}
 
-	if event.Type == fflogs.Begincast {
-		caster := s.EntryMap[*event.SourceID]
-		if caster == nil {
-			return
-		}
-		instanceID := 0
-		if event.SourceInstance != nil {
-			instanceID = int(*event.SourceInstance) - 1
-		}
-		skill := skills.QuerySkill(event.Ability.ToSkill(*event.Duration))
-		skill.StartTick = event.LocalTick
+	status := component.Status.Get(buffTarget)
+	ability := (*event.Ability).ToBuff()
+	status.BuffList.Remove(ability)
 
-		component.Sprite.Get(caster).Instances[instanceID].Cast(skill)
-		if debug && caster.HasComponent(tag.Enemy) {
-			log.Printf("[%d]%s[%d] begin cast [%d]%s on [%d]%s\n", component.Status.Get(caster).ID, component.Status.Get(caster).Name, instanceID+1, event.Ability.Guid, event.Ability.Name, component.Status.Get(target).ID, component.Status.Get(target).Name)
-		}
+	return
+}
+
+func handleRemoveDebuff(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+	buffTarget := s.EntryMap[*event.TargetID]
+	if buffTarget == nil {
 		return
 	}
 
-	if event.Type == fflogs.Cast {
-		caster := s.EntryMap[*event.SourceID]
-		if caster == nil {
-			return
-		}
-		instanceID := 0
-		if event.SourceInstance != nil {
-			instanceID = int(*event.SourceInstance) - 1
-		}
-		if event.Ability == nil {
-			return
-		}
-		if event.TargetID == nil || s.EntryMap[*event.TargetID] == nil {
-			return
-		}
-		target := s.EntryMap[*event.TargetID]
-		skill := skills.QuerySkill(event.Ability.ToSkill(0))
-		skill.StartTick = event.LocalTick
-		if debug && caster.HasComponent(tag.Enemy) {
-			log.Printf("[%d]%s[%d] cast [%d]%s on [%d]%s\n", component.Status.Get(caster).ID, component.Status.Get(caster).Name, instanceID+1, skill.ID, event.Ability.Name, component.Status.Get(target).ID, component.Status.Get(target).Name)
-		}
-		s.Cast(ecs, caster, instanceID, target, 0, skill)
+	status := component.Status.Get(buffTarget)
+
+	ability := (*event.Ability).ToBuff()
+	status.BuffList.Remove(ability)
+
+	return
+}
+
+func handleDeath(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+	if event.TargetID == nil {
 		return
 	}
 
-	if event.Type == fflogs.Death {
-		if event.TargetID == nil {
-			return
-		}
-		target := s.EntryMap[*event.TargetID]
-		if target == nil {
-			return
-		}
-		status := component.Status.Get(target)
-		status.SetDeath(true)
+	eventTarget := s.EntryMap[*event.TargetID]
+	if eventTarget == nil {
+		return
 	}
 
-	if event.Type == fflogs.WorldMarkerRemoved {
-		var targetMarker *donburi.Entry = nil
-		for m := range component.WorldMarker.Iter(ecs.World) {
-			if component.WorldMarker.Get(m).Type == model.WorldMarkerType(*event.Icon) {
-				targetMarker = m
-				break
-			}
-		}
-		if targetMarker == nil {
-			return
-		}
-		ecs.World.Remove(targetMarker.Entity())
-	}
+	status := component.Status.Get(eventTarget)
+	status.SetDeath(true)
 
-	if event.Type == fflogs.WorldMarkerPlaced {
-		found := false
-		for m := range component.WorldMarker.Iter(ecs.World) {
-			marker := component.WorldMarker.Get(m)
-			if marker.Type == model.WorldMarkerType(*event.Icon-1) {
-				marker.Position[0] = float64(*event.X) / 100 * 25
-				marker.Position[1] = float64(*event.Y) / 100 * 25
-				found = true
-				break
-			}
-		}
-		if !found {
-			entry.NewWorldMarker(ecs, model.WorldMarkerType(*event.Icon-1), f64.Vec2{
-				float64(*event.X) / 100 * 25,
-				float64(*event.Y) / 100 * 25,
-			})
+	return
+}
+
+func handleWorldMarkerRemoved(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+	var targetMarker *donburi.Entry = nil
+
+	for m := range component.WorldMarker.Iter(ecs.World) {
+		if component.WorldMarker.Get(m).Type == model.WorldMarkerType(*event.Icon) {
+			targetMarker = m
+
+			break
 		}
 	}
 
-	if event.Type == fflogs.Applybuffstack {
-		buffTarget := s.EntryMap[*event.TargetID]
-		if buffTarget == nil {
-			return
-		}
-		status := component.Status.Get(buffTarget)
-		status.BuffList.UpdateStack(event.Ability.Guid, int(*event.Stack))
+	if targetMarker == nil {
+		return
 	}
 
-	if event.Type == fflogs.Removebuffstack {
-		buffTarget := s.EntryMap[*event.TargetID]
-		if buffTarget == nil {
-			return
+	ecs.World.Remove(targetMarker.Entity())
+
+	return
+}
+
+func handleWorldMarkerPlaced(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+	found := false
+
+	for m := range component.WorldMarker.Iter(ecs.World) {
+		marker := component.WorldMarker.Get(m)
+		if marker.Type == model.WorldMarkerType(*event.Icon-1) {
+			marker.Position[0] = float64(*event.X) / 100 * 25
+			marker.Position[1] = float64(*event.Y) / 100 * 25
+			found = true
+
+			break
 		}
-		status := component.Status.Get(buffTarget)
-		status.BuffList.UpdateStack(event.Ability.Guid, int(*event.Stack))
+	}
+
+	if !found {
+		entry.NewWorldMarker(ecs, model.WorldMarkerType(*event.Icon-1), f64.Vec2{
+			float64(*event.X) / 100 * 25,
+			float64(*event.Y) / 100 * 25,
+		})
+	}
+}
+
+func handleBeginCast(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+	caster := s.EntryMap[*event.SourceID]
+	if caster == nil {
+		return
+	}
+
+	instanceID := 0
+
+	if event.SourceInstance != nil {
+		instanceID = int(*event.SourceInstance) - 1
+	}
+
+	skill := skills.QuerySkill(event.Ability.ToSkill(*event.Duration))
+	skill.StartTick = event.LocalTick
+
+	component.Sprite.Get(caster).Instances[instanceID].Cast(skill)
+
+	if caster.HasComponent(tag.Enemy) {
+		log.Printf("[%d]%s[%d] begin cast [%d]%s on [%d]%s\n",
+			component.Status.Get(caster).ID,
+			component.Status.Get(caster).Name,
+			instanceID+1,
+			event.Ability.Guid,
+			event.Ability.Name,
+			component.Status.Get(eventSource).ID,
+			component.Status.Get(eventSource).Name)
+	}
+
+	return
+}
+
+func handleApplyBuff(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+	buffTarget := s.EntryMap[*event.TargetID]
+	if buffTarget == nil {
+		return
+	}
+
+	status := component.Status.Get(buffTarget)
+	ability := (*event.Ability).ToBuff()
+	ability.ApplyTick = event.LocalTick
+	ability.Duration = *event.Duration
+	status.BuffList.Add(ability)
+	// TODO implement buff effect(removeCallback) to do this work
+	if ability.ID == 1000418 {
+		status.SetDeath(false)
+	}
+
+	return
+}
+
+func handleApplyDebuff(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+	sourceTarget := s.EntryMap[*event.SourceID]
+
+	buffTarget := s.EntryMap[*event.TargetID]
+	if buffTarget == nil {
+		return
+	}
+
+	status := component.Status.Get(buffTarget)
+	ability := (*event.Ability).ToBuff()
+	ability.ECS = ecs
+	ability.Source = sourceTarget
+	ability.Target = buffTarget
+	ability.RemoveCallback = buffRemoveDB[ability.ID]
+	ability.Type = model.Debuff
+	ability.ApplyTick = event.LocalTick
+	ability.Duration = *event.Duration
+	status.BuffList.Add(ability)
+
+	return
+}
+
+func (s *System) updateEventTargetStatus(event fflogs.FFLogsEvent) {
+	instanceID := 0
+	if event.TargetInstance != nil {
+		instanceID = int(*event.TargetInstance) - 1
+	}
+
+	status := component.Status.Get(s.EntryMap[*event.TargetID])
+	target := component.Sprite.Get(s.EntryMap[*event.TargetID])
+	target.Instances[instanceID].LastActive = event.LocalTick
+
+	if event.TargetMarker != nil {
+		status.Marker = *event.TargetMarker
+	} else {
+		status.Marker = 0
+	}
+}
+
+func (s *System) updateEventSourceStatus(event fflogs.FFLogsEvent) {
+	instanceID := 0
+	if event.SourceInstance != nil {
+		instanceID = int(*event.SourceInstance) - 1
+	}
+
+	source := component.Sprite.Get(s.EntryMap[*event.SourceID])
+	status := component.Status.Get(s.EntryMap[*event.SourceID])
+	source.Instances[instanceID].LastActive = event.LocalTick
+
+	if event.SourceMarker != nil {
+		status.Marker = *event.SourceMarker
+	} else {
+		status.Marker = 0
 	}
 }
 
@@ -399,5 +424,45 @@ func aurasToBuffs(auras []fflogs.Aura) []*model.Buff {
 			Duration: 0,
 		}
 	}
+
 	return buffs
+}
+
+func handleCast(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+	caster := s.EntryMap[*event.SourceID]
+	if caster == nil {
+		return
+	}
+
+	instanceID := 0
+
+	if event.SourceInstance != nil {
+		instanceID = int(*event.SourceInstance) - 1
+	}
+
+	if event.Ability == nil {
+		return
+	}
+
+	if event.TargetID == nil || s.EntryMap[*event.TargetID] == nil {
+		return
+	}
+
+	target := s.EntryMap[*event.TargetID]
+
+	skill := skills.QuerySkill(event.Ability.ToSkill(0))
+	skill.StartTick = event.LocalTick
+
+	if caster.HasComponent(tag.Enemy) {
+		log.Printf("[%d]%s[%d] cast [%d]%s on [%d]%s\n",
+			component.Status.Get(caster).ID,
+			component.Status.Get(caster).Name,
+			instanceID+1,
+			skill.ID,
+			event.Ability.Name,
+			component.Status.Get(target).ID,
+			component.Status.Get(target).Name)
+	}
+
+	s.Cast(ecs, caster, instanceID, target, 0, skill)
 }

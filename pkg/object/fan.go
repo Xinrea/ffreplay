@@ -15,7 +15,7 @@ type FanObject struct {
 	length float64
 }
 
-// make sure FanObject implements Object interface
+// make sure FanObject implements Object interface.
 var _ Object = (*FanObject)(nil)
 
 func NewFanObject(opt ObjectOption, pos Vector, angle, length float64) *FanObject {
@@ -54,6 +54,7 @@ func NewFanObject(opt ObjectOption, pos Vector, angle, length float64) *FanObjec
 
 	texture := ebiten.NewImageFromImage(ctx.Image())
 	objectTextureCache[hashStr] = texture
+
 	return &FanObject{
 		DefaultObject: DefaultObject{
 			anchor:   pos,
@@ -72,5 +73,6 @@ func (f *FanObject) IsPointInside(v Vector) bool {
 	centerLine := NewVector(0, -1).Rotate(f.rotate)
 	relativeAngle := pRelative.Angle(centerLine)
 	half := math.Pi * f.angle / 180 / 2
+
 	return pRelative.Length() <= f.length && relativeAngle <= half && relativeAngle >= -half
 }

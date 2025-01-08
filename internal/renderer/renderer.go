@@ -23,10 +23,12 @@ const (
 	AlignCenter
 )
 
-type Renderer struct {
-}
+type Renderer struct{}
 
 func NewRenderer() *Renderer {
+	// do init work
+	initBackground()
+
 	return &Renderer{}
 }
 
@@ -44,11 +46,31 @@ func RenderBuffList(canvas *ebiten.Image, tick int64, buffs []*model.Buff, x, y 
 		geoM.Scale(s, s)
 		geoM.Translate(x+float64((i+1)*25)*s, y)
 		canvas.DrawImage(iconTexture, &ebiten.DrawImageOptions{GeoM: geoM})
+
 		if buff.Remain > 0 {
-			ui.DrawText(canvas, formatSeconds(buff.Remain), 14*s, x+float64((i+1)*25)*s, y+14*s, color.White, furex.AlignItemCenter, textShdowOpt)
+			ui.DrawText(
+				canvas,
+				formatSeconds(buff.Remain),
+				14*s,
+				x+float64((i+1)*25)*s,
+				y+14*s,
+				color.White,
+				furex.AlignItemCenter,
+				textShdowOpt,
+			)
 		}
+
 		if buff.Stacks > 1 {
-			ui.DrawText(canvas, strconv.Itoa(buff.Stacks), 13*s, x+float64((i+1)*25)*s+6*s, y-7*s, color.White, furex.AlignItemCenter, stackTextShadowOpt)
+			ui.DrawText(
+				canvas,
+				strconv.Itoa(buff.Stacks),
+				13*s,
+				x+float64((i+1)*25)*s+6*s,
+				y-7*s,
+				color.White,
+				furex.AlignItemCenter,
+				stackTextShadowOpt,
+			)
 		}
 	}
 }
@@ -65,11 +87,14 @@ func (r *Renderer) Init(ecs *ecs.ECS) {
 func formatSeconds(seconds int64) string {
 	minutes := seconds / 60
 	hours := minutes / 60
+
 	if hours > 0 {
-		return fmt.Sprintf("%d时", hours)
+		return fmt.Sprintf("%dh", hours)
 	}
+
 	if minutes > 0 {
-		return fmt.Sprintf("%d分", minutes)
+		return fmt.Sprintf("%dm", minutes)
 	}
+
 	return fmt.Sprintf("%d", seconds)
 }

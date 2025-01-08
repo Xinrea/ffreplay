@@ -19,6 +19,7 @@ func NewLine(start, end Vector) Line {
 func (l Line) Apply(m ebiten.GeoM) Line {
 	start := l.start.Apply(m)
 	end := l.end.Apply(m)
+
 	return NewLine(start, end)
 }
 

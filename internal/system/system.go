@@ -6,7 +6,7 @@ import (
 	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/data"
 	"github.com/Xinrea/ffreplay/internal/data/fflogs"
-	"github.com/Xinrea/ffreplay/internal/model"
+	"github.com/Xinrea/ffreplay/internal/model/role"
 	"github.com/Xinrea/ffreplay/internal/tag"
 	"github.com/Xinrea/ffreplay/util"
 	"github.com/yohamta/donburi"
@@ -36,7 +36,7 @@ type EventLine struct {
 }
 
 // NewSystem create a system that controls camera, players and all game objects also status.
-// if replay is true, all skill and buff status are disabled, player status only change by fflogs event
+// if replay is true, all skill and buff status are disabled, player status only change by fflogs event.
 func NewSystem() *System {
 	return &System{
 		lock:       sync.Mutex{},
@@ -61,8 +61,9 @@ func (s *System) Layout(w, h int) {
 
 func (s *System) AddEntry(id int64, player *donburi.Entry) {
 	s.EntryMap[id] = player
-	role := component.Status.Get(player).Role
-	if role != model.Boss && role != model.NPC {
+
+	prole := component.Status.Get(player).Role
+	if prole != role.Boss && prole != role.NPC {
 		s.PlayerList = append(s.PlayerList, player)
 	}
 }
@@ -96,19 +97,25 @@ func (s *System) Update(ecs *ecs.ECS) {
 		s.doReset(ecs)
 		globalData.Reset.Store(false)
 	}
+
 	if s.reset {
 		s.doReset(ecs)
+
 		globalData.Tick = 0
 		s.reset = false
 	}
+
 	if globalData.Loaded.Load() {
 		s.LogUpdate(ecs, globalData.Tick/10)
 	}
+
 	s.ControlUpdate(ecs)
 	s.TimelineUpdate(ecs)
 	s.BuffUpdate(ecs, globalData.Tick/10)
 	s.SkillUpdate(ecs)
 	s.WorldMarkerUpdate(ecs)
+	s.BackgroundUpdate()
+
 	if globalData.Loaded.Load() && !s.Pause && util.MSToTick(globalData.FightDuration.Load())*10 > globalData.Tick {
 		globalData.Tick += globalData.Speed
 		globalData.Tick = min(globalData.Tick, util.MSToTick(globalData.FightDuration.Load())*10)
@@ -124,6 +131,7 @@ func (s *System) doReset(ecs *ecs.ECS) {
 	// clean all buffs and casting
 	for e := range component.Status.Iter(ecs.World) {
 		component.Status.Get(e).Reset()
+
 		for _, instance := range component.Sprite.Get(e).Instances {
 			instance.Reset()
 		}

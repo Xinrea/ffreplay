@@ -44,6 +44,7 @@ func (c *FFLogsClient) QueryWorldMarkers(code string, fight int) []markers.World
 	if util.IsWasm() {
 		return markers.QueryWorldMarkersFromApi(code, fight)
 	}
+
 	return markers.QueryWorldMarkers(code, fight)
 }
 
@@ -51,22 +52,27 @@ func (c *FFLogsClient) RawQuery(query string, variables map[string]any, result a
 	for k, v := range variables {
 		query = strings.ReplaceAll(query, "$"+k, fmt.Sprintf("%v", v))
 	}
+
 	requestBody, err := json.Marshal(map[string]string{
 		"query": query,
 	})
 	if err != nil {
 		return err
 	}
+
 	resp, err := c.client.Post(ENDPOINT, "application/json", bytes.NewReader(requestBody))
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
+
 	err = json.Unmarshal(body, &result)
+
 	return err
 }
 
@@ -78,9 +84,11 @@ func (c *FFLogsClient) QueryMapInfo(mapCode int) GameMap {
 			}
 		}
 	}
+
 	variables := map[string]interface{}{
 		"id": mapCode,
 	}
+
 	err := c.RawQuery(`
 			query {
 				gameData {
@@ -97,7 +105,9 @@ func (c *FFLogsClient) QueryMapInfo(mapCode int) GameMap {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	log.Println(mapCode, Query)
+
 	return Query.Data.GameData.Map
 }
 
@@ -113,9 +123,11 @@ func (c *FFLogsClient) QueryActors(reportCode string) []Actor {
 			}
 		}
 	}
+
 	variables := map[string]interface{}{
 		"code": reportCode,
 	}
+
 	err := c.RawQuery(`
 			query {
 				reportData {
@@ -135,6 +147,7 @@ func (c *FFLogsClient) QueryActors(reportCode string) []Actor {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	return Query.Data.ReportData.Report.MasterData.Actors
 }
 
@@ -148,9 +161,11 @@ func (c *FFLogsClient) QueryReportFights(reportCode string) []ReportFight {
 			}
 		}
 	}
+
 	variables := map[string]interface{}{
 		"code": reportCode,
 	}
+
 	err := c.RawQuery(`
 			query {
 				reportData {
@@ -184,8 +199,10 @@ func (c *FFLogsClient) QueryReportFights(reportCode string) []ReportFight {
 		`, variables, &Query)
 	if err != nil {
 		log.Println(err)
+
 		return nil
 	}
+
 	return Query.Data.ReportData.Report.Fights
 }
 
@@ -199,10 +216,12 @@ func (c *FFLogsClient) QueryFightPlayers(reportCode string, fightID int) *Player
 			}
 		}
 	}
+
 	variables := map[string]interface{}{
 		"code":     reportCode,
 		"fightIDs": []int{fightID},
 	}
+
 	err := c.RawQuery(`
 			query {
 				reportData {
@@ -214,18 +233,23 @@ func (c *FFLogsClient) QueryFightPlayers(reportCode string, fightID int) *Player
 		`, variables, &Query)
 	if err != nil {
 		log.Println(err)
+
 		return nil
 	}
+
 	var players struct {
 		Data struct {
 			PlayerDetails PlayerDetails `json:"playerDetails"`
 		}
 	}
+
 	err = json.Unmarshal(Query.Data.ReportData.Report.PlayerDetails, &players)
 	if err != nil {
 		log.Println(err)
+
 		return nil
 	}
+
 	return &players.Data.PlayerDetails
 }
 
@@ -233,6 +257,26 @@ type ReportEventPaginator struct {
 	Data              json.RawMessage
 	NextPageTimestamp float64
 }
+
+const RawQueryFightEvents = `
+query {
+	reportData {
+		report(code: "$code") {
+			events(
+				fightIDs: $fightIDs,
+				startTime: $startTime,
+				endTime: $endTime,
+				limit: 10000,
+				includeResources: true,
+				useAbilityIDs: false
+			) {
+				data
+				nextPageTimestamp
+			}
+		}
+	}
+}
+`
 
 func (c *FFLogsClient) QueryFightEvents(reportCode string, fight ReportFight) (ret []FFLogsEvent) {
 	var Query struct {
@@ -244,54 +288,55 @@ func (c *FFLogsClient) QueryFightEvents(reportCode string, fight ReportFight) (r
 			}
 		}
 	}
-	query := `
-			query {
-				reportData {
-					report(code: "$code") {
-						events(fightIDs: $fightIDs, startTime: $startTime, endTime: $endTime, limit: 10000, includeResources: true, useAbilityIDs: false) {
-							data
-							nextPageTimestamp
-						}
-					}
-				}
-			}
-	`
+
 	variables := map[string]interface{}{
 		"code":      reportCode,
 		"fightIDs":  []int{fight.ID},
 		"startTime": fight.StartTime,
 		"endTime":   fight.EndTime,
 	}
-	err := c.RawQuery(query, variables, &Query)
+
+	err := c.RawQuery(RawQueryFightEvents, variables, &Query)
 	if err != nil {
 		log.Println(err)
+
 		return nil
 	}
+
 	var events []FFLogsEvent
+
 	err = json.Unmarshal(Query.Data.ReportData.Report.Events.Data, &events)
 	if err != nil {
 		log.Println(err)
+
 		return nil
 	}
-	ret = append(ret, events...)
-	for Query.Data.ReportData.Report.Events.NextPageTimestamp != 0 {
 
+	ret = append(ret, events...)
+
+	for Query.Data.ReportData.Report.Events.NextPageTimestamp != 0 {
 		events = []FFLogsEvent{}
 		variables["startTime"] = Query.Data.ReportData.Report.Events.NextPageTimestamp
 		Query.Data.ReportData.Report.Events.NextPageTimestamp = 0
-		err = c.RawQuery(query, variables, &Query)
+
+		err = c.RawQuery(RawQueryFightEvents, variables, &Query)
 		if err != nil {
 			log.Println(err)
+
 			return nil
 		}
+
 		err = json.Unmarshal(Query.Data.ReportData.Report.Events.Data, &events)
 		if err != nil {
 			log.Println(err)
-			return
+
+			return nil
 		}
+
 		ret = append(ret, events...)
 	}
-	return
+
+	return ret
 }
 
 type Ability struct {
@@ -321,14 +366,17 @@ func (a Ability) ToSkill(duration int64) model.Skill {
 
 func getFFLogsToken(clientID, clientSecret string) (*Credentials, error) {
 	data := []byte(`grant_type=client_credentials`)
-	req, err := http.NewRequest("POST", "https://www.fflogs.com/oauth/token", bytes.NewBuffer(data))
+
+	req, err := http.NewRequest(http.MethodPost, "https://www.fflogs.com/oauth/token", bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
 	}
+
 	req.SetBasicAuth(clientID, clientSecret)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	client := &http.Client{}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err

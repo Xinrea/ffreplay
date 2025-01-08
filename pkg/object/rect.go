@@ -16,7 +16,7 @@ type RectObject struct {
 	height float64
 }
 
-// make sure RectObject implements Object interface
+// make sure RectObject implements Object interface.
 var _ Object = (*RectObject)(nil)
 
 // NewRectObject creates a new RectObject with given position and size.
@@ -27,6 +27,7 @@ func NewRectObject(opt ObjectOption, pos Vector, rw, rh float64) *RectObject {
 	initialM := ebiten.GeoM{}
 	initialM.Translate(-w/2, 0)
 	initialM.Rotate(-math.Pi)
+
 	if cachedTexture, ok := objectTextureCache[hashStr]; ok {
 		return &RectObject{
 			DefaultObject: DefaultObject{
@@ -43,8 +44,19 @@ func NewRectObject(opt ObjectOption, pos Vector, rw, rh float64) *RectObject {
 
 	texture := ebiten.NewImage(int(w), int(h))
 	texture.Fill(opt.FillColor)
-	vector.StrokeRect(texture, float32(opt.StrokeWidth)/2, float32(opt.StrokeWidth)/2, float32(rw), float32(rh), float32(opt.StrokeWidth), opt.StrokeColor, true)
+
+	vector.StrokeRect(
+		texture,
+		float32(opt.StrokeWidth)/2,
+		float32(opt.StrokeWidth)/2,
+		float32(rw),
+		float32(rh),
+		float32(opt.StrokeWidth),
+		opt.StrokeColor,
+		true)
+
 	objectTextureCache[hashStr] = texture
+
 	return &RectObject{
 		DefaultObject: DefaultObject{
 			anchor:   pos,
@@ -58,9 +70,11 @@ func NewRectObject(opt ObjectOption, pos Vector, rw, rh float64) *RectObject {
 	}
 }
 
-// The points are ordered as follows:
+// lines are bounds of the rectangle.
+//
+// which are 4 lines:
 // 1(x, y)     2(x+w, y)
-// 4(x, y+h)   3(x+w, y+h)
+// 4(x, y+h)   3(x+w, y+h).
 func (r *RectObject) lines() [4]Line {
 	return [4]Line{
 		NewLine(Vector{0, 0}, Vector{r.width, 0}).Apply(r.initialM),
@@ -74,14 +88,18 @@ func (r *RectObject) IsPointInside(v Vector) bool {
 	// make sure the line has at least one end outside the rect, so we make the end point to be very far away
 	pRelative := v.Sub(r.anchor)
 	testLine := NewLine(pRelative, Vector{pRelative[0] + 999999, pRelative[1]})
+
 	cnt := 0
+
 	for _, l := range r.lines() {
 		l = l.Translate(r.anchor)
 		l = l.Rotate(r.rotate)
 		l = l.Scale(Vector{r.scale, r.scale})
+
 		if l.IsIntersecting(testLine) {
 			cnt++
 		}
 	}
+
 	return cnt%2 == 1
 }

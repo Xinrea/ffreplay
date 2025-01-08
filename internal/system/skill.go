@@ -17,19 +17,23 @@ func (s *System) SkillUpdate(ecs *ecs.ECS) {
 	if !global.Loaded.Load() {
 		return
 	}
+
 	for e := range tag.GameObject.Iter(ecs.World) {
 		sprite := component.Sprite.Get(e)
 		if !sprite.Initialized {
 			continue
 		}
+
 		for _, instance := range sprite.Instances {
 			casting := instance.GetCast()
 			if casting == nil {
 				continue
 			}
+
 			if casting.StartTick == -1 {
 				casting.StartTick = entry.GetTick(ecs)
 			}
+
 			if util.TickToMS(entry.GetTick(ecs)-casting.StartTick) > casting.Cast {
 				// remove skill
 				instance.ClearCast()
@@ -38,18 +42,31 @@ func (s *System) SkillUpdate(ecs *ecs.ECS) {
 	}
 }
 
-func (s *System) Cast(ecs *ecs.ECS, caster *donburi.Entry, casterInstance int, target *donburi.Entry, targetInstance int, skill model.Skill) {
+func (s *System) Cast(
+	ecs *ecs.ECS,
+	caster *donburi.Entry,
+	casterInstance int,
+	target *donburi.Entry,
+	targetInstance int,
+	skill model.Skill,
+) {
 	global := component.Global.Get(tag.Global.MustFirst(ecs.World))
+
 	casterSprite := component.Sprite.Get(caster)
 	if casterSprite == nil {
 		log.Println("Cast with nil caster")
+
 		return
 	}
+
 	if casterInstance >= len(casterSprite.Instances) {
 		log.Println("Cast with invalid caster instance id")
+
 		return
 	}
+
 	casterSprite.Instances[casterInstance].Cast(skill)
+
 	if skill.SkillEvents != nil && global.Debug {
 		timeline := skill.SkillEvents.InstanceWith(entry.GetTick(ecs), caster, casterInstance, target, targetInstance)
 		entry.NewTimeline(ecs, &timeline)

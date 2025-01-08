@@ -21,7 +21,7 @@ const (
 // https://github.com/Xinrea/ffreplay/issues/17
 var BuffFilter = map[int64]bool{}
 
-func init() {
+func initBuffFilter() {
 	ids := []int64{
 		1061, 1079, 1080, 1081, 1082, 1083, 1084, 1085, 1086,
 		353, 354, 355, 356, 357, 360, 361, 362, 363, 364, 365, 366, 367, 368,
@@ -50,12 +50,15 @@ func (bl *BuffList) Update(now int64) {
 
 func (bl *BuffList) SetBuffs(buffs []*Buff) {
 	filtered := []*Buff{}
+
 	for _, b := range buffs {
 		if BuffFilter[b.ID] {
 			continue
 		}
+
 		filtered = append(filtered, b)
 	}
+
 	bl.buffs = append(bl.buffs, filtered...)
 }
 
@@ -64,6 +67,7 @@ func (bl *BuffList) Buffs() []*Buff {
 	sort.Slice(bl.buffs, func(i, j int) bool {
 		return bl.buffs[i].Type > bl.buffs[j].Type
 	})
+
 	return bl.buffs
 }
 
@@ -73,6 +77,7 @@ func (bl *BuffList) DeBuffs() (ret []*Buff) {
 			ret = append(ret, b)
 		}
 	}
+
 	return
 }
 
@@ -80,13 +85,17 @@ func (bl *BuffList) Add(buff *Buff) {
 	if BuffFilter[buff.ID] {
 		return
 	}
+
 	index := -1
+
 	for i, b := range bl.buffs {
 		if b.ID == buff.ID {
 			index = i
+
 			break
 		}
 	}
+
 	if index != -1 {
 		bl.buffs[index] = buff
 	} else {
@@ -98,6 +107,7 @@ func (bl *BuffList) UpdateStack(id int64, stack int) {
 	for i := range bl.buffs {
 		if bl.buffs[i].ID == id {
 			bl.buffs[i].Stacks = stack
+
 			return
 		}
 	}
@@ -105,12 +115,15 @@ func (bl *BuffList) UpdateStack(id int64, stack int) {
 
 func (bl *BuffList) Refresh(buff *Buff) {
 	index := -1
+
 	for i, b := range bl.buffs {
 		if b.ID == buff.ID {
 			index = i
+
 			break
 		}
 	}
+
 	if index != -1 {
 		bl.buffs[index].Duration = buff.Duration
 	}
@@ -118,12 +131,15 @@ func (bl *BuffList) Refresh(buff *Buff) {
 
 func (bl *BuffList) Remove(buff *Buff) {
 	index := -1
+
 	for i, b := range bl.buffs {
 		if b.ID == buff.ID {
 			index = i
+
 			break
 		}
 	}
+
 	if index != -1 {
 		bl.buffs[index].Remove()
 		bl.buffs = append(bl.buffs[:index], bl.buffs[index+1:]...)
@@ -132,11 +148,13 @@ func (bl *BuffList) Remove(buff *Buff) {
 
 func (bl *BuffList) UpdateExpire(now int64) {
 	toRemove := make([]*Buff, 0)
+
 	for _, b := range bl.buffs {
 		if b.Expired(now) {
 			toRemove = append(toRemove, b)
 		}
 	}
+
 	for _, b := range toRemove {
 		bl.Remove(b)
 	}
@@ -183,8 +201,10 @@ type Buff struct {
 func (b *Buff) UpdateRemain(now int64) {
 	if b.Duration == 0 || b.Duration > 7200*1000 {
 		b.Remain = 0
+
 		return
 	}
+
 	b.Remain = (b.Duration - util.TickToMS(now-b.ApplyTick)) / 1000
 }
 
@@ -192,6 +212,7 @@ func (b Buff) Expired(now int64) bool {
 	if b.Duration == 0 {
 		return false
 	}
+
 	return b.Duration < util.TickToMS(now-b.ApplyTick)
 }
 
