@@ -130,8 +130,8 @@ func (p *PlaygroundUI) SetupHotBar(v *furex.View, w, h int) {
 		})
 	}
 
-	for i := 0; i < h; i++ {
-		for j := 0; j < w; j++ {
+	for i := range h {
+		for j := range w {
 			marker := model.WorldMarkerType(i*w + j)
 			if marker > model.WorldMarker4 {
 				return
