@@ -112,6 +112,11 @@ func parseFightURL(reportUrl *string) (string, int) {
 		os.Exit(errors.ErrorInvalidReportUrl)
 	}
 
+	if !strings.HasPrefix(parsedUrl.Path, "/reports/") {
+		log.Println("Invalid report url:", *reportUrl)
+		os.Exit(errors.ErrorInvalidReportUrl)
+	}
+
 	report := parsedUrl.Path[len("/reports/"):]
 
 	fight, err := strconv.Atoi(parsedUrl.Query().Get("fight"))
@@ -123,6 +128,8 @@ func parseFightURL(reportUrl *string) (string, int) {
 			os.Exit(errors.ErrorInvalidFightID)
 		}
 	}
+
+	log.Println("report:", report, "fight:", fight)
 
 	return report, fight
 }
