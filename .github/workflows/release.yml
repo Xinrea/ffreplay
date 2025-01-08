@@ -20,10 +20,16 @@ jobs:
         with:
           go-version: "1.23.1"
 
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
       - name: Build
         env:
           CREDENTIAL: ${{ secrets.CREDENTIAL }}
-        run: sh build.sh
+        run: |
+          sh build.sh
+          mkdir -p .vercel/output/static
+          cp -r public/* .vercel/output/static/
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v4
@@ -31,3 +37,11 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./public
           cname: ffreplay.xinrea.cn
+
+      - name: Deploy Project Artifacts to Vercel
+        run: |
+          vercel deploy --yes --prebuilt --target=production --token=${{ secrets.VERCEL_TOKEN }} | tee deploy.log
+
+      - id: seturl
+        name: Set preview url
+        run: echo "url=$(tail -1 deploy.log)">> $GITHUB_OUTPUT

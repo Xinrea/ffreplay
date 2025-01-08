@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Xinrea/ffreplay/internal/errors"
 	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/internal/scene"
 	"github.com/Xinrea/ffreplay/internal/scene/scenes"
@@ -107,7 +108,13 @@ func parseFightURL(reportUrl *string) (string, int) {
 
 	parsedUrl, err := url.Parse(*reportUrl)
 	if err != nil {
-		log.Fatal("Invalid report url:", err)
+		log.Println("Invalid report url:", err)
+		os.Exit(errors.ErrorInvalidReportUrl)
+	}
+
+	if !strings.HasPrefix(parsedUrl.Path, "/reports/") {
+		log.Println("Invalid report url:", *reportUrl)
+		os.Exit(errors.ErrorInvalidReportUrl)
 	}
 
 	report := parsedUrl.Path[len("/reports/"):]
@@ -117,9 +124,12 @@ func parseFightURL(reportUrl *string) (string, int) {
 		if parsedUrl.Query().Get("fight") == "last" {
 			fight = -1
 		} else {
-			log.Fatal("Invalid fight id")
+			log.Println("Invalid fight id")
+			os.Exit(errors.ErrorInvalidFightID)
 		}
 	}
+
+	log.Println("report:", report, "fight:", fight)
 
 	return report, fight
 }
