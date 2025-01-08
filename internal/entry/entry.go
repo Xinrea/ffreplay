@@ -208,6 +208,7 @@ func NewGlobal(ecs *ecs.ECS) *donburi.Entry {
 		Tick:                0,
 		Speed:               10,
 		WorldMarkerSelected: -1,
+		ShowTargetRing:      true,
 	})
 
 	return global
