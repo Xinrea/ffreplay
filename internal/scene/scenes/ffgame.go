@@ -3,6 +3,7 @@ package scenes
 import (
 	"image/color"
 	"log"
+	"os"
 	"sort"
 	"sync"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/Xinrea/ffreplay/internal/data"
 	"github.com/Xinrea/ffreplay/internal/data/fflogs"
 	"github.com/Xinrea/ffreplay/internal/entry"
+	"github.com/Xinrea/ffreplay/internal/errors"
 	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/internal/model/role"
 	"github.com/Xinrea/ffreplay/internal/renderer"
@@ -90,7 +92,8 @@ func (ms *FFScene) loadFFLogsReport() {
 	fightIndex := ms.findFightIndex(fights)
 
 	if fightIndex == -1 {
-		log.Fatal("Invalid fight id")
+		log.Println("Invalid fight id")
+		os.Exit(errors.ErrorInvalidFightID)
 	}
 
 	fight := fights[fightIndex]

@@ -7,9 +7,11 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/Xinrea/ffreplay/internal/data/markers"
+	"github.com/Xinrea/ffreplay/internal/errors"
 	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/util"
 )
@@ -24,7 +26,7 @@ func NewFFLogsClient(clientID, clientSecret string) *FFLogsClient {
 	creds, err := getFFLogsToken(clientID, clientSecret)
 	if err != nil {
 		log.Println(err)
-		panic(err)
+		os.Exit(errors.ErrorInvalidCredentials)
 	}
 
 	// create http client with bearer token
@@ -48,7 +50,7 @@ func (c *FFLogsClient) QueryWorldMarkers(code string, fight int) []markers.World
 	return markers.QueryWorldMarkers(code, fight)
 }
 
-func (c *FFLogsClient) RawQuery(query string, variables map[string]any, result any) error {
+func (c *FFLogsClient) RawQuery(query string, variables map[string]any, result any) {
 	for k, v := range variables {
 		query = strings.ReplaceAll(query, "$"+k, fmt.Sprintf("%v", v))
 	}
@@ -57,23 +59,26 @@ func (c *FFLogsClient) RawQuery(query string, variables map[string]any, result a
 		"query": query,
 	})
 	if err != nil {
-		return err
+		log.Println(err)
+		os.Exit(errors.ErrorNetworkError)
 	}
 
 	resp, err := c.client.Post(ENDPOINT, "application/json", bytes.NewReader(requestBody))
 	if err != nil {
-		return err
+		log.Println(err)
+		os.Exit(errors.ErrorNetworkError)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
 
 	err = json.Unmarshal(body, &result)
-
-	return err
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func (c *FFLogsClient) QueryMapInfo(mapCode int) GameMap {
@@ -89,7 +94,7 @@ func (c *FFLogsClient) QueryMapInfo(mapCode int) GameMap {
 		"id": mapCode,
 	}
 
-	err := c.RawQuery(`
+	c.RawQuery(`
 			query {
 				gameData {
 					map(id: $id) {
@@ -102,9 +107,6 @@ func (c *FFLogsClient) QueryMapInfo(mapCode int) GameMap {
 				}
 			}
 		`, variables, &Query)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	log.Println(mapCode, Query)
 
@@ -128,7 +130,7 @@ func (c *FFLogsClient) QueryActors(reportCode string) []Actor {
 		"code": reportCode,
 	}
 
-	err := c.RawQuery(`
+	c.RawQuery(`
 			query {
 				reportData {
 					report(code: "$code") {
@@ -144,9 +146,6 @@ func (c *FFLogsClient) QueryActors(reportCode string) []Actor {
 				}
 			}
 		`, variables, &Query)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	return Query.Data.ReportData.Report.MasterData.Actors
 }
@@ -166,7 +165,7 @@ func (c *FFLogsClient) QueryReportFights(reportCode string) []ReportFight {
 		"code": reportCode,
 	}
 
-	err := c.RawQuery(`
+	c.RawQuery(`
 			query {
 				reportData {
 					report(code: "$code") {
@@ -197,10 +196,10 @@ func (c *FFLogsClient) QueryReportFights(reportCode string) []ReportFight {
 				}
 			}
 		`, variables, &Query)
-	if err != nil {
-		log.Println(err)
 
-		return nil
+	if len(Query.Data.ReportData.Report.Fights) == 0 {
+		log.Println("No fight found")
+		os.Exit(errors.ErrorPrivateReport)
 	}
 
 	return Query.Data.ReportData.Report.Fights
@@ -222,7 +221,7 @@ func (c *FFLogsClient) QueryFightPlayers(reportCode string, fightID int) *Player
 		"fightIDs": []int{fightID},
 	}
 
-	err := c.RawQuery(`
+	c.RawQuery(`
 			query {
 				reportData {
 					report(code: "$code") {
@@ -231,11 +230,6 @@ func (c *FFLogsClient) QueryFightPlayers(reportCode string, fightID int) *Player
 				}
 			}
 		`, variables, &Query)
-	if err != nil {
-		log.Println(err)
-
-		return nil
-	}
 
 	var players struct {
 		Data struct {
@@ -243,7 +237,7 @@ func (c *FFLogsClient) QueryFightPlayers(reportCode string, fightID int) *Player
 		}
 	}
 
-	err = json.Unmarshal(Query.Data.ReportData.Report.PlayerDetails, &players)
+	err := json.Unmarshal(Query.Data.ReportData.Report.PlayerDetails, &players)
 	if err != nil {
 		log.Println(err)
 
@@ -296,16 +290,11 @@ func (c *FFLogsClient) QueryFightEvents(reportCode string, fight ReportFight) (r
 		"endTime":   fight.EndTime,
 	}
 
-	err := c.RawQuery(RawQueryFightEvents, variables, &Query)
-	if err != nil {
-		log.Println(err)
-
-		return nil
-	}
+	c.RawQuery(RawQueryFightEvents, variables, &Query)
 
 	var events []FFLogsEvent
 
-	err = json.Unmarshal(Query.Data.ReportData.Report.Events.Data, &events)
+	err := json.Unmarshal(Query.Data.ReportData.Report.Events.Data, &events)
 	if err != nil {
 		log.Println(err)
 
@@ -319,12 +308,7 @@ func (c *FFLogsClient) QueryFightEvents(reportCode string, fight ReportFight) (r
 		variables["startTime"] = Query.Data.ReportData.Report.Events.NextPageTimestamp
 		Query.Data.ReportData.Report.Events.NextPageTimestamp = 0
 
-		err = c.RawQuery(RawQueryFightEvents, variables, &Query)
-		if err != nil {
-			log.Println(err)
-
-			return nil
-		}
+		c.RawQuery(RawQueryFightEvents, variables, &Query)
 
 		err = json.Unmarshal(Query.Data.ReportData.Report.Events.Data, &events)
 		if err != nil {
