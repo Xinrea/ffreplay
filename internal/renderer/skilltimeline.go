@@ -82,7 +82,7 @@ func RenderCasting(debug bool, canvas *ebiten.Image, tick int64, cast *model.Ski
 	geoM := texture.CenterGeoM(iconTexture)
 	geoM.Scale(s, s)
 
-	borderGeoM := model.BorderGeoM
+	borderGeoM := texture.CenterGeoM(model.BorderTexture)
 	borderGeoM.Scale(s, s)
 
 	if !cast.IsGCD {

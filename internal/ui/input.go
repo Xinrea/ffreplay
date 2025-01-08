@@ -217,10 +217,19 @@ func InputView(prefix string, minWidth int, commitHandler func(string)) *furex.V
 		MinWidth:      minWidth,
 		CommitHandler: commitHandler,
 	}
-	view := furex.NewView(furex.TagName("input"), furex.Direction(furex.Column), furex.Width(minWidth), furex.Handler(handler))
-	view.AddChild(furex.NewView(furex.ID("input-bg"), furex.Height(InputHeight), furex.Handler(&Sprite{
-		NineSliceTexture: messageTextureAtlas.GetNineSlice("input_bg.png"),
-	})))
+	view := furex.NewView(
+		furex.TagName("input"),
+		furex.Direction(furex.Column),
+		furex.Width(minWidth),
+		furex.Handler(handler),
+	)
+	view.AddChild(
+		furex.NewView(
+			furex.ID("input-bg"),
+			furex.Height(InputHeight),
+			furex.Handler(&Sprite{
+				NineSliceTexture: messageTextureAtlas.GetNineSlice("input_bg.png"),
+			})))
 	view.AddChild(
 		furex.NewView(
 			furex.ID("content"),

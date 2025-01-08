@@ -61,6 +61,7 @@ func (s *System) Layout(w, h int) {
 
 func (s *System) AddEntry(id int64, player *donburi.Entry) {
 	s.EntryMap[id] = player
+
 	prole := component.Status.Get(player).Role
 	if prole != role.Boss && prole != role.NPC {
 		s.PlayerList = append(s.PlayerList, player)
@@ -99,6 +100,7 @@ func (s *System) Update(ecs *ecs.ECS) {
 
 	if s.reset {
 		s.doReset(ecs)
+
 		globalData.Tick = 0
 		s.reset = false
 	}

@@ -71,7 +71,16 @@ func (a *archetype) Spawn(ecs *ecs.ECS, cs ...donburi.IComponentType) *donburi.E
 }
 
 // boss gameID is unique in ffxiv, id is used in events.
-func NewEnemy(ecs *ecs.ECS, pos f64.Vec2, ringSize float64, gameID int64, id int64, name string, isBoss bool, instanceCount int) *donburi.Entry {
+func NewEnemy(
+	ecs *ecs.ECS,
+	pos f64.Vec2,
+	ringSize float64,
+	gameID int64,
+	id int64,
+	name string,
+	isBoss bool,
+	instanceCount int,
+) *donburi.Entry {
 	enemy := Enemy.Spawn(ecs)
 	textureRing := texture.NewTextureFromFile("asset/target_enemy.png")
 

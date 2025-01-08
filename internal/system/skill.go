@@ -29,9 +29,11 @@ func (s *System) SkillUpdate(ecs *ecs.ECS) {
 			if casting == nil {
 				continue
 			}
+
 			if casting.StartTick == -1 {
 				casting.StartTick = entry.GetTick(ecs)
 			}
+
 			if util.TickToMS(entry.GetTick(ecs)-casting.StartTick) > casting.Cast {
 				// remove skill
 				instance.ClearCast()
@@ -49,6 +51,7 @@ func (s *System) Cast(
 	skill model.Skill,
 ) {
 	global := component.Global.Get(tag.Global.MustFirst(ecs.World))
+
 	casterSprite := component.Sprite.Get(caster)
 	if casterSprite == nil {
 		log.Println("Cast with nil caster")
@@ -63,6 +66,7 @@ func (s *System) Cast(
 	}
 
 	casterSprite.Instances[casterInstance].Cast(skill)
+
 	if skill.SkillEvents != nil && global.Debug {
 		timeline := skill.SkillEvents.InstanceWith(entry.GetTick(ecs), caster, casterInstance, target, targetInstance)
 		entry.NewTimeline(ecs, &timeline)

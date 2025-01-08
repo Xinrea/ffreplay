@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/internal/scene"
 	"github.com/Xinrea/ffreplay/internal/scene/scenes"
 	"github.com/Xinrea/ffreplay/internal/ui"
@@ -65,6 +66,7 @@ var credential string
 func main() {
 	// initialize work
 	ui.InitializeFont()
+	model.Init()
 	// ffreplay -r report_code -f fight_id
 	// ffpreplay -u https://www.fflogs.com/reports/wrLFVz2QtvnGT9j1?fight=9
 	var report string

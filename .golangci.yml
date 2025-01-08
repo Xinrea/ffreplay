@@ -5,4 +5,5 @@ linters:
     - godox
     - mnd
     - gomnd
+    - gomoddirectives
   fast: true

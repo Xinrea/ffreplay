@@ -17,13 +17,13 @@ func HotBarView(w, h int) *furex.View {
 		furex.Direction(furex.Column),
 	)
 
-	for i := 0; i < h; i++ {
+	for range h {
 		row := furex.NewView(
 			furex.TagName("hotbar-row"),
 			furex.MarginTop(2),
 		)
 
-		for j := 0; j < w; j++ {
+		for range w {
 			item := &HotBarItemConfig{}
 			row.AddChild(HotbarItemView(item))
 		}
@@ -45,6 +45,19 @@ type HotBarItemConfig struct {
 var globalHoveredHotbarItem *furex.View
 
 func HotbarItemView(item *HotBarItemConfig) *furex.View {
+	view := newHotBarItemFrame()
+
+	initHotBarIcon(view, item.Icon)
+
+	if item.Icon != nil {
+		initHotBarClickHandler(view, item)
+	}
+
+	return view
+}
+
+// newHotBarItemFrame creates a new hotbar item frame that handles hover events.
+func newHotBarItemFrame() *furex.View {
 	view := furex.NewView(
 		furex.TagName("hotbar-item"),
 		furex.Width(48),
@@ -68,7 +81,11 @@ func HotbarItemView(item *HotBarItemConfig) *furex.View {
 		globalHoveredHotbarItem = nil
 	}
 
-	if item.Icon == nil {
+	return view
+}
+
+func initHotBarIcon(view *furex.View, icon *ebiten.Image) {
+	if icon == nil {
 		view.AddChild(furex.NewView(
 			furex.TagName("hotbar-empty"),
 			furex.Position(furex.PositionAbsolute),
@@ -82,7 +99,7 @@ func HotbarItemView(item *HotBarItemConfig) *furex.View {
 				},
 			)))
 
-		return view
+		return
 	}
 
 	view.AddChild(furex.NewView(
@@ -91,7 +108,7 @@ func HotbarItemView(item *HotBarItemConfig) *furex.View {
 		furex.Height(48),
 		furex.Handler(
 			&Sprite{
-				Texture: item.Icon,
+				Texture: icon,
 			},
 		)))
 
@@ -121,7 +138,9 @@ func HotbarItemView(item *HotBarItemConfig) *furex.View {
 				NineSliceTexture: hotbarAtlasTexture.GetNineSlice("hotbar_clicked.png"),
 			},
 		)))
+}
 
+func initHotBarClickHandler(view *furex.View, item *HotBarItemConfig) {
 	view.Handler.JustPressedMouseButtonLeft = func(frame image.Rectangle, x, y int) bool {
 		item.clickTime = time.Now()
 
@@ -139,6 +158,4 @@ func HotbarItemView(item *HotBarItemConfig) *furex.View {
 			view.FilterByTagName("hotbar-click")[0].Attrs.Hidden = true
 		}
 	}
-
-	return view
 }

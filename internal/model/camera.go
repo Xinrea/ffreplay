@@ -22,7 +22,6 @@ func (c *CameraData) viewportCenter() f64.Vec2 {
 	}
 }
 
-// Window size without scaled
 func (c *CameraData) WindowSize() (float64, float64) {
 	return c.ViewPort[0], c.ViewPort[1]
 }
@@ -42,21 +41,25 @@ func (c *CameraData) WorldMatrix() ebiten.GeoM {
 	)
 	m.Rotate(c.Rotation)
 	m.Translate(c.Position[0], c.Position[1])
+
 	return m
 }
 
 func (c *CameraData) WorldToScreen(x, y float64) (float64, float64) {
 	worldInverted := c.WorldMatrixInverted()
+
 	return worldInverted.Apply(x, y)
 }
 
 func (c *CameraData) ScreenToWorld(x, y float64) (float64, float64) {
 	world := c.WorldMatrix()
+
 	return world.Apply(x, y)
 }
 
 func (c *CameraData) WorldMatrixInverted() ebiten.GeoM {
 	worldGeo := c.WorldMatrix()
 	worldGeo.Invert()
+
 	return worldGeo
 }

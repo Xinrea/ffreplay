@@ -1,16 +1,9 @@
 package ui
 
 import (
-	"fmt"
 	"image/color"
-	"sort"
-	"strconv"
 	"strings"
 
-	"github.com/Xinrea/ffreplay/internal/component"
-	"github.com/Xinrea/ffreplay/internal/entry"
-	"github.com/Xinrea/ffreplay/internal/model"
-	"github.com/Xinrea/ffreplay/pkg/vector"
 	"github.com/yohamta/furex/v2"
 )
 
@@ -67,62 +60,6 @@ func (c *CommandHandler) Execute(cmd string) {
 		c.message.SetHeight(12)
 	default:
 		c.AddError("Invalid command: " + commands[0])
-	}
-}
-
-func (c *CommandHandler) mapHandler(cmds []string) {
-	if len(cmds) == 0 {
-		c.AddError("Invalid map command")
-
-		return
-	}
-
-	switch cmds[0] {
-	case "list":
-		mapids := []string{}
-		for k, m := range model.MapCache {
-			mapids = append(mapids, fmt.Sprintf("%d-%s", k, m.Path))
-		}
-
-		sort.Strings(mapids)
-
-		for _, m := range mapids {
-			c.AddResult(m)
-		}
-	case "phase":
-		id, _ := strconv.Atoi(cmds[1])
-		if m, ok := model.MapCache[id]; ok {
-			for i := range m.Phases {
-				c.AddResult(fmt.Sprintf("Phase %d", i))
-			}
-		} else {
-			c.AddError("Invalid map id")
-		}
-	case "set":
-		mapData := component.Map.Get(component.Map.MustFirst(ecsInstance.World))
-		cameraData := entry.GetCamera(ecsInstance)
-		id, _ := strconv.Atoi(cmds[1])
-
-		if m, ok := model.MapCache[id]; ok {
-			mapData.Config = m.Load()
-			current := mapData.Config.Maps[mapData.Config.CurrentMap]
-			cameraData.Position = vector.NewVector(current.Offset.X*25, current.Offset.Y*25)
-
-			c.AddResult("Setup map " + cmds[1])
-
-			if len(cmds) > 2 {
-				phase, _ := strconv.Atoi(cmds[2])
-				if phase < len(mapData.Config.Phases) && phase >= 0 {
-					mapData.Config.CurrentPhase = phase
-
-					c.AddResult("Setup phase " + cmds[2])
-				}
-			}
-		} else {
-			c.AddError("Invalid map id")
-		}
-	default:
-		c.AddError("Invalid map command")
 	}
 }
 

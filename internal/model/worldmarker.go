@@ -41,6 +41,7 @@ func (m *WorldMarkerConfig) preprocess() {
 	mainColor := m.BackgroundColor
 	w := float32(m.Background.Bounds().Dx())
 	h := float32(m.Background.Bounds().Dy())
+
 	if m.Type > WorldMarkerD {
 		mainColor.A = 128
 		m.Background.Fill(mainColor)
@@ -48,13 +49,27 @@ func (m *WorldMarkerConfig) preprocess() {
 		vector.StrokeRect(m.Background, 0, 0, w, h, 16, mainColor, true)
 	} else {
 		mainColor.A = 128
-		vector.DrawFilledCircle(m.Background, float32(m.Background.Bounds().Dx()/2), float32(m.Background.Bounds().Dy()/2), float32(m.Background.Bounds().Dx()/2), mainColor, true)
+		vector.DrawFilledCircle(
+			m.Background,
+			float32(m.Background.Bounds().Dx()/2),
+			float32(m.Background.Bounds().Dy()/2),
+			float32(m.Background.Bounds().Dx()/2),
+			mainColor,
+			true)
+
 		mainColor.A = 230
-		vector.StrokeCircle(m.Background, float32(m.Background.Bounds().Dx()/2), float32(m.Background.Bounds().Dy()/2), float32(m.Background.Bounds().Dx()/2-4), 8, mainColor, true)
+		vector.StrokeCircle(
+			m.Background,
+			float32(m.Background.Bounds().Dx()/2),
+			float32(m.Background.Bounds().Dy()/2),
+			float32(m.Background.Bounds().Dx()/2-4),
+			8,
+			mainColor,
+			true)
 	}
 }
 
-func init() {
+func initWorldMarkerTextures() {
 	// setup marker configs
 	WorldMarkerConfigs[WorldMarker1] = &WorldMarkerConfig{
 		Type:            WorldMarker1,

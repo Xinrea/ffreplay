@@ -62,6 +62,7 @@ func (m MapPresetItem) Load() *MapConfig {
 	defaultItem.Offset.X = m.Offset.X
 	defaultItem.Offset.Y = m.Offset.Y
 	config.Maps[m.ID] = defaultItem
+
 	for _, p := range m.Phases {
 		item := MapItem{}
 		item.ID = m.ID
@@ -70,12 +71,13 @@ func (m MapPresetItem) Load() *MapConfig {
 		item.Offset.Y = p.Offset.Y
 		config.Phases = append(config.Phases, item)
 	}
+
 	return config
 }
 
 var MapCache = map[int]MapPresetItem{}
 
-func init() {
+func initMapPreset() {
 	f, err := asset.AssetFS.Open("asset/floor/floor.json")
 	if err != nil {
 		log.Fatal(err)
@@ -83,10 +85,12 @@ func init() {
 	defer f.Close()
 
 	var config MapPreset
+
 	err = json.NewDecoder(f).Decode(&config)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	for _, m := range config.Maps {
 		MapCache[m.ID] = m
 	}

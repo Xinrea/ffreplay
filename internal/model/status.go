@@ -33,6 +33,7 @@ func (r *StatusData) Reset() {
 func (r *StatusData) TakeDamage(d Damage) {
 	r.BuffList.ProcessDamage(&d)
 	r.HP -= d.Amount
+
 	if r.HP <= 0 {
 		r.HP = 0
 	}
@@ -48,10 +49,13 @@ func (r *StatusData) IsDead() bool {
 
 func (r *StatusData) TakeHeal(h Heal) {
 	r.BuffList.ProcessHeal(&h)
+
 	if r.IsDead() {
 		return
 	}
+
 	r.HP += h.Amount
+
 	if r.HP > r.MaxHP {
 		r.HP = r.MaxHP
 	}
