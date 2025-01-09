@@ -59,7 +59,7 @@ func (i *Instance) IsActive(tick int64) bool {
 
 func (i *Instance) Cast(gameSkill Skill) {
 	// just auto attack
-	if gameSkill.ID == 7 {
+	if gameSkill.ID == 7 || gameSkill.ID == 8 {
 		return
 	}
 
