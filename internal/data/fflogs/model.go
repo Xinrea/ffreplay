@@ -1,6 +1,7 @@
 package fflogs
 
 import (
+	"encoding/json"
 	"net/http"
 )
 
@@ -132,6 +133,13 @@ type FFLogsEvent struct {
 	Y                   *int64        `json:"y,omitempty"`
 	SourceMarker        *int          `json:"sourceMarker,omitempty"`
 	TargetMarker        *int          `json:"targetMarker,omitempty"`
+	Buffs               string        `json:"buffs,omitempty"`
+}
+
+func (e FFLogsEvent) ToJson() string {
+	jsonStr, _ := json.Marshal(e)
+
+	return string(jsonStr)
 }
 
 type Aura struct {

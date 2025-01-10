@@ -1,8 +1,11 @@
 package system
 
 import (
+	"log"
 	"math"
 	"sort"
+	"strconv"
+	"strings"
 
 	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/data"
@@ -157,6 +160,7 @@ var EventHandlerMap = map[fflogs.EventType]EventHandler{
 	fflogs.WorldMarkerPlaced:  handleWorldMarkerPlaced,
 	fflogs.Applybuffstack:     handleApplyBuffStack,
 	fflogs.Removebuffstack:    handleRemoveBuffStack,
+	fflogs.TDamage:            handleDamage,
 }
 
 func (s *System) applyLog(ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
@@ -442,4 +446,59 @@ func handleCast(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflog
 	skill.StartTick = event.LocalTick
 
 	s.Cast(ecs, caster, instanceID, target, 0, skill)
+}
+
+func handleDamage(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+	// source := s.EntryMap[*event.SourceID]
+	target := s.EntryMap[*event.TargetID]
+
+	targetSprite := component.Sprite.Get(target)
+	targetInstance := targetSprite.Instances[0]
+
+	relatedBuffs := make([]*model.BasicBuffInfo, 0)
+
+	buffs := event.Buffs
+
+	buffStrs := strings.Split(buffs, ".")
+	for _, buffStr := range buffStrs {
+		if buffStr == "" {
+			continue
+		}
+
+		buffID, err := strconv.Atoi(buffStr)
+		if err != nil {
+			log.Println("failed to parse buff id", buffStr)
+
+			continue
+		}
+
+		buffInfo := model.GetBuffInfo(int64(buffID))
+		if buffInfo != nil {
+			relatedBuffs = append(relatedBuffs, buffInfo)
+		} else {
+			log.Println("failed to find buff info for", buffID)
+		}
+	}
+
+	var amount int64 = 0
+	if event.Amount != nil {
+		amount = *event.Amount
+	}
+
+	var multiplier float64 = 1
+	if event.Multiplier != nil {
+		multiplier = *event.Multiplier
+	}
+
+	damageTakenEntry := model.DamageTaken{
+		Tick:         event.LocalTick,
+		Type:         model.DamageType(event.Ability.Type),
+		SourceID:     *event.SourceID,
+		Ability:      event.Ability.ToSkill(0),
+		Amount:       amount,
+		Multiplier:   multiplier,
+		RelatedBuffs: relatedBuffs,
+	}
+
+	targetInstance.AddDamageTaken(damageTakenEntry)
 }

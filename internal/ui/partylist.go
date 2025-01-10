@@ -62,6 +62,8 @@ func NewPartyList(players []*donburi.Entry) *furex.View {
 		view.AddChild(NewPlayerItem(p))
 	}
 
+	view.Layout()
+
 	return view
 }
 

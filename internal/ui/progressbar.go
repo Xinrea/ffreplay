@@ -57,19 +57,20 @@ func ProgressBarView() *furex.View {
 	addTextLine(5, "暂停: SPACE | 播放速度: 方向键（上下）| 重置: R")
 	addTextLine(5, "锁定玩家: 1-8 | 点击小队列表锁定 | 解除锁定: ESC")
 
+	view.Layout()
+
 	return view
 }
 
 func createProgressBar(newHandler furex.ViewHandler) *furex.View {
 	global := entry.GetGlobal(ecsInstance)
 	view := furex.NewView(
-		furex.Position(furex.PositionAbsolute),
 		furex.Direction(furex.Column),
 		furex.AlignItems(furex.AlignItemEnd),
 		furex.Justify(furex.JustifyEnd),
 		furex.Handler(newHandler),
-		furex.Bottom(20),
-		furex.Right(20),
+		furex.MarginBottom(UIPadding),
+		furex.MarginRight(UIPadding),
 	)
 
 	view.AddChild(furex.NewView(
