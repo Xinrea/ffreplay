@@ -5,6 +5,7 @@ import (
 	"image/color"
 	"log"
 
+	asset "github.com/Xinrea/ffreplay"
 	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/internal/ui"
 	"github.com/Xinrea/ffreplay/pkg/texture"
@@ -14,14 +15,13 @@ import (
 
 const (
 	TIMELINE_WIDTH  = 800
-	TIMELINE_HEIGHT = 150
+	TIMELINE_HEIGHT = 130
 	NONEGCD_GAP     = 50
 )
 
 var (
-	background     *ebiten.Image = nil
-	skillLayer     *ebiten.Image = nil
-	skillLayerMask *ebiten.Image = nil
+	shader     *ebiten.Shader
+	skillLayer *ebiten.Image
 )
 
 type SkillTimeline struct {
@@ -36,45 +36,21 @@ type GCDPeriod struct {
 
 func initBackground() {
 	s := ebiten.Monitor().DeviceScaleFactor()
-	background = ebiten.NewImage(int(TIMELINE_WIDTH*s), int(TIMELINE_HEIGHT*s))
 	skillLayer = ebiten.NewImage(int(TIMELINE_WIDTH*s), int(TIMELINE_HEIGHT*s))
-	skillLayerMask = ebiten.NewImage(int(TIMELINE_WIDTH*s), int(TIMELINE_HEIGHT*s))
 
-	for i := 0; i < int(TIMELINE_WIDTH*s); i++ {
-		p := 1.0
+	shaderSrc, _ := asset.AssetFS.ReadFile("asset/shader/easeinout.kage")
 
-		if i < int(TIMELINE_WIDTH*s*0.16) {
-			p = float64(i) / (TIMELINE_WIDTH * s * 0.16)
-		}
+	var err error
 
-		if i > int(TIMELINE_WIDTH*s*0.84) {
-			p = 1 - (float64(i)-TIMELINE_WIDTH*s*0.84)/(TIMELINE_WIDTH*s*0.16)
-		}
-
-		for j := 0; j < int(TIMELINE_HEIGHT*s); j++ {
-			background.Set(i, j, color.NRGBA{0, 0, 0, uint8(p * 128)})
-		}
-	}
-
-	for i := 0; i < int(TIMELINE_WIDTH*s); i++ {
-		p := 1.0
-
-		if i < int(TIMELINE_WIDTH*s*0.16) {
-			p = float64(i) / (TIMELINE_WIDTH * s * 0.16)
-		}
-
-		if i > int(TIMELINE_WIDTH*s*0.84) {
-			p = 1 - (float64(i)-TIMELINE_WIDTH*s*0.84)/(TIMELINE_WIDTH*s*0.16)
-		}
-
-		for j := 0; j < int(TIMELINE_HEIGHT*s); j++ {
-			skillLayerMask.Set(i, j, color.NRGBA{0, 0, 0, uint8(p * 255)})
-		}
+	shader, err = ebiten.NewShader(shaderSrc)
+	if err != nil {
+		panic(err)
 	}
 }
 
 func RenderCasting(debug bool, canvas *ebiten.Image, tick int64, cast *model.Skill, x, y float64) {
 	s := ebiten.Monitor().DeviceScaleFactor()
+
 	textSize := 12.0 * s
 	yOffset := 30.0 * s
 
@@ -90,6 +66,7 @@ func RenderCasting(debug bool, canvas *ebiten.Image, tick int64, cast *model.Ski
 		borderGeoM.Scale(0.8, 0.8)
 		geoM.Translate(0, -30*s)
 		borderGeoM.Translate(0, -30*s)
+
 		textSize = 10.0 * s
 		yOffset = -55 * s
 	}
@@ -168,9 +145,10 @@ func (st SkillTimeline) Render(debug bool, canvas *ebiten.Image, x, y float64, t
 		return
 	}
 
-	if int(TIMELINE_WIDTH*s) != background.Bounds().Dx() {
-		initBackground()
-		log.Println("Scale factor changed, recreated skill timeline assets")
+	if int(TIMELINE_HEIGHT*s) != skillLayer.Bounds().Dy() || int(TIMELINE_WIDTH*s) != skillLayer.Bounds().Dx() {
+		skillLayer = ebiten.NewImage(int(TIMELINE_WIDTH*s), int(TIMELINE_HEIGHT*s))
+
+		log.Println("resize skillLayer")
 	}
 
 	x = x * s
@@ -178,20 +156,17 @@ func (st SkillTimeline) Render(debug bool, canvas *ebiten.Image, x, y float64, t
 
 	x = x - TIMELINE_WIDTH*s/2
 
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(x, y)
-
-	canvas.DrawImage(background, op)
-
 	skillLayer.Clear()
 
 	for i := range st.Periods {
 		offset := tickToLength(tick - st.Periods[i].StartTick)
 		px := -offset*1.3*s + TIMELINE_WIDTH*s
-		py := TIMELINE_HEIGHT*s/2 + 15.0*s
+		py := TIMELINE_HEIGHT*s/2.0 + 15*s
 		st.Periods[i].Render(debug, skillLayer, px, py, tick)
 	}
 
-	skillLayer.DrawImage(skillLayerMask, &ebiten.DrawImageOptions{Blend: ebiten.BlendDestinationIn})
-	canvas.DrawImage(skillLayer, op)
+	sop := &ebiten.DrawRectShaderOptions{}
+	sop.GeoM.Translate(x, y)
+	sop.Images[0] = skillLayer
+	canvas.DrawRectShader(int(TIMELINE_WIDTH*s), int(TIMELINE_HEIGHT*s), shader, sop)
 }
