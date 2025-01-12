@@ -7,11 +7,9 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/Xinrea/ffreplay/internal/data/markers"
-	"github.com/Xinrea/ffreplay/internal/errors"
 	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/util"
 )
@@ -25,8 +23,7 @@ type FFLogsClient struct {
 func NewFFLogsClient(clientID, clientSecret string) *FFLogsClient {
 	creds, err := getFFLogsToken(clientID, clientSecret)
 	if err != nil {
-		log.Println(err)
-		os.Exit(errors.ErrorInvalidCredentials)
+		log.Panic(err)
 	}
 
 	// create http client with bearer token
@@ -59,25 +56,23 @@ func (c *FFLogsClient) RawQuery(query string, variables map[string]any, result a
 		"query": query,
 	})
 	if err != nil {
-		log.Println(err)
-		os.Exit(errors.ErrorNetworkError)
+		log.Panic(err)
 	}
 
 	resp, err := c.client.Post(ENDPOINT, "application/json", bytes.NewReader(requestBody))
 	if err != nil {
-		log.Println(err)
-		os.Exit(errors.ErrorNetworkError)
+		log.Panic(err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	err = json.Unmarshal(body, &result)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 }
 
@@ -150,7 +145,21 @@ func (c *FFLogsClient) QueryActors(reportCode string) []Actor {
 	return Query.Data.ReportData.Report.MasterData.Actors
 }
 
-func (c *FFLogsClient) QueryReportFights(reportCode string) []ReportFight {
+func findFightIndex(fights []ReportFight, fight int) int {
+	if fight == -1 {
+		return len(fights) - 1
+	}
+
+	for i := range fights {
+		if fights[i].ID == fight {
+			return i
+		}
+	}
+
+	return -1
+}
+
+func (c *FFLogsClient) QueryReportFight(reportCode string, fight int) ReportFight {
 	var Query struct {
 		Data struct {
 			ReportData struct {
@@ -198,11 +207,15 @@ func (c *FFLogsClient) QueryReportFights(reportCode string) []ReportFight {
 		`, variables, &Query)
 
 	if len(Query.Data.ReportData.Report.Fights) == 0 {
-		log.Println("No fight found")
-		os.Exit(errors.ErrorPrivateReport)
+		log.Panic("No fight found")
 	}
 
-	return Query.Data.ReportData.Report.Fights
+	index := findFightIndex(Query.Data.ReportData.Report.Fights, fight)
+	if index == -1 {
+		log.Panic("Invalid fight id")
+	}
+
+	return Query.Data.ReportData.Report.Fights[index]
 }
 
 func (c *FFLogsClient) QueryFightPlayers(reportCode string, fightID int) *PlayerDetails {

@@ -25,7 +25,7 @@ var (
 func InitializeFont() {
 	s, err := text.NewGoTextFaceSource(bytes.NewReader(fontTTF))
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	fontSource = s
