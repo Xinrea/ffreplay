@@ -52,7 +52,7 @@ func timelineRender(ecs *ecs.ECS, screen *ebiten.Image, timeline *model.Timeline
 		}
 
 		if param < 0 || param > 1 {
-			log.Fatal("Invalid param", current, partTick, param)
+			log.Panic("Invalid param", current, partTick, param)
 		}
 		// draw skill range
 		scale := color.RGBA{255, 255, 255, uint8(255 * param)}

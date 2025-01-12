@@ -53,7 +53,7 @@ func queryBossIDAndStart(code string, fight int) (int, int) {
 		nil,
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	req.Header.Set("referer", "https://www.fflogs.com/")
@@ -68,7 +68,7 @@ func queryBossIDAndStart(code string, fight int) (int, int) {
 
 	err = json.NewDecoder(resp.Body).Decode(&fightResponse)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 	// find boss id in fight
 	boss := -1
@@ -84,7 +84,7 @@ func queryBossIDAndStart(code string, fight int) (int, int) {
 	}
 
 	if boss == -1 {
-		log.Fatal("Invalid boss id found")
+		log.Panic("Invalid boss id found")
 	}
 
 	return boss, startTime
@@ -101,7 +101,7 @@ func QueryWorldMarkers(code string, fight int) []WorldMarker {
 		nil,
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	req.Header.Set("referer", "https://www.fflogs.com/")
@@ -120,7 +120,7 @@ func QueryWorldMarkers(code string, fight int) []WorldMarker {
 
 	err = json.NewDecoder(segResp.Body).Decode(&segResponse)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	return segResponse.WorldMarkers

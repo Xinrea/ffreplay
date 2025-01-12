@@ -9,14 +9,15 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"runtime/debug"
 	"strconv"
 	"strings"
 
-	"github.com/Xinrea/ffreplay/internal/errors"
 	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/internal/scene"
 	"github.com/Xinrea/ffreplay/internal/scene/scenes"
 	"github.com/Xinrea/ffreplay/internal/ui"
+	"github.com/Xinrea/ffreplay/util"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
@@ -65,6 +66,12 @@ func (g *Game) Layout(width, height int) (int, int) {
 var credential string
 
 func main() {
+	defer func() {
+		if r := recover(); r != nil {
+			util.SetExitMessage(fmt.Sprintf("error: %s\n%s", r, string(debug.Stack())))
+			os.Exit(1)
+		}
+	}()
 	// initialize work
 	ui.InitializeFont()
 	model.Init()
@@ -108,13 +115,11 @@ func parseFightURL(reportUrl *string) (string, int) {
 
 	parsedUrl, err := url.Parse(*reportUrl)
 	if err != nil {
-		log.Println("Invalid report url:", err)
-		os.Exit(errors.ErrorInvalidReportUrl)
+		log.Panic("Invalid report url:", err)
 	}
 
 	if !strings.HasPrefix(parsedUrl.Path, "/reports/") {
-		log.Println("Invalid report url:", *reportUrl)
-		os.Exit(errors.ErrorInvalidReportUrl)
+		log.Panic("Invalid report url:", *reportUrl)
 	}
 
 	report := parsedUrl.Path[len("/reports/"):]
@@ -124,8 +129,7 @@ func parseFightURL(reportUrl *string) (string, int) {
 		if parsedUrl.Query().Get("fight") == "last" {
 			fight = -1
 		} else {
-			log.Println("Invalid fight id")
-			os.Exit(errors.ErrorInvalidFightID)
+			log.Panic("Invalid fight id")
 		}
 	}
 
@@ -138,7 +142,7 @@ func startPlayground() {
 	ebiten.SetWindowTitle("FFReplay Playground")
 
 	if err := ebiten.RunGame(NewGame(nil)); err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 }
 
@@ -155,20 +159,20 @@ func startReplay(clientID string, clientSecret string, report string, fight int)
 			},
 		),
 	); err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 }
 
 func loadCredentialFromFile() string {
 	f, err := os.Open(".credential")
 	if err != nil {
-		log.Fatal("Failed to open credential file:", err)
+		log.Panic("Failed to open credential file:", err)
 	}
 	defer f.Close()
 
 	cbytes, err := io.ReadAll(f)
 	if err != nil {
-		log.Fatal("Failed to read credential file:", err)
+		log.Panic("Failed to read credential file:", err)
 	}
 
 	return string(cbytes)

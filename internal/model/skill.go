@@ -44,7 +44,7 @@ var actionEntries = []ActionInfo{}
 func initActionPreset() {
 	f, err := asset.AssetFS.Open("asset/gamedata/Action.csv")
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 	defer f.Close()
 
@@ -52,7 +52,7 @@ func initActionPreset() {
 
 	records, err := r.ReadAll()
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 	// remove headers
 	records = records[3:]
