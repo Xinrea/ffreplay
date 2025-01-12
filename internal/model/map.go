@@ -80,7 +80,7 @@ var MapCache = map[int]MapPresetItem{}
 func initMapPreset() {
 	f, err := asset.AssetFS.Open("asset/floor/floor.json")
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 	defer f.Close()
 
@@ -88,7 +88,7 @@ func initMapPreset() {
 
 	err = json.NewDecoder(f).Decode(&config)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	for _, m := range config.Maps {

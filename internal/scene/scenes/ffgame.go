@@ -1,9 +1,11 @@
 package scenes
 
 import (
+	"fmt"
 	"image/color"
 	"log"
 	"os"
+	"runtime/debug"
 	"sort"
 	"sync"
 	"time"
@@ -12,7 +14,6 @@ import (
 	"github.com/Xinrea/ffreplay/internal/data"
 	"github.com/Xinrea/ffreplay/internal/data/fflogs"
 	"github.com/Xinrea/ffreplay/internal/entry"
-	"github.com/Xinrea/ffreplay/internal/errors"
 	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/internal/model/role"
 	"github.com/Xinrea/ffreplay/internal/renderer"
@@ -88,15 +89,15 @@ func NewFFScene(opt *FFLogsOpt) *FFScene {
 }
 
 func (ms *FFScene) loadFFLogsReport() {
-	fights := ms.client.QueryReportFights(ms.code)
-	fightIndex := ms.findFightIndex(fights)
+	defer func() {
+		if r := recover(); r != nil {
+			util.SetExitMessage(fmt.Sprintf("error: %s\n%s", r, string(debug.Stack())))
+			os.Exit(1)
+		}
+	}()
 
-	if fightIndex == -1 {
-		log.Println("Invalid fight id")
-		os.Exit(errors.ErrorInvalidFightID)
-	}
-
-	fight := fights[fightIndex]
+	fight := ms.client.QueryReportFight(ms.code, ms.fight)
+	ms.fight = fight.ID
 
 	log.Println("Fight name:", fight.Name)
 
@@ -112,7 +113,7 @@ func (ms *FFScene) loadFFLogsReport() {
 
 	actors := ms.client.QueryActors(ms.code)
 	if len(actors) == 0 {
-		log.Fatal("No actor found")
+		log.Panic("No actor found")
 
 		return
 	}
@@ -153,22 +154,6 @@ func (ms *FFScene) loadFFLogsReport() {
 	log.Println("Loading cost", time.Since(pBeforeLoad))
 	ms.global.Loaded.Store(true)
 	log.Println("FFLogs report loaded")
-}
-
-func (ms *FFScene) findFightIndex(fights []fflogs.ReportFight) int {
-	if ms.fight == -1 {
-		ms.fight = fights[len(fights)-1].ID
-
-		return len(fights) - 1
-	}
-
-	for i := range fights {
-		if fights[i].ID == ms.fight {
-			return i
-		}
-	}
-
-	return -1
 }
 
 func (ms *FFScene) loadPlayerEvents(

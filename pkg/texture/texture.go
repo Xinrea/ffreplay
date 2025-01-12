@@ -23,7 +23,7 @@ func NewAbilityTexture(iconName string) *ebiten.Image {
 
 	u, err := url.Parse("https://assets.rpglogs.com/img/ff/abilities/" + iconName)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	finalUrl := u.ResolveReference(u).String()
@@ -51,7 +51,7 @@ func NewMapTexture(mapName string) *ebiten.Image {
 
 	u, err := url.Parse("https://assets.rpglogs.com/img/ff/maps/" + mapName)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	finalUrl := u.ResolveReference(u).String()
@@ -79,12 +79,12 @@ func NewTextureFromFile(filepath string) *ebiten.Image {
 
 	f, err := asset.AssetFS.Open(filepath)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	img, _, err := ebitenutil.NewImageFromReader(f)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	textureCache.Store(filepath, img)
