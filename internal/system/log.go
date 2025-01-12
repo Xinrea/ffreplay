@@ -1,7 +1,6 @@
 package system
 
 import (
-	"log"
 	"math"
 	"sort"
 
@@ -324,17 +323,6 @@ func handleBeginCast(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event 
 
 	component.Sprite.Get(caster).Instances[instanceID].Cast(skill)
 
-	if caster.HasComponent(tag.Enemy) {
-		log.Printf("[%d]%s[%d] begin cast [%d]%s on [%d]%s\n",
-			component.Status.Get(caster).ID,
-			component.Status.Get(caster).Name,
-			instanceID+1,
-			event.Ability.Guid,
-			event.Ability.Name,
-			component.Status.Get(eventSource).ID,
-			component.Status.Get(eventSource).Name)
-	}
-
 	return
 }
 
@@ -452,17 +440,6 @@ func handleCast(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflog
 
 	skill := skills.QuerySkill(event.Ability.ToSkill(0))
 	skill.StartTick = event.LocalTick
-
-	if caster.HasComponent(tag.Enemy) {
-		log.Printf("[%d]%s[%d] cast [%d]%s on [%d]%s\n",
-			component.Status.Get(caster).ID,
-			component.Status.Get(caster).Name,
-			instanceID+1,
-			skill.ID,
-			event.Ability.Name,
-			component.Status.Get(target).ID,
-			component.Status.Get(target).Name)
-	}
 
 	s.Cast(ecs, caster, instanceID, target, 0, skill)
 }

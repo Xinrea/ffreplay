@@ -26,7 +26,6 @@ const (
 type Renderer struct{}
 
 func NewRenderer() *Renderer {
-	// do init work
 	initBackground()
 
 	return &Renderer{}
