@@ -99,13 +99,14 @@ func (b *Bar) Draw(screen *ebiten.Image, frame image.Rectangle, view *furex.View
 
 		for i := range b.Segments {
 			e := b.Segments[i]
-			s = e
 			b.BG.Draw(screen, image.Rect(
 				frame.Min.X+int(s*float64(frame.Dx())),
 				frame.Min.Y,
 				frame.Min.X+int(e*float64(frame.Dx())),
 				frame.Max.Y,
 			), nil)
+
+			s = e
 		}
 	}
 
