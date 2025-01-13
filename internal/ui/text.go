@@ -73,8 +73,10 @@ func (t *Text) Measure(fontSize float64) (float64, float64) {
 }
 
 func (t *Text) update(v *furex.View) {
-	w, _ := t.Measure(float64(v.Attrs.Height))
-	v.SetWidth(int(w))
+	if v.Attrs.Width == 0 {
+		w, _ := t.Measure(float64(v.Attrs.Height))
+		v.SetWidth(int(w))
+	}
 }
 
 func (t *Text) draw(screen *ebiten.Image, frame image.Rectangle, view *furex.View) {

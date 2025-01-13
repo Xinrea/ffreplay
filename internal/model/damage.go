@@ -3,9 +3,9 @@ package model
 type DamageType int
 
 const (
-	Physical DamageType = iota
-	Magical
-	Direct
+	Physical DamageType = 128
+	Magical  DamageType = 1024
+	Special  DamageType = 32
 )
 
 type Damage struct {

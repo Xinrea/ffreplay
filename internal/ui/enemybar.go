@@ -17,26 +17,29 @@ import (
 )
 
 func EnemyBarsView() *furex.View {
-	return furex.NewView(furex.Position(furex.PositionAbsolute), furex.Handler(furex.ViewHandler{
-		Update: func(v *furex.View) {
-			v.SetRight(0)
-			v.SetTop(0)
-			v.RemoveAll()
-			cnt := 0
-			for e := range tag.Enemy.Iter(ecsInstance.World) {
-				sprite := component.Sprite.Get(e)
-				if !sprite.Initialized {
-					continue
+	return furex.NewView(
+		furex.MarginRight(UIPadding),
+		furex.MarginTop(UIPadding),
+		furex.Direction(furex.Column),
+		furex.Handler(furex.ViewHandler{
+			Update: func(v *furex.View) {
+				v.RemoveAll()
+				cnt := 0
+				for e := range tag.Enemy.Iter(ecsInstance.World) {
+					sprite := component.Sprite.Get(e)
+					if !sprite.Initialized {
+						continue
+					}
+					enemy := component.Status.Get(e)
+					if enemy.Role != role.Boss || !sprite.Instances[0].IsActive(entry.GetTick(ecsInstance)) {
+						continue
+					}
+					v.AddChild(CreateEnemyBarView(cnt, e))
+					cnt++
 				}
-				enemy := component.Status.Get(e)
-				if enemy.Role != role.Boss || !sprite.Instances[0].IsActive(entry.GetTick(ecsInstance)) {
-					continue
-				}
-				v.AddChild(CreateEnemyBarView(cnt, e))
-				cnt++
-			}
-		},
-	}))
+				v.Layout()
+			},
+		}))
 }
 
 func CreateEnemyBarView(i int, enemy *donburi.Entry) *furex.View {
@@ -44,11 +47,8 @@ func CreateEnemyBarView(i int, enemy *donburi.Entry) *furex.View {
 	status := component.Status.Get(enemy)
 
 	view := furex.NewView(
-		furex.Position(furex.PositionAbsolute),
 		furex.Direction(furex.Column),
 		furex.AlignItems(furex.AlignItemStart),
-		furex.Right(520),
-		furex.Top(20+100*i),
 	)
 	nameView := furex.NewView(furex.Height(13), furex.Handler(&Text{
 		Content:      status.Name,

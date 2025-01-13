@@ -1,8 +1,11 @@
 package system
 
 import (
+	"log"
 	"math"
 	"sort"
+	"strconv"
+	"strings"
 
 	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/data"
@@ -65,6 +68,8 @@ func (s *System) replayUpdate(ecs *ecs.ECS, tick int64) {
 }
 
 func (s *System) handleFFlogsEvents(ecs *ecs.ECS, tick int64) {
+	lineMap := make(map[*donburi.Entry]*EventLine)
+
 	for e := range tag.GameObject.Iter(ecs.World) {
 		id := component.Status.Get(e).ID
 
@@ -73,8 +78,39 @@ func (s *System) handleFFlogsEvents(ecs *ecs.ECS, tick int64) {
 			continue
 		}
 
+		lineMap[e] = line
+
 		s.updateInstances(e, line, tick)
-		s.consumeEvents(ecs, e, line, tick)
+	}
+
+	s.consumeEvents(tick, lineMap)
+}
+
+func (s *System) consumeEvents(tick int64, lineMap map[*donburi.Entry]*EventLine) {
+	for {
+		var topTarget *donburi.Entry = nil
+
+		var topLine *EventLine = nil
+
+		var topTick int64 = math.MaxInt64
+
+		for e, line := range lineMap {
+			if line.Cursor < len(line.Events) && line.Events[line.Cursor].LocalTick <= tick {
+				if topLine == nil || line.Events[line.Cursor].LocalTick < topTick {
+					topTarget = e
+					topLine = line
+					topTick = line.Events[line.Cursor].LocalTick
+				}
+			}
+		}
+
+		if topLine == nil {
+			break
+		}
+
+		s.applyLog(s.ecs, topTarget, topLine.Events[topLine.Cursor])
+
+		topLine.Cursor++
 	}
 }
 
@@ -132,15 +168,6 @@ func (s *System) lerpUpdate(e *donburi.Entry, sprite *model.Instance, previous, 
 	component.Status.Get(e).MaxMana = status.MaxMP
 }
 
-func (s *System) consumeEvents(ecs *ecs.ECS, e *donburi.Entry, line *EventLine, tick int64) {
-	for line.Cursor < len(line.Events) && line.Events[line.Cursor].LocalTick <= tick {
-		event := line.Events[line.Cursor]
-		s.applyLog(ecs, e, event)
-
-		line.Cursor++
-	}
-}
-
 type EventHandler func(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent)
 
 var EventHandlerMap = map[fflogs.EventType]EventHandler{
@@ -157,6 +184,7 @@ var EventHandlerMap = map[fflogs.EventType]EventHandler{
 	fflogs.WorldMarkerPlaced:  handleWorldMarkerPlaced,
 	fflogs.Applybuffstack:     handleApplyBuffStack,
 	fflogs.Removebuffstack:    handleRemoveBuffStack,
+	fflogs.TDamage:            handleDamage,
 }
 
 func (s *System) applyLog(ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
@@ -442,4 +470,59 @@ func handleCast(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflog
 	skill.StartTick = event.LocalTick
 
 	s.Cast(ecs, caster, instanceID, target, 0, skill)
+}
+
+func handleDamage(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+	// source := s.EntryMap[*event.SourceID]
+	target := s.EntryMap[*event.TargetID]
+
+	targetSprite := component.Sprite.Get(target)
+	targetInstance := targetSprite.Instances[0]
+
+	relatedBuffs := make([]*model.BasicBuffInfo, 0)
+
+	buffs := event.Buffs
+
+	buffStrs := strings.Split(buffs, ".")
+	for _, buffStr := range buffStrs {
+		if buffStr == "" {
+			continue
+		}
+
+		buffID, err := strconv.Atoi(buffStr)
+		if err != nil {
+			log.Println("failed to parse buff id", buffStr)
+
+			continue
+		}
+
+		buffInfo := model.GetBuffInfo(int64(buffID))
+		if buffInfo != nil {
+			relatedBuffs = append(relatedBuffs, buffInfo)
+		} else {
+			log.Println("failed to find buff info for", buffID)
+		}
+	}
+
+	var amount int64 = 0
+	if event.Amount != nil {
+		amount = *event.Amount
+	}
+
+	var multiplier float64 = 1
+	if event.Multiplier != nil {
+		multiplier = *event.Multiplier
+	}
+
+	damageTakenEntry := model.DamageTaken{
+		Tick:         event.LocalTick,
+		Type:         model.DamageType(event.Ability.Type),
+		SourceID:     *event.SourceID,
+		Ability:      event.Ability.ToSkill(0),
+		Amount:       amount,
+		Multiplier:   multiplier,
+		RelatedBuffs: relatedBuffs,
+	}
+
+	targetInstance.AddDamageTaken(damageTakenEntry)
 }

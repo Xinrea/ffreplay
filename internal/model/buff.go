@@ -2,6 +2,7 @@ package model
 
 import (
 	"sort"
+	"sync"
 
 	"github.com/Xinrea/ffreplay/pkg/texture"
 	"github.com/Xinrea/ffreplay/util"
@@ -224,4 +225,26 @@ func (b *Buff) Remove() {
 	if b.RemoveCallback != nil {
 		b.RemoveCallback(b, b.ECS, b.Source, b.Target)
 	}
+}
+
+type BasicBuffInfo struct {
+	ID   int64
+	Name string
+	Icon string
+}
+
+var buffInfoCache = sync.Map{}
+
+func GetBuffInfo(id int64) *BasicBuffInfo {
+	if v, ok := buffInfoCache.Load(id); ok {
+		if b, ok := v.(*BasicBuffInfo); ok {
+			return b
+		}
+	}
+
+	return nil
+}
+
+func SetBuffInfoCache(id int64, info *BasicBuffInfo) {
+	buffInfoCache.Store(id, info)
 }

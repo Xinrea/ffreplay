@@ -2,6 +2,7 @@ package renderer
 
 import (
 	"github.com/Xinrea/ffreplay/internal/component"
+	"github.com/Xinrea/ffreplay/internal/entry"
 	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/internal/tag"
 	"github.com/Xinrea/ffreplay/pkg/texture"
@@ -10,7 +11,12 @@ import (
 )
 
 func (r *Renderer) WorldMarkerRender(ecs *ecs.ECS, screen *ebiten.Image) {
+	global := entry.GetGlobal(ecs)
 	camera := component.Camera.Get(tag.Camera.MustFirst(ecs.World))
+
+	if !global.Loaded.Load() {
+		return
+	}
 
 	for e := range tag.WorldMarker.Iter(ecs.World) {
 		marker := component.WorldMarker.Get(e)

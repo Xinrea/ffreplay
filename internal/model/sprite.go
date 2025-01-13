@@ -17,11 +17,22 @@ type SpriteData struct {
 }
 
 type Instance struct {
-	Face           float64
-	Object         object.Object
-	LastActive     int64
-	casting        *Skill
-	historyCasting []*Skill
+	Face               float64
+	Object             object.Object
+	LastActive         int64
+	casting            *Skill
+	castHistory        []*Skill
+	damageTakenHistory []DamageTaken
+}
+
+type DamageTaken struct {
+	Tick         int64
+	Type         DamageType
+	SourceID     int64
+	Ability      Skill
+	Amount       int64
+	Multiplier   float64
+	RelatedBuffs []*BasicBuffInfo
 }
 
 func (s SpriteData) Render(camera *CameraData, screen *ebiten.Image) {
@@ -68,7 +79,7 @@ func (i *Instance) Cast(gameSkill Skill) {
 		return
 	}
 
-	if len(i.historyCasting) > 0 && isSucceed(i.historyCasting[len(i.historyCasting)-1], &gameSkill) {
+	if len(i.castHistory) > 0 && isSucceed(i.castHistory[len(i.castHistory)-1], &gameSkill) {
 		return
 	}
 	// no need to spell, just move into historyCasting
@@ -77,7 +88,7 @@ func (i *Instance) Cast(gameSkill Skill) {
 			i.ClearCast()
 		}
 
-		i.historyCasting = append(i.historyCasting, &gameSkill)
+		i.castHistory = append(i.castHistory, &gameSkill)
 
 		return
 	}
@@ -98,7 +109,7 @@ func (i *Instance) ClearCast() {
 		return
 	}
 
-	i.historyCasting = append(i.historyCasting, i.casting)
+	i.castHistory = append(i.castHistory, i.casting)
 	i.casting = nil
 }
 
@@ -106,25 +117,44 @@ func (i *Instance) GetHistoryCast(tick int64) []*Skill {
 	// only keep last 5 gcd of history
 	cnt := 5
 
-	for k := len(i.historyCasting) - 1; k >= 0; k-- {
-		if i.historyCasting[k].IsGCD {
+	for k := len(i.castHistory) - 1; k >= 0; k-- {
+		if i.castHistory[k].IsGCD {
 			cnt--
 		}
 
 		if cnt == 0 {
-			i.historyCasting = i.historyCasting[k:]
+			i.castHistory = i.castHistory[k:]
 
 			break
 		}
 	}
 
-	return i.historyCasting
+	return i.castHistory
+}
+
+func (i *Instance) AddDamageTaken(damage DamageTaken) {
+	// TODO: ignore dots, bleeding, etc for now.(type:1, 64)
+	if damage.Type != Physical && damage.Type != Magical && damage.Type != Special {
+		return
+	}
+
+	i.damageTakenHistory = append(i.damageTakenHistory, damage)
+}
+
+// GetHistoryDamageTaken returns the last n damage taken history.
+func (i *Instance) GetHistoryDamageTaken(n int) []DamageTaken {
+	if len(i.damageTakenHistory) > n {
+		return i.damageTakenHistory[len(i.damageTakenHistory)-n:]
+	}
+
+	return i.damageTakenHistory
 }
 
 func (i *Instance) Reset() {
 	i.LastActive = -1
 	i.casting = nil
-	i.historyCasting = nil
+	i.castHistory = nil
+	i.damageTakenHistory = nil
 }
 
 // isSucceed checks same skill that cast twice, but previous one has cast time.
