@@ -285,7 +285,7 @@ query {
 }
 `
 
-func (c *FFLogsClient) QueryFightEvents(reportCode string, fight ReportFight) (ret []FFLogsEvent) {
+func (c *FFLogsClient) QueryFightEvents(query string, reportCode string, fight ReportFight) (ret []FFLogsEvent) {
 	var Query struct {
 		Data struct {
 			ReportData struct {
@@ -303,7 +303,7 @@ func (c *FFLogsClient) QueryFightEvents(reportCode string, fight ReportFight) (r
 		"endTime":   fight.EndTime,
 	}
 
-	c.RawQuery(RawQueryFightEvents, variables, &Query)
+	c.RawQuery(query, variables, &Query)
 
 	var events []FFLogsEvent
 
@@ -321,7 +321,7 @@ func (c *FFLogsClient) QueryFightEvents(reportCode string, fight ReportFight) (r
 		variables["startTime"] = Query.Data.ReportData.Report.Events.NextPageTimestamp
 		Query.Data.ReportData.Report.Events.NextPageTimestamp = 0
 
-		c.RawQuery(RawQueryFightEvents, variables, &Query)
+		c.RawQuery(query, variables, &Query)
 
 		err = json.Unmarshal(Query.Data.ReportData.Report.Events.Data, &events)
 		if err != nil {
@@ -336,7 +336,28 @@ func (c *FFLogsClient) QueryFightEvents(reportCode string, fight ReportFight) (r
 	return ret
 }
 
+const RawQueryDamageTakenEvents = `
+query {
+	reportData {
+		report(code: "$code") {
+			events(
+				fightIDs: $fightIDs,
+				startTime: $startTime,
+				endTime: $endTime,
+				dataType: DamageTaken,
+				filterExpression:"type=\"calculateddamage\"",
+				limit: 10000,
+			) {
+				data
+				nextPageTimestamp
+			}
+		}
+	}
+}
+`
+
 type Ability struct {
+	Type        int    `json:"type"`
 	Guid        int64  `json:"guid"`
 	Name        string `json:"name"`
 	AbilityIcon string `json:"abilityIcon"`

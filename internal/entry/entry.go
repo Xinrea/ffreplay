@@ -36,6 +36,11 @@ var (
 		component.Sprite,
 		component.Status,
 	)
+	LimitBreak = newArchetype(tag.GameObject,
+		tag.LimitBreak,
+		component.Sprite,
+		component.Status,
+	)
 	Enemy = newArchetype(
 		tag.GameObject,
 		tag.Enemy,
@@ -150,6 +155,38 @@ func NewPet(ecs *ecs.ECS, gameID int64, id int64, name string, instanceCount int
 	})
 
 	return pet
+}
+
+func NewLimitBreakNPC(ecs *ecs.ECS, gameID int64, id int64) *donburi.Entry {
+	limitBreak := LimitBreak.Spawn(ecs)
+
+	instances := []*model.Instance{}
+	instances = append(instances, &model.Instance{
+		Face:       0,
+		Object:     object.NewPointObject(vector.NewVector(0, 0)),
+		LastActive: -1,
+	})
+
+	component.Sprite.Set(limitBreak, &model.SpriteData{
+		Texture:     nil,
+		Scale:       0,
+		Instances:   instances,
+		Initialized: true,
+	})
+
+	component.Status.Set(limitBreak, &model.StatusData{
+		GameID:   gameID,
+		ID:       id,
+		Name:     "LimitBreak",
+		Role:     role.LimitBreak,
+		HP:       1,
+		MaxHP:    1,
+		BuffList: model.NewBuffList(),
+	})
+
+	log.Println("LimitBreak:", id)
+
+	return limitBreak
 }
 
 func NewPlayer(ecs *ecs.ECS, role role.RoleType, pos f64.Vec2, detail *fflogs.PlayerDetail) *donburi.Entry {

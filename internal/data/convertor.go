@@ -1,6 +1,9 @@
 package data
 
 import (
+	"encoding/json"
+	"fmt"
+	"log"
 	"sync/atomic"
 
 	"github.com/Xinrea/ffreplay/internal/data/fflogs"
@@ -52,24 +55,27 @@ func FetchLogEvents(
 	fight fflogs.ReportFight,
 ) (map[int64]InstanceStatus, []fflogs.FFLogsEvent) {
 	status := make(map[int64]InstanceStatus)
-	events := c.QueryFightEvents(code, fight)
+	events := c.QueryFightEvents(fflogs.RawQueryFightEvents, code, fight)
 	startTime := int64(fight.StartTime)
+
+	preloadCalculatedDamageEvents(c.QueryFightEvents(fflogs.RawQueryDamageTakenEvents, code, fight))
+	preprocessDamageEvents(events)
 
 	// preprocess events, convert timestamp to tick
 	for i := range events {
 		events[i].LocalTick = int64(events[i].Timestamp-startTime) / 1000 * 60
-		processEvent(&events[i], status)
+		processEvent(events[i], status)
 	}
 
 	return status, events
 }
 
-func processEvent(event *fflogs.FFLogsEvent, status map[int64]InstanceStatus) {
+func processEvent(event fflogs.FFLogsEvent, status map[int64]InstanceStatus) {
 	processSourceEvent(event, status)
 	processTargetEvent(event, status)
 }
 
-func processSourceEvent(event *fflogs.FFLogsEvent, status map[int64]InstanceStatus) {
+func processSourceEvent(event fflogs.FFLogsEvent, status map[int64]InstanceStatus) {
 	if event.SourceID != nil && event.SourceResources != nil {
 		sourceID := *event.SourceID
 		if _, ok := status[sourceID]; !ok {
@@ -82,7 +88,7 @@ func processSourceEvent(event *fflogs.FFLogsEvent, status map[int64]InstanceStat
 			instanceID = int(*event.SourceInstance)
 		}
 
-		newStatus := extractSourceStatusFromEvent(*event)
+		newStatus := extractSourceStatusFromEvent(event)
 
 		if len(status[sourceID][instanceID]) == 0 ||
 			status[sourceID][instanceID][len(status[sourceID][instanceID])-1].Tick != event.LocalTick {
@@ -93,7 +99,7 @@ func processSourceEvent(event *fflogs.FFLogsEvent, status map[int64]InstanceStat
 	}
 }
 
-func processTargetEvent(event *fflogs.FFLogsEvent, status map[int64]InstanceStatus) {
+func processTargetEvent(event fflogs.FFLogsEvent, status map[int64]InstanceStatus) {
 	if event.TargetID != nil && event.TargetResources != nil {
 		targetID := *event.TargetID
 		if _, ok := status[targetID]; !ok {
@@ -106,7 +112,7 @@ func processTargetEvent(event *fflogs.FFLogsEvent, status map[int64]InstanceStat
 			instanceID = int(*event.TargetInstance)
 		}
 
-		newStatus := extractTargetStatusFromEvent(*event)
+		newStatus := extractTargetStatusFromEvent(event)
 
 		if len(status[targetID][instanceID]) == 0 ||
 			status[targetID][instanceID][len(status[targetID][instanceID])-1].Tick != event.LocalTick {
@@ -124,6 +130,41 @@ func PreloadAbilityInfo(events []fflogs.FFLogsEvent, counter *atomic.Int32) {
 		if events[i].Ability != nil {
 			_ = texture.NewAbilityTexture(events[i].Ability.AbilityIcon)
 			_ = model.GetAction(events[i].Ability.Guid)
+			model.SetBuffInfoCache(events[i].Ability.Guid, &model.BasicBuffInfo{
+				ID:   events[i].Ability.Guid,
+				Name: events[i].Ability.Name,
+				Icon: events[i].Ability.AbilityIcon,
+			})
 		}
 	}
+}
+
+var packetMap = make(map[string]fflogs.FFLogsEvent)
+
+func preloadCalculatedDamageEvents(events []fflogs.FFLogsEvent) {
+	for i := range events {
+		identifier := getDamageEventIdentifier(events[i])
+		packetMap[identifier] = events[i]
+	}
+}
+
+func preprocessDamageEvents(events []fflogs.FFLogsEvent) {
+	for i := range events {
+		if events[i].Type == fflogs.TDamage && events[i].PacketID != nil {
+			identifier := getDamageEventIdentifier(events[i])
+
+			if event, ok := packetMap[identifier]; ok {
+				events[i].Buffs = event.Buffs
+			}
+		}
+	}
+}
+
+func getDamageEventIdentifier(event fflogs.FFLogsEvent) string {
+	if event.SourceID == nil || event.TargetID == nil || event.PacketID == nil {
+		j, err := json.Marshal(event)
+		log.Fatal("missing source/target id or packet id", string(j), err)
+	}
+
+	return fmt.Sprintf("%d-%d-%d", *event.SourceID, *event.TargetID, *event.PacketID)
 }

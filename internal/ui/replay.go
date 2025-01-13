@@ -39,18 +39,9 @@ var _ UI = (*FFUI)(nil)
 
 func NewReplayUI(ecs *ecs.ECS) *FFUI {
 	ecsInstance = ecs
-	view := furex.NewView(furex.Direction(furex.Row))
-	view.AddChild(
-		furex.NewView(
-			furex.ID("left"),
-			furex.Grow(UIHalf),
-			furex.MarginTop(UIPadding),
-			furex.MarginLeft(UIPadding),
-			furex.MarginBottom(UIPadding),
-			furex.AlignItems(furex.AlignItemStart),
-			furex.AlignContent(furex.AlignContentSpaceBetween),
-			furex.Direction(furex.Column),
-		),
+	view := furex.NewView(
+		furex.Direction(furex.Row),
+		furex.Justify(furex.JustifySpaceBetween),
 	)
 
 	return &FFUI{
@@ -65,9 +56,14 @@ func (f *FFUI) Update(w, h int) {
 	}
 
 	f.once.Do(func() {
-		lview := f.view.MustGetByID("left")
-		tlview := furex.NewView(furex.AlignItems(furex.AlignItemStart), furex.Direction(furex.Column))
-		tlview.AddChild(furex.NewView(furex.Handler(&LimitBreak{
+		lview := furex.NewView(
+			furex.ID("left"),
+			furex.MarginTop(UIPadding),
+			furex.MarginLeft(UIPadding),
+			furex.Direction(furex.Column),
+		)
+
+		lview.AddChild(furex.NewView(furex.Handler(&LimitBreak{
 			Value:     &global.LimitBreak,
 			BarNumber: &global.Bar,
 		})))
@@ -83,14 +79,25 @@ func (f *FFUI) Update(w, h int) {
 			memberList = append(memberList, e)
 		})
 
-		tlview.AddChild(NewPartyList(memberList))
-		lview.AddChild(tlview)
+		lview.AddChild(NewPartyList(memberList))
+		lview.AddChild(DamageHistoryView())
 
-		enemyBarView := EnemyBarsView()
-		f.view.AddChild(enemyBarView)
+		f.view.AddChild(lview)
 
-		playProgressView := ProgressBarView()
-		f.view.AddChild(playProgressView)
+		rview := furex.NewView(
+			furex.ID("right"),
+			furex.Width(600),
+			furex.MarginTop(UIPadding),
+			furex.MarginRight(UIPadding),
+			furex.MarginBottom(UIPadding),
+			furex.Direction(furex.Column),
+			furex.Justify(furex.JustifySpaceBetween),
+			furex.AlignItems(furex.AlignItemEnd),
+		)
+		rview.AddChild(EnemyBarsView())
+		rview.AddChild(ProgressBarView())
+
+		f.view.AddChild(rview)
 	})
 
 	furex.GlobalScale = ebiten.Monitor().DeviceScaleFactor()

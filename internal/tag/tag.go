@@ -5,6 +5,7 @@ import "github.com/yohamta/donburi"
 var (
 	Player      = donburi.NewTag().SetName("Player")
 	Pet         = donburi.NewTag().SetName("Pet")
+	LimitBreak  = donburi.NewTag().SetName("LimitBreak")
 	PartyMember = donburi.NewTag().SetName("PartyMember")
 	GameObject  = donburi.NewTag().SetName("GameObject")
 	Wall        = donburi.NewTag().SetName("Wall")
