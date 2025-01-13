@@ -150,7 +150,7 @@ func createDamageHistoryItemNameView(damage model.DamageTaken) *furex.View {
 	case model.Special:
 		damageIcon = "asset/ui/d_special.png"
 	default:
-		log.Println("Unknown damage type:", damage.Type)
+		log.Println("Unknown damage type:", damage)
 	}
 
 	view.AddChild(furex.NewView(

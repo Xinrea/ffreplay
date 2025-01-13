@@ -133,6 +133,11 @@ func (i *Instance) GetHistoryCast(tick int64) []*Skill {
 }
 
 func (i *Instance) AddDamageTaken(damage DamageTaken) {
+	// TODO: ignore dots, bleeding, etc for now.(type:1, 64)
+	if damage.Type != Physical && damage.Type != Magical && damage.Type != Special {
+		return
+	}
+
 	i.damageTakenHistory = append(i.damageTakenHistory, damage)
 }
 
