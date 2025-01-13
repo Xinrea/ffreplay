@@ -45,6 +45,10 @@ func DamageHistoryView() *furex.View {
 	}
 
 	view.Handler.Draw = func(screen *ebiten.Image, frame image.Rectangle, v *furex.View) {
+		if global.TargetPlayer == nil {
+			return
+		}
+
 		bg := texture.NewNineSlice(
 			texture.NewTextureFromFile("asset/partylist_bg.png"),
 			PartyListBGNineSliceConfig[0],

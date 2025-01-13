@@ -136,10 +136,16 @@ func (ms *FFScene) loadFFLogsReport() {
 	ms.loadPetEvents(&wg, fight.FriendlyPets, status, events)
 	ms.loadEnemyEvents(&wg, fight.EnemyNPCs, status, events)
 	ms.loadEnvironmentEvents(status, events)
+
+	limitbreak := findLimitBreakNPC(actors)
+	if limitbreak != nil {
+		ms.loadLimitBreakNPCEvents(limitbreak.ID, status, events)
+	}
+
 	ms.loadSpecialEvents(events, fight, isDungeonReport)
 
 	// create players
-	ms.createPlayers(players)
+	ms.createPlayers(players, actors)
 
 	// create pets
 	ms.createPets(fight.FriendlyPets)
@@ -219,13 +225,23 @@ func (ms *FFScene) loadEnvironmentEvents(status map[int64]data.InstanceStatus, e
 	ms.system.AddEventLine(-1, status[-1], environmentEvents)
 }
 
+func (ms *FFScene) loadLimitBreakNPCEvents(
+	id int64,
+	status map[int64]data.InstanceStatus,
+	events []fflogs.FFLogsEvent,
+) {
+	limitbreakNPCEvents := ms.filterTargetEvents(id, events)
+	data.PreloadAbilityInfo(limitbreakNPCEvents, &ms.global.LoadCount)
+	ms.system.AddEventLine(id, status[id], limitbreakNPCEvents)
+}
+
 func (ms *FFScene) loadSpecialEvents(events []fflogs.FFLogsEvent, fight fflogs.ReportFight, isDungeonReport bool) {
 	ms.system.AddLimitbreakEvents(ms.filterLimitbreakEvents(events))
 	ms.system.AddMapChangeEvents(ms.filterMapChangeEvents(events, fight, isDungeonReport))
 	ms.system.AddWorldMarkerEvents(ms.filterMarkerChangeEvents(events))
 }
 
-func (ms *FFScene) createPlayers(players *fflogs.PlayerDetails) {
+func (ms *FFScene) createPlayers(players *fflogs.PlayerDetails, actors []fflogs.Actor) {
 	for _, t := range players.Tanks {
 		ms.system.AddEntry(t.ID, entry.NewPlayer(ms.ecs, role.StringToRole(t.Type), f64.Vec2{}, &t))
 	}
@@ -237,6 +253,22 @@ func (ms *FFScene) createPlayers(players *fflogs.PlayerDetails) {
 	for _, d := range players.DPS {
 		ms.system.AddEntry(d.ID, entry.NewPlayer(ms.ecs, role.StringToRole(d.Type), f64.Vec2{}, &d))
 	}
+
+	// create limitbreak npc
+	limitBreakNPC := findLimitBreakNPC(actors)
+	if limitBreakNPC != nil {
+		ms.system.AddEntry(limitBreakNPC.ID, entry.NewLimitBreakNPC(ms.ecs, limitBreakNPC.GameID, limitBreakNPC.ID))
+	}
+}
+
+func findLimitBreakNPC(actors []fflogs.Actor) *fflogs.Actor {
+	for _, actor := range actors {
+		if actor.SubType == "LimitBreak" && actor.Name == "Limit Break" {
+			return &actor
+		}
+	}
+
+	return nil
 }
 
 func (ms *FFScene) createPets(pets []fflogs.ReportFightNPC) {

@@ -2,5 +2,8 @@
 
 package util
 
+import "log"
+
 func SetExitMessage(msg string) {
+	log.Println(msg)
 }
