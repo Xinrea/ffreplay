@@ -68,6 +68,8 @@ func (s *System) replayUpdate(ecs *ecs.ECS, tick int64) {
 }
 
 func (s *System) handleFFlogsEvents(ecs *ecs.ECS, tick int64) {
+	lineMap := make(map[*donburi.Entry]*EventLine)
+
 	for e := range tag.GameObject.Iter(ecs.World) {
 		id := component.Status.Get(e).ID
 
@@ -76,8 +78,39 @@ func (s *System) handleFFlogsEvents(ecs *ecs.ECS, tick int64) {
 			continue
 		}
 
+		lineMap[e] = line
+
 		s.updateInstances(e, line, tick)
-		s.consumeEvents(ecs, e, line, tick)
+	}
+
+	s.consumeEvents(tick, lineMap)
+}
+
+func (s *System) consumeEvents(tick int64, lineMap map[*donburi.Entry]*EventLine) {
+	for {
+		var topTarget *donburi.Entry = nil
+
+		var topLine *EventLine = nil
+
+		var topTick int64 = math.MaxInt64
+
+		for e, line := range lineMap {
+			if line.Cursor < len(line.Events) && line.Events[line.Cursor].LocalTick <= tick {
+				if topLine == nil || line.Events[line.Cursor].LocalTick < topTick {
+					topTarget = e
+					topLine = line
+					topTick = line.Events[line.Cursor].LocalTick
+				}
+			}
+		}
+
+		if topLine == nil {
+			break
+		}
+
+		s.applyLog(s.ecs, topTarget, topLine.Events[topLine.Cursor])
+
+		topLine.Cursor++
 	}
 }
 
@@ -133,15 +166,6 @@ func (s *System) lerpUpdate(e *donburi.Entry, sprite *model.Instance, previous, 
 	component.Status.Get(e).MaxHP = status.MaxHP
 	component.Status.Get(e).Mana = status.MP
 	component.Status.Get(e).MaxMana = status.MaxMP
-}
-
-func (s *System) consumeEvents(ecs *ecs.ECS, e *donburi.Entry, line *EventLine, tick int64) {
-	for line.Cursor < len(line.Events) && line.Events[line.Cursor].LocalTick <= tick {
-		event := line.Events[line.Cursor]
-		s.applyLog(ecs, e, event)
-
-		line.Cursor++
-	}
 }
 
 type EventHandler func(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent)
