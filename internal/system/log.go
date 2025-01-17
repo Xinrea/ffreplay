@@ -363,7 +363,11 @@ func handleApplyBuff(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event 
 	status := component.Status.Get(buffTarget)
 	ability := (*event.Ability).ToBuff()
 	ability.ApplyTick = event.LocalTick
-	ability.Duration = *event.Duration
+
+	if event.Duration != nil {
+		ability.Duration = *event.Duration
+	}
+
 	status.BuffList.Add(ability)
 	// TODO implement buff effect(removeCallback) to do this work
 	if ability.ID == 1000418 {
@@ -474,7 +478,10 @@ func handleCast(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflog
 
 func handleDamage(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
 	// source := s.EntryMap[*event.SourceID]
-	target := s.EntryMap[*event.TargetID]
+	target, ok := s.EntryMap[*event.TargetID]
+	if !ok {
+		return
+	}
 
 	targetSprite := component.Sprite.Get(target)
 	targetInstance := targetSprite.Instances[0]
