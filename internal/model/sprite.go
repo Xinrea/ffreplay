@@ -68,43 +68,47 @@ func (i *Instance) IsActive(tick int64) bool {
 	return util.TickToMS(tick-i.LastActive) <= 2500
 }
 
-func (i *Instance) Cast(gameSkill Skill) {
+func (i *Instance) Cast(gameSkill *Skill) {
+	if gameSkill.Initialize != nil {
+		gameSkill.Initialize(gameSkill.EffectRange, i)
+	}
+
 	// just auto attack
 	if gameSkill.ID == 7 || gameSkill.ID == 8 {
 		return
 	}
 
 	// maybe the skill to cast is the effect of previous long casting skill
-	if isSucceed(i.casting, &gameSkill) {
+	if isSucceed(i.casting, gameSkill) {
 		return
 	}
 
-	if len(i.castHistory) > 0 && isSucceed(i.castHistory[len(i.castHistory)-1], &gameSkill) {
+	if len(i.castHistory) > 0 && isSucceed(i.castHistory[len(i.castHistory)-1], gameSkill) {
 		return
 	}
 	// no need to spell, just move into historyCasting
 	if gameSkill.Cast == 0 {
 		if i.casting != nil && i.casting.Cast > 0 {
-			i.ClearCast()
+			i.DoneCast()
 		}
 
-		i.castHistory = append(i.castHistory, &gameSkill)
+		i.castHistory = append(i.castHistory, gameSkill)
 
 		return
 	}
 
 	if i.casting != nil {
-		i.ClearCast()
+		i.DoneCast()
 	}
 
-	i.casting = &gameSkill
+	i.casting = gameSkill
 }
 
 func (i *Instance) GetCast() *Skill {
 	return i.casting
 }
 
-func (i *Instance) ClearCast() {
+func (i *Instance) DoneCast() {
 	if i.casting == nil {
 		return
 	}

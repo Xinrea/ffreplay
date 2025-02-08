@@ -1,16 +1,21 @@
 package renderer
 
 import (
+	"fmt"
+	"image/color"
+
 	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/entry"
 	"github.com/Xinrea/ffreplay/internal/model/role"
 	"github.com/Xinrea/ffreplay/internal/tag"
+	"github.com/Xinrea/ffreplay/internal/ui"
 	"github.com/Xinrea/ffreplay/pkg/object"
 	"github.com/Xinrea/ffreplay/pkg/texture"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/colorm"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"
+	"github.com/yohamta/furex/v2"
 )
 
 func (r *Renderer) EnemyRender(ecs *ecs.ECS, screen *ebiten.Image) {
@@ -64,10 +69,28 @@ func (r *Renderer) renderEnemy(ecs *ecs.ECS, screen *ebiten.Image, enemy *donbur
 	}
 
 	for _, instance := range sprite.Instances {
-		if !instance.IsActive(tick) && instance.GetCast() == nil {
+		if !global.Debug && !instance.IsActive(tick) && instance.GetCast() == nil {
 			continue
 		}
 
 		renderObject(instance.Face, instance.Object)
+
+		if global.Debug && instance.GetCast() != nil {
+			// render casting skill name
+			cast := instance.GetCast()
+			if cast != nil {
+				px, py := camera.WorldToScreen(instance.Object.Position()[0], instance.Object.Position()[1])
+				ui.DrawText(
+					screen,
+					fmt.Sprintf("[%d]%s", cast.ID, cast.Name),
+					12,
+					px,
+					py,
+					color.White,
+					furex.AlignItemCenter,
+					nil,
+				)
+			}
+		}
 	}
 }

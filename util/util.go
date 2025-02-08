@@ -81,3 +81,15 @@ func ScaleFrame(frame image.Rectangle) image.Rectangle {
 		int(float64(frame.Max.Y)*s),
 	)
 }
+
+func Clamp(v, mi, ma float64) float64 {
+	if v < mi {
+		return mi
+	}
+
+	if v > ma {
+		return ma
+	}
+
+	return v
+}

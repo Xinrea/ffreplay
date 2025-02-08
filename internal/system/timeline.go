@@ -25,19 +25,19 @@ func (s *System) TimelineUpdate(ecs *ecs.ECS) {
 
 		p := tick - timeline.StartTick
 		for i := range timeline.Events {
-			if timeline.Events[i].OffsetTick()-timeline.Events[i].DisplayTick()/2 == p {
+			if !timeline.Events[i].Started && p >= timeline.Events[i].OffsetTick() {
 				timeline.Begin(ecs, i)
 
 				continue
 			}
 
-			if timeline.Events[i].OffsetTick()-timeline.Events[i].DisplayTick()/2 < p && p < timeline.Events[i].OffsetTick() {
+			if timeline.Events[i].OffsetTick() < p && p < timeline.Events[i].OffsetTick()+timeline.Events[i].DurationTick() {
 				timeline.Update(ecs, i)
 
 				continue
 			}
 
-			if timeline.Events[i].OffsetTick() == p {
+			if !timeline.Events[i].Finished && p >= timeline.Events[i].OffsetTick()+timeline.Events[i].DurationTick() {
 				timeline.Finish(ecs, i)
 
 				continue

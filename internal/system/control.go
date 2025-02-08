@@ -6,7 +6,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/yohamta/donburi/ecs"
-	"github.com/yohamta/furex/v2"
 )
 
 const MaxVelocity = 4
@@ -26,7 +25,6 @@ func (s *System) ControlUpdate(ecs *ecs.ECS) {
 
 	if inpututil.IsKeyJustPressed(ebiten.KeyBackquote) {
 		global.Debug = !global.Debug
-		furex.Debug = !furex.Debug
 	}
 
 	_, dy := ebiten.Wheel()
