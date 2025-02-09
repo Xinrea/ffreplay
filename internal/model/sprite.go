@@ -97,9 +97,7 @@ func (i *Instance) Cast(gameSkill *Skill) {
 		return
 	}
 
-	if i.casting != nil {
-		i.DoneCast()
-	}
+	i.DoneCast()
 
 	i.casting = gameSkill
 }

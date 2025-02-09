@@ -10,48 +10,43 @@ import (
 const METER = 25
 
 // QueryCastingSkill returns a skill from the skillDB, which contains more detailed event timeline to action.
+var skillHandlers = map[int64]func(cast int64) *model.Skill{
+	S_Witchgleam:       NewWitchGleam,
+	S_FulminousFieldA:  NewFulminousFieldA,
+	S_FulminousFieldB:  NewFulminousFieldB,
+	S_SidewiseSparkR:   NewSideWiseSparkR,
+	S_SidewiseSparkR2:  NewSideWiseSparkR,
+	S_SidewiseSparkL:   NewSideWiseSparkL,
+	S_SidewiseSparkL2:  NewSideWiseSparkL,
+	S_WitchHunt:        NewWitchHunt,
+	S_LightningCage:    NewLightningCage,
+	S_BewitchingFlight: NewBewitchingFlight,
+	S_Burst:            NewBurst,
+	S_Thundering:       NewThundering,
+	S_LightningVortex:  NewLightningVortex,
+}
+
 func QueryCastingSkill(skill model.Skill) *model.Skill {
-	switch skill.ID {
-	case S_Witchgleam:
-		return NewWitchGleam(skill.Cast)
-	case S_FulminousFieldA:
-		return NewFulminousFieldA(skill.Cast)
-	case S_FulminousFieldB:
-		return NewFulminousFieldB(skill.Cast)
-	case S_SidewiseSparkR:
-		return NewSideWiseSparkR(skill.Cast)
-	case S_SidewiseSparkR2:
-		return NewSideWiseSparkR(skill.Cast)
-	case S_SidewiseSparkL:
-		return NewSideWiseSparkL(skill.Cast)
-	case S_SidewiseSparkL2:
-		return NewSideWiseSparkL(skill.Cast)
-	case S_WitchHunt:
-		return NewWitchHunt(skill.Cast)
-	case S_LightningCage:
-		return NewLightningCage(skill.Cast)
-	case S_BewitchingFlight:
-		return NewBewitchingFlight(skill.Cast)
-	case S_Burst:
-		return NewBurst(skill.Cast)
-	case S_Thundering:
-		return NewThundering(skill.Cast)
-	case S_LightningVortex:
-		return NewLightningVortex(skill.Cast)
-	default:
-		actionInfo := model.GetAction(skill.ID)
-		if actionInfo == nil {
-			return &skill
-		}
+	if handler, found := skillHandlers[skill.ID]; found {
+		return handler(skill.Cast)
+	}
 
-		if !strings.HasPrefix(actionInfo.Name, "_rsv") && actionInfo.Name != "" {
-			skill.Name = actionInfo.Name
-		}
+	return handleDefaultSkill(skill)
+}
 
-		skill.IsGCD = actionInfo.IsGCD
-
+func handleDefaultSkill(skill model.Skill) *model.Skill {
+	actionInfo := model.GetAction(skill.ID)
+	if actionInfo == nil {
 		return &skill
 	}
+
+	if !strings.HasPrefix(actionInfo.Name, "_rsv") && actionInfo.Name != "" {
+		skill.Name = actionInfo.Name
+	}
+
+	skill.IsGCD = actionInfo.IsGCD
+
+	return &skill
 }
 
 func QuerySkill(skill model.Skill) *model.Skill {

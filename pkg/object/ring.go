@@ -19,7 +19,8 @@ type RingObject struct {
 var _ Object = (*RingObject)(nil)
 
 func NewRingObject(opt ObjectOption, pos Vector, innerRadius float64, outerRadius float64) *RingObject {
-	hashStr := fmt.Sprintf("ring-%v-%v-%v-%v-%v", opt.FillColor, opt.StrokeColor, opt.StrokeWidth, innerRadius, outerRadius)
+	hashStr := fmt.Sprintf(
+		"ring-%v-%v-%v-%v-%v", opt.FillColor, opt.StrokeColor, opt.StrokeWidth, innerRadius, outerRadius)
 	w := outerRadius*2 + opt.StrokeWidth
 	h := outerRadius*2 + opt.StrokeWidth
 	initialM := ebiten.GeoM{}

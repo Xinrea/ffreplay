@@ -130,6 +130,7 @@ func (s *System) updateInstances(e *donburi.Entry, line *EventLine, tick int64) 
 			s.normalUpdate(e, sprite, status)
 		} else {
 			previous := line.Status[instanceID][index-1]
+
 			if component.Status.Get(e).Role == role.NPC {
 				s.normalUpdate(e, sprite, status)
 			} else {
