@@ -479,7 +479,7 @@ func handleCast(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflog
 	skill.StartTick = event.LocalTick
 
 	if entry.GetGlobal(ecs).Debug && component.Status.Get(caster).Role == role.NPC {
-		log.Println("NPC inst-cast", skill.ID, skill.Name)
+		log.Println("NPC inst-cast", *event.SourceID, *event.SourceInstance, skill.ID, skill.Name)
 	}
 
 	s.Cast(ecs, caster, instanceID, target, 0, skill, event.LocalTick)

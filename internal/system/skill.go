@@ -64,5 +64,11 @@ func (s *System) Cast(
 		return
 	}
 
-	casterSprite.Instances[casterInstance].Cast(skill)
+	inst := casterSprite.Instances[casterInstance]
+
+	if skill.Initialize != nil {
+		skill.Initialize(skill.EffectRange, inst.Face, inst.Object.Position())
+	}
+
+	inst.Cast(skill)
 }

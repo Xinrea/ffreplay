@@ -13,6 +13,7 @@ import (
 	asset "github.com/Xinrea/ffreplay"
 	"github.com/Xinrea/ffreplay/pkg/object"
 	"github.com/Xinrea/ffreplay/pkg/texture"
+	"github.com/Xinrea/ffreplay/pkg/vector"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -28,7 +29,7 @@ type Skill struct {
 	IsGCD       bool
 	EffectRange object.Object
 
-	Initialize func(r object.Object, inst *Instance)
+	Initialize func(r object.Object, facing float64, pos vector.Vector)
 }
 
 func (s Skill) Texture() *ebiten.Image {

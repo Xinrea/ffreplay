@@ -35,9 +35,9 @@ func NewSideWiseSparkR(cast int64) *model.Skill {
 		20*METER,
 	))
 
-	skill.Initialize = func(r object.Object, inst *model.Instance) {
-		generalInitializer(r, inst)
-		r.UpdateRotate(inst.Face + math.Pi/2)
+	skill.Initialize = func(r object.Object, facing float64, pos vector.Vector) {
+		generalInitializer(r, facing, pos)
+		r.UpdateRotate(facing + math.Pi/2)
 	}
 
 	return skill
@@ -54,9 +54,9 @@ func NewSideWiseSparkL(cast int64) *model.Skill {
 		20*METER,
 	))
 
-	skill.Initialize = func(r object.Object, inst *model.Instance) {
-		generalInitializer(r, inst)
-		r.UpdateRotate(inst.Face - math.Pi/2)
+	skill.Initialize = func(r object.Object, facing float64, pos vector.Vector) {
+		generalInitializer(r, facing, pos)
+		r.UpdateRotate(facing - math.Pi/2)
 	}
 
 	return skill

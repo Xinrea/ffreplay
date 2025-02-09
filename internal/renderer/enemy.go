@@ -69,7 +69,7 @@ func (r *Renderer) renderEnemy(ecs *ecs.ECS, screen *ebiten.Image, enemy *donbur
 	}
 
 	for _, instance := range sprite.Instances {
-		if !global.Debug && !instance.IsActive(tick) && instance.GetCast() == nil {
+		if !instance.IsActive(tick) && instance.GetCast() == nil {
 			continue
 		}
 
