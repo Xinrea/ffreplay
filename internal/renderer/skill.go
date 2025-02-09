@@ -14,6 +14,10 @@ import (
 )
 
 func (r *Renderer) RangeRender(ecs *ecs.ECS, screen *ebiten.Image) {
+	if !entry.GetGlobal(ecs).RangeDisplay {
+		return
+	}
+
 	tick := entry.GetTick(ecs)
 
 	for entry := range component.Sprite.Iter(ecs.World) {
