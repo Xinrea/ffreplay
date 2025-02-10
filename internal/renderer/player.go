@@ -1,6 +1,7 @@
 package renderer
 
 import (
+	"image/color"
 	"math"
 
 	"github.com/Xinrea/ffreplay/internal/component"
@@ -10,6 +11,7 @@ import (
 	"github.com/Xinrea/ffreplay/pkg/texture"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/colorm"
+	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"
 )
@@ -39,6 +41,28 @@ func (r *Renderer) renderPlayer(ecs *ecs.ECS, camera *model.CameraData, screen *
 	if global.TargetPlayer != nil && global.TargetPlayer == player {
 		c.ChangeHSV(135.0/180.0*3.14, 1, 1.2)
 	}
+
+	// render tether
+	tethers := sprite.Instances[0].GetTethers()
+	for _, target := range tethers {
+		// draw a line from player to target
+		sp := sprite.Instances[0].Object.Position()
+		tp := target.Object.Position()
+
+		spx, spy := camera.WorldToScreen(sp[0], sp[1])
+		tpx, tpy := camera.WorldToScreen(tp[0], tp[1])
+
+		vector.StrokeLine(
+			screen,
+			float32(spx),
+			float32(spy),
+			float32(tpx),
+			float32(tpy),
+			4,
+			color.NRGBA{255, 215, 0, 200},
+			true)
+	}
+
 	// player only has one instance
 	pos := sprite.Instances[0].Object.Position()
 	geoM := texture.CenterGeoM(sprite.Texture)

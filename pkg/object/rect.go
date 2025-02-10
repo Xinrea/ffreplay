@@ -19,13 +19,27 @@ type RectObject struct {
 // make sure RectObject implements Object interface.
 var _ Object = (*RectObject)(nil)
 
+const (
+	AnchorMiddle = iota
+	AnchorBottomMiddle
+)
+
 // NewRectObject creates a new RectObject with given position and size.
-func NewRectObject(opt ObjectOption, pos Vector, rw, rh float64) *RectObject {
+func NewRectObject(opt ObjectOption, pos Vector, anchor int, rw, rh float64) *RectObject {
 	hashStr := fmt.Sprintf("rect-%v-%v-%v-%v-%v", opt.FillColor, opt.StrokeColor, opt.StrokeWidth, rw, rh)
 	w := rw + opt.StrokeWidth
 	h := rh + opt.StrokeWidth
 	initialM := ebiten.GeoM{}
-	initialM.Translate(-w/2, 0)
+
+	switch anchor {
+	case AnchorMiddle:
+		initialM.Translate(-w/2, -h/2)
+	case AnchorBottomMiddle:
+		initialM.Translate(-w/2, 0)
+	default:
+		initialM.Translate(-w/2, 0)
+	}
+
 	initialM.Rotate(-math.Pi)
 
 	if cachedTexture, ok := objectTextureCache[hashStr]; ok {

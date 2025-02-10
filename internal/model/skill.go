@@ -11,22 +11,25 @@ import (
 	"sync"
 
 	asset "github.com/Xinrea/ffreplay"
+	"github.com/Xinrea/ffreplay/pkg/object"
 	"github.com/Xinrea/ffreplay/pkg/texture"
+	"github.com/Xinrea/ffreplay/pkg/vector"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
 var BorderTexture = texture.NewTextureFromFile("asset/skillborder.png")
 
 type Skill struct {
-	ID        int64
-	Name      string
-	Icon      string
-	StartTick int64
-	Cast      int64
-	Recast    int64
-	IsGCD     bool
+	ID          int64
+	Name        string
+	Icon        string
+	StartTick   int64
+	Cast        int64
+	Recast      int64
+	IsGCD       bool
+	EffectRange object.Object
 
-	SkillEvents *TimelineData
+	Initialize func(r object.Object, facing float64, pos vector.Vector)
 }
 
 func (s Skill) Texture() *ebiten.Image {

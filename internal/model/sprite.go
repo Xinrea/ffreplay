@@ -23,6 +23,7 @@ type Instance struct {
 	casting            *Skill
 	castHistory        []*Skill
 	damageTakenHistory []DamageTaken
+	tethers            []*Instance
 }
 
 type DamageTaken struct {
@@ -54,6 +55,18 @@ func (s SpriteData) Render(camera *CameraData, screen *ebiten.Image) {
 	}
 }
 
+func (i *Instance) AddTether(tether *Instance) {
+	i.tethers = append(i.tethers, tether)
+}
+
+func (i *Instance) GetTethers() []*Instance {
+	return i.tethers
+}
+
+func (i *Instance) ClearTether() {
+	i.tethers = nil
+}
+
 func (i *Instance) IsActive(tick int64) bool {
 	if i.LastActive == -1 {
 		return false
@@ -68,43 +81,41 @@ func (i *Instance) IsActive(tick int64) bool {
 	return util.TickToMS(tick-i.LastActive) <= 2500
 }
 
-func (i *Instance) Cast(gameSkill Skill) {
+func (i *Instance) Cast(gameSkill *Skill) {
 	// just auto attack
 	if gameSkill.ID == 7 || gameSkill.ID == 8 {
 		return
 	}
 
 	// maybe the skill to cast is the effect of previous long casting skill
-	if isSucceed(i.casting, &gameSkill) {
+	if isSucceed(i.casting, gameSkill) {
 		return
 	}
 
-	if len(i.castHistory) > 0 && isSucceed(i.castHistory[len(i.castHistory)-1], &gameSkill) {
+	if len(i.castHistory) > 0 && isSucceed(i.castHistory[len(i.castHistory)-1], gameSkill) {
 		return
 	}
 	// no need to spell, just move into historyCasting
 	if gameSkill.Cast == 0 {
 		if i.casting != nil && i.casting.Cast > 0 {
-			i.ClearCast()
+			i.DoneCast()
 		}
 
-		i.castHistory = append(i.castHistory, &gameSkill)
+		i.castHistory = append(i.castHistory, gameSkill)
 
 		return
 	}
 
-	if i.casting != nil {
-		i.ClearCast()
-	}
+	i.DoneCast()
 
-	i.casting = &gameSkill
+	i.casting = gameSkill
 }
 
 func (i *Instance) GetCast() *Skill {
 	return i.casting
 }
 
-func (i *Instance) ClearCast() {
+func (i *Instance) DoneCast() {
 	if i.casting == nil {
 		return
 	}
@@ -155,6 +166,7 @@ func (i *Instance) Reset() {
 	i.casting = nil
 	i.castHistory = nil
 	i.damageTakenHistory = nil
+	i.tethers = nil
 }
 
 // isSucceed checks same skill that cast twice, but previous one has cast time.
