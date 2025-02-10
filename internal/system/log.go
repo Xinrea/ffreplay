@@ -187,6 +187,7 @@ var EventHandlerMap = map[fflogs.EventType]EventHandler{
 	fflogs.Applybuffstack:     handleApplyBuffStack,
 	fflogs.Removebuffstack:    handleRemoveBuffStack,
 	fflogs.TDamage:            handleDamage,
+	fflogs.Tether:             handleTether,
 }
 
 func (s *System) applyLog(ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
@@ -203,6 +204,37 @@ func (s *System) applyLog(ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs
 
 		return
 	}
+}
+
+func handleTether(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+	// Currently only handle tether in future's rewritten
+	if component.Map.Get(component.Map.MustFirst(ecs.World)).Config.CurrentMap != 77 {
+		return
+	}
+
+	source := s.EntryMap[*event.SourceID]
+	target := s.EntryMap[*event.TargetID]
+
+	if source == nil || target == nil {
+		return
+	}
+
+	sourceInstanceIndex := 0
+	if event.SourceInstance != nil {
+		sourceInstanceIndex = int(*event.SourceInstance) - 1
+	}
+
+	targetInstanceIndex := 0
+	if event.TargetInstance != nil {
+		targetInstanceIndex = int(*event.TargetInstance) - 1
+	}
+
+	sourceInst := component.Sprite.Get(source).Instances[sourceInstanceIndex]
+	targetInst := component.Sprite.Get(target).Instances[targetInstanceIndex]
+
+	sourceInst.AddTether(targetInst)
+
+	return
 }
 
 func handleCombatantinfo(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
@@ -274,6 +306,12 @@ func handleRemoveDebuff(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, eve
 
 	ability := (*event.Ability).ToBuff()
 	status.BuffList.Remove(ability)
+
+	// TODO handle this in buff remove callback
+	if ability.ID == 1004158 || ability.ID == 1002255 {
+		targetInstance := component.Sprite.Get(buffTarget).Instances[0]
+		targetInstance.ClearTether()
+	}
 
 	return
 }

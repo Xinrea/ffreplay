@@ -1,6 +1,8 @@
 package util
 
 import (
+	"encoding/json"
+	"fmt"
 	"image"
 	"math"
 	"runtime"
@@ -92,4 +94,9 @@ func Clamp(v, mi, ma float64) float64 {
 	}
 
 	return v
+}
+
+func PrintJson(v any) {
+	b, _ := json.MarshalIndent(v, "", "  ")
+	fmt.Println(string(b))
 }
