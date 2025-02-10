@@ -26,6 +26,8 @@ var skillHandlers = map[int64]func(cast int64) *model.Skill{
 	S_LightningVortex:  NewLightningVortex,
 	S_CyclonicBreakA:   NewCyclonicBreakA,
 	S_CyclonicBreakB:   NewCyclonicBreakB,
+	S_PositronStream:   NewPositronStream,
+	S_NegatronStream:   NewNegatronStream,
 }
 
 func QueryCastingSkill(skill model.Skill) *model.Skill {

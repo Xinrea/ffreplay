@@ -22,7 +22,33 @@ const (
 	S_Witchgleam       = 38790
 	S_FulminousFieldA  = 37118
 	S_FulminousFieldB  = 39117
+	S_PositronStream   = 38437
+	S_NegatronStream   = 38438
 )
+
+func NewNegatronStream(cast int64) *model.Skill {
+	opt, cast := differByCastTime(cast)
+
+	return TemplateFixedRangeSkill(S_NegatronStream, "Negatron Stream", cast, object.NewRectObject(
+		opt,
+		vector.Vector{},
+		object.AnchorBottomMiddle,
+		12*METER,
+		40*METER,
+	))
+}
+
+func NewPositronStream(cast int64) *model.Skill {
+	opt, cast := differByCastTime(cast)
+
+	return TemplateFixedRangeSkill(S_PositronStream, "Positron Stream", cast, object.NewRectObject(
+		opt,
+		vector.Vector{},
+		object.AnchorBottomMiddle,
+		12*METER,
+		40*METER,
+	))
+}
 
 func NewSideWiseSparkR(cast int64) *model.Skill {
 	opt, cast := differByCastTime(cast)
