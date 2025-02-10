@@ -116,6 +116,7 @@ func (s *System) consumeEvents(tick int64, lineMap map[*donburi.Entry]*EventLine
 
 func (s *System) updateInstances(e *donburi.Entry, line *EventLine, tick int64) {
 	for i, sprite := range component.Sprite.Get(e).Instances {
+		isNPC := component.Status.Get(e).Role == role.NPC
 		instanceID := i + 1
 		index := sort.Search(len(line.Status[instanceID]), func(i int) bool {
 			return line.Status[instanceID][i].Tick >= tick
@@ -130,8 +131,9 @@ func (s *System) updateInstances(e *donburi.Entry, line *EventLine, tick int64) 
 			s.normalUpdate(e, sprite, status)
 		} else {
 			previous := line.Status[instanceID][index-1]
-			if component.Status.Get(e).Role == role.NPC {
-				s.normalUpdate(e, sprite, previous)
+
+			if isNPC {
+				s.normalUpdate(e, sprite, status)
 			} else {
 				s.lerpUpdate(e, sprite, previous, status, tick)
 			}
@@ -175,6 +177,7 @@ var EventHandlerMap = map[fflogs.EventType]EventHandler{
 	fflogs.Applybuff:          handleApplyBuff,
 	fflogs.Applydebuff:        handleApplyDebuff,
 	fflogs.Refreshbuff:        handleRefreshBuff,
+	fflogs.RefreshDebuff:      handleRefreshDebuff,
 	fflogs.Removebuff:         handleRemoveBuff,
 	fflogs.RemoveDebuff:       handleRemoveDebuff,
 	fflogs.Begincast:          handleBeginCast,
@@ -185,6 +188,7 @@ var EventHandlerMap = map[fflogs.EventType]EventHandler{
 	fflogs.Applybuffstack:     handleApplyBuffStack,
 	fflogs.Removebuffstack:    handleRemoveBuffStack,
 	fflogs.TDamage:            handleDamage,
+	fflogs.Tether:             handleTether,
 }
 
 func (s *System) applyLog(ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
@@ -203,6 +207,37 @@ func (s *System) applyLog(ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs
 	}
 }
 
+func handleTether(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+	// Currently only handle tether in future's rewritten
+	if component.Map.Get(component.Map.MustFirst(ecs.World)).Config.CurrentMap != 77 {
+		return
+	}
+
+	source := s.EntryMap[*event.SourceID]
+	target := s.EntryMap[*event.TargetID]
+
+	if source == nil || target == nil {
+		return
+	}
+
+	sourceInstanceIndex := 0
+	if event.SourceInstance != nil {
+		sourceInstanceIndex = int(*event.SourceInstance) - 1
+	}
+
+	targetInstanceIndex := 0
+	if event.TargetInstance != nil {
+		targetInstanceIndex = int(*event.TargetInstance) - 1
+	}
+
+	sourceInst := component.Sprite.Get(source).Instances[sourceInstanceIndex]
+	targetInst := component.Sprite.Get(target).Instances[targetInstanceIndex]
+
+	sourceInst.AddTether(targetInst)
+
+	return
+}
+
 func handleCombatantinfo(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
 	status := component.Status.Get(eventSource)
 	status.BuffList.SetBuffs(aurasToBuffs(event.Auras))
@@ -211,6 +246,21 @@ func handleCombatantinfo(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, ev
 }
 
 func handleRefreshBuff(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+	buffTarget := s.EntryMap[*event.TargetID]
+	if buffTarget == nil {
+		return
+	}
+
+	status := component.Status.Get(buffTarget)
+	ability := (*event.Ability).ToBuff()
+	ability.ApplyTick = event.LocalTick
+	ability.Duration = *event.Duration
+	status.BuffList.Add(ability)
+
+	return
+}
+
+func handleRefreshDebuff(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
 	buffTarget := s.EntryMap[*event.TargetID]
 	if buffTarget == nil {
 		return
@@ -272,6 +322,12 @@ func handleRemoveDebuff(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, eve
 
 	ability := (*event.Ability).ToBuff()
 	status.BuffList.Remove(ability)
+
+	// TODO handle this in buff remove callback
+	if ability.ID == 1004158 || ability.ID == 1002255 {
+		targetInstance := component.Sprite.Get(buffTarget).Instances[0]
+		targetInstance.ClearTether()
+	}
 
 	return
 }
@@ -346,10 +402,14 @@ func handleBeginCast(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event 
 		instanceID = int(*event.SourceInstance) - 1
 	}
 
-	skill := skills.QuerySkill(event.Ability.ToSkill(*event.Duration))
+	skill := skills.QueryCastingSkill(event.Ability.ToSkill(*event.Duration))
 	skill.StartTick = event.LocalTick
 
-	component.Sprite.Get(caster).Instances[instanceID].Cast(skill)
+	if entry.GetGlobal(ecs).Debug && component.Status.Get(caster).Role == role.NPC {
+		log.Println("NPC begin cast", skill.ID, skill.Name, *event.Duration)
+	}
+
+	s.Cast(ecs, caster, instanceID, nil, 0, skill, event.LocalTick)
 
 	return
 }
@@ -470,10 +530,14 @@ func handleCast(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflog
 
 	target := s.EntryMap[*event.TargetID]
 
-	skill := skills.QuerySkill(event.Ability.ToSkill(0))
+	skill := skills.QueryCastingSkill(event.Ability.ToSkill(0))
 	skill.StartTick = event.LocalTick
 
-	s.Cast(ecs, caster, instanceID, target, 0, skill)
+	if entry.GetGlobal(ecs).Debug && component.Status.Get(caster).Role == role.NPC {
+		log.Println("NPC inst-cast", *event.SourceID, instanceID, skill.ID, skill.Name)
+	}
+
+	s.Cast(ecs, caster, instanceID, target, 0, skill, event.LocalTick)
 }
 
 func handleDamage(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {

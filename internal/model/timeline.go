@@ -1,7 +1,6 @@
 package model
 
 import (
-	"github.com/Xinrea/ffreplay/pkg/object"
 	"github.com/Xinrea/ffreplay/util"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"
@@ -17,13 +16,13 @@ type TimelineData struct {
 	Events         []Event
 }
 
-func (t TimelineData) InstanceWith(
+func (t *TimelineData) InstanceWith(
 	tick int64,
 	caster *donburi.Entry,
 	casterInstance int,
 	target *donburi.Entry,
 	targetInstance int,
-) TimelineData {
+) *TimelineData {
 	t.StartTick = tick
 	t.Caster = caster
 	t.CasterInstance = casterInstance
@@ -44,23 +43,27 @@ func (t TimelineData) IsDone(tick int64) bool {
 }
 
 func (t TimelineData) EndTick() int64 {
-	return util.MSToTick(t.Events[len(t.Events)-1].Offset + t.Events[len(t.Events)-1].DisplayTime)
+	return util.MSToTick(t.Events[len(t.Events)-1].Offset + t.Events[len(t.Events)-1].Duration)
 }
 
 func (t TimelineData) Begin(ecs *ecs.ECS, index int) {
+	t.Events[index].Started = true
+
 	if t.Events[index].Begin == nil {
 		return
 	}
 
-	t.Events[index].Begin(ecs, t.Events[index].EffectRange, t.Caster, t.CasterInstance, t.Target, t.TargetInstance)
+	t.Events[index].Begin(ecs, t.Caster, t.CasterInstance, t.Target, t.TargetInstance)
 }
 
 func (t TimelineData) Finish(ecs *ecs.ECS, index int) {
+	t.Events[index].Finished = true
+
 	if t.Events[index].Finish == nil {
 		return
 	}
 
-	t.Events[index].Finish(ecs, t.Events[index].EffectRange, t.Caster, t.CasterInstance, t.Target, t.TargetInstance)
+	t.Events[index].Finish(ecs, t.Caster, t.CasterInstance, t.Target, t.TargetInstance)
 }
 
 func (t TimelineData) Update(ecs *ecs.ECS, index int) {
@@ -68,7 +71,7 @@ func (t TimelineData) Update(ecs *ecs.ECS, index int) {
 		return
 	}
 
-	t.Events[index].Update(ecs, t.Events[index].EffectRange, t.Caster, t.CasterInstance, t.Target, t.TargetInstance)
+	t.Events[index].Update(ecs, t.Caster, t.CasterInstance, t.Target, t.TargetInstance)
 }
 
 func (t *TimelineData) Reset() {
@@ -77,7 +80,6 @@ func (t *TimelineData) Reset() {
 
 type EventCallback func(
 	ecs *ecs.ECS,
-	rangeObj object.Object,
 	caster *donburi.Entry,
 	casterInstance int,
 	target *donburi.Entry,
@@ -85,18 +87,20 @@ type EventCallback func(
 )
 
 type Event struct {
-	Offset      int64
-	DisplayTime int64
-	EffectRange object.Object
-	Begin       EventCallback
-	Update      EventCallback
-	Finish      EventCallback
+	Offset   int64
+	Duration int64
+	Begin    EventCallback
+	Update   EventCallback
+	Finish   EventCallback
+
+	Started  bool
+	Finished bool
 }
 
 func (e Event) OffsetTick() int64 {
 	return util.MSToTick(e.Offset)
 }
 
-func (e Event) DisplayTick() int64 {
-	return util.MSToTick(e.DisplayTime)
+func (e Event) DurationTick() int64 {
+	return util.MSToTick(e.Duration)
 }

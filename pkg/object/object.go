@@ -28,6 +28,12 @@ var DefaultPositiveSkillRangeOption = ObjectOption{
 	StrokeWidth: 4,
 }
 
+var DefaultEffectSkillRangeOption = ObjectOption{
+	FillColor:   color.NRGBA{144, 110, 212, 128},
+	StrokeColor: color.NRGBA{144, 110, 212, 200},
+	StrokeWidth: 4,
+}
+
 type Object interface {
 	Position() Vector
 	UpdatePosition(v Vector)

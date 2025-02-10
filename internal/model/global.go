@@ -16,6 +16,7 @@ type GlobalData struct {
 	LimitBreak   int
 	Bar          int
 	Debug        bool
+	RangeDisplay bool
 	// should not process any event when UI is on focus
 	UIFocus bool
 	// Phases is a tick array for phase change

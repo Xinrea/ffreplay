@@ -73,6 +73,17 @@ func createProgressBar(newHandler furex.ViewHandler) *furex.View {
 		furex.MarginRight(UIPadding),
 	)
 
+	cv := CheckBoxView(
+		13,
+		true,
+		&global.RangeDisplay,
+		"显示技能范围(测试)",
+		nil,
+	)
+
+	cv.SetMarginBottom(12)
+	view.AddChild(cv)
+
 	view.AddChild(furex.NewView(
 		furex.ID("progress"),
 		furex.Height(13),
