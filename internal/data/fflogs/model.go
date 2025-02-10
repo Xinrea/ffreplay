@@ -169,6 +169,7 @@ const (
 	Absorbed           EventType = "absorbed"
 	Applybuff          EventType = "applybuff"
 	Refreshbuff        EventType = "refreshbuff"
+	RefreshDebuff      EventType = "refreshdebuff"
 	Applybuffstack     EventType = "applybuffstack"
 	Applydebuff        EventType = "applydebuff"
 	Begincast          EventType = "begincast"

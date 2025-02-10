@@ -177,6 +177,7 @@ var EventHandlerMap = map[fflogs.EventType]EventHandler{
 	fflogs.Applybuff:          handleApplyBuff,
 	fflogs.Applydebuff:        handleApplyDebuff,
 	fflogs.Refreshbuff:        handleRefreshBuff,
+	fflogs.RefreshDebuff:      handleRefreshDebuff,
 	fflogs.Removebuff:         handleRemoveBuff,
 	fflogs.RemoveDebuff:       handleRemoveDebuff,
 	fflogs.Begincast:          handleBeginCast,
@@ -245,6 +246,21 @@ func handleCombatantinfo(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, ev
 }
 
 func handleRefreshBuff(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+	buffTarget := s.EntryMap[*event.TargetID]
+	if buffTarget == nil {
+		return
+	}
+
+	status := component.Status.Get(buffTarget)
+	ability := (*event.Ability).ToBuff()
+	ability.ApplyTick = event.LocalTick
+	ability.Duration = *event.Duration
+	status.BuffList.Add(ability)
+
+	return
+}
+
+func handleRefreshDebuff(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
 	buffTarget := s.EntryMap[*event.TargetID]
 	if buffTarget == nil {
 		return
