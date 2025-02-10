@@ -50,7 +50,7 @@ func rangeRender(ecs *ecs.ECS, screen *ebiten.Image, skill *model.Skill, tick in
 
 	param := 1.0
 
-	partTick := castTick / 4
+	partTick := min(castTick/4, 30)
 	if current < partTick {
 		param = ease.InOutQuart(float64(current) / float64(partTick))
 	}

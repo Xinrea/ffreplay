@@ -116,6 +116,7 @@ func (s *System) consumeEvents(tick int64, lineMap map[*donburi.Entry]*EventLine
 
 func (s *System) updateInstances(e *donburi.Entry, line *EventLine, tick int64) {
 	for i, sprite := range component.Sprite.Get(e).Instances {
+		isNPC := component.Status.Get(e).Role == role.NPC
 		instanceID := i + 1
 		index := sort.Search(len(line.Status[instanceID]), func(i int) bool {
 			return line.Status[instanceID][i].Tick >= tick
@@ -131,7 +132,7 @@ func (s *System) updateInstances(e *donburi.Entry, line *EventLine, tick int64) 
 		} else {
 			previous := line.Status[instanceID][index-1]
 
-			if component.Status.Get(e).Role == role.NPC {
+			if isNPC {
 				s.normalUpdate(e, sprite, status)
 			} else {
 				s.lerpUpdate(e, sprite, previous, status, tick)
@@ -479,7 +480,7 @@ func handleCast(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflog
 	skill.StartTick = event.LocalTick
 
 	if entry.GetGlobal(ecs).Debug && component.Status.Get(caster).Role == role.NPC {
-		log.Println("NPC inst-cast", *event.SourceID, *event.SourceInstance, skill.ID, skill.Name)
+		log.Println("NPC inst-cast", *event.SourceID, instanceID, skill.ID, skill.Name)
 	}
 
 	s.Cast(ecs, caster, instanceID, target, 0, skill, event.LocalTick)
