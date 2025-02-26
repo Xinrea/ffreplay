@@ -43,11 +43,11 @@ func (r *Renderer) renderPlayer(ecs *ecs.ECS, camera *model.CameraData, screen *
 	}
 
 	// render tether
-	tethers := sprite.Instances[0].GetTethers()
-	for _, target := range tethers {
+	tethers := status.GetTethers()
+	for _, tether := range tethers {
 		// draw a line from player to target
 		sp := sprite.Instances[0].Object.Position()
-		tp := target.Object.Position()
+		tp := tether.Target.Instances[0].Object.Position()
 
 		spx, spy := camera.WorldToScreen(sp[0], sp[1])
 		tpx, tpy := camera.WorldToScreen(tp[0], tp[1])

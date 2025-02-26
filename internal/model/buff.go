@@ -43,6 +43,7 @@ func NewBuffList() *BuffList {
 	}
 }
 
+// Update only updates the remain time of buffs.
 func (bl *BuffList) Update(now int64) {
 	for _, b := range bl.buffs {
 		b.UpdateRemain(now)
@@ -147,6 +148,7 @@ func (bl *BuffList) Remove(buff *Buff) {
 	}
 }
 
+// UpdateExpire trying to remove buffs that remain time is 0.
 func (bl *BuffList) UpdateExpire(now int64) {
 	toRemove := make([]*Buff, 0)
 

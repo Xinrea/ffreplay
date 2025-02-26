@@ -23,7 +23,6 @@ type Instance struct {
 	casting            *Skill
 	castHistory        []*Skill
 	damageTakenHistory []DamageTaken
-	tethers            []*Instance
 }
 
 type DamageTaken struct {
@@ -53,18 +52,6 @@ func (s SpriteData) Render(camera *CameraData, screen *ebiten.Image) {
 			GeoM: geoM,
 		})
 	}
-}
-
-func (i *Instance) AddTether(tether *Instance) {
-	i.tethers = append(i.tethers, tether)
-}
-
-func (i *Instance) GetTethers() []*Instance {
-	return i.tethers
-}
-
-func (i *Instance) ClearTether() {
-	i.tethers = nil
 }
 
 func (i *Instance) IsActive(tick int64) bool {
@@ -166,7 +153,6 @@ func (i *Instance) Reset() {
 	i.casting = nil
 	i.castHistory = nil
 	i.damageTakenHistory = nil
-	i.tethers = nil
 }
 
 // isSucceed checks same skill that cast twice, but previous one has cast time.
