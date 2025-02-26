@@ -11,6 +11,7 @@ import (
 	"github.com/Xinrea/ffreplay/internal/data"
 	"github.com/Xinrea/ffreplay/internal/data/fflogs"
 	"github.com/Xinrea/ffreplay/internal/entry"
+	"github.com/Xinrea/ffreplay/internal/game/buffs"
 	"github.com/Xinrea/ffreplay/internal/game/skills"
 	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/internal/model/role"
@@ -207,9 +208,13 @@ func (s *System) applyLog(ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs
 	}
 }
 
+var TETHER_SUPPORTED_MAPS = map[int]bool{
+	77: true, // FRU
+}
+
 func handleTether(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
-	// Currently only handle tether in future's rewritten
-	if component.Map.Get(component.Map.MustFirst(ecs.World)).Config.CurrentMap != 77 {
+	currentMapID := component.Map.Get(component.Map.MustFirst(ecs.World)).Config.CurrentMap
+	if _, ok := TETHER_SUPPORTED_MAPS[currentMapID]; !ok {
 		return
 	}
 
@@ -220,20 +225,10 @@ func handleTether(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event ffl
 		return
 	}
 
-	sourceInstanceIndex := 0
-	if event.SourceInstance != nil {
-		sourceInstanceIndex = int(*event.SourceInstance) - 1
-	}
+	sourceStatus := component.Status.Get(source)
+	targetSprite := component.Sprite.Get(target)
 
-	targetInstanceIndex := 0
-	if event.TargetInstance != nil {
-		targetInstanceIndex = int(*event.TargetInstance) - 1
-	}
-
-	sourceInst := component.Sprite.Get(source).Instances[sourceInstanceIndex]
-	targetInst := component.Sprite.Get(target).Instances[targetInstanceIndex]
-
-	sourceInst.AddTether(targetInst)
+	sourceStatus.AddTether(event.LocalTick, targetSprite)
 
 	return
 }
@@ -323,10 +318,8 @@ func handleRemoveDebuff(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, eve
 	ability := (*event.Ability).ToBuff()
 	status.BuffList.Remove(ability)
 
-	// TODO handle this in buff remove callback
-	if ability.ID == 1004158 || ability.ID == 1002255 {
-		targetInstance := component.Sprite.Get(buffTarget).Instances[0]
-		targetInstance.ClearTether()
+	if entry.GetGlobal(ecs).Debug {
+		util.PrintJson(ability)
 	}
 
 	return
@@ -450,7 +443,7 @@ func handleApplyDebuff(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, even
 	ability.ECS = ecs
 	ability.Source = sourceTarget
 	ability.Target = buffTarget
-	ability.RemoveCallback = buffRemoveDB[ability.ID]
+	ability.RemoveCallback = buffs.BuffRemoveCallBackDB[ability.ID]
 	ability.Type = model.Debuff
 	ability.ApplyTick = event.LocalTick
 	ability.Duration = *event.Duration
