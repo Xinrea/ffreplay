@@ -1,11 +1,8 @@
 package skills
 
 import (
-	"math"
-
 	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/pkg/object"
-	"github.com/Xinrea/ffreplay/pkg/vector"
 )
 
 const (
@@ -37,13 +34,17 @@ const (
 func NewUnknown9cb3(cast int64) *model.Skill {
 	opt, cast := differByCastTime(cast)
 
-	skill := TemplateFixedRangeSkill(S_Unknown9cb3, "Unknown9cb3", cast, object.NewRectObject(
-		opt,
-		vector.Vector{},
-		object.AnchorBottomMiddle,
-		60*METER,
-		5*METER,
-	))
+	config := TemplateConfigure{
+		ID:       S_Unknown9cb3,
+		Name:     "Unknown9cb3",
+		Cast:     cast,
+		Range:    RangeTypeRect,
+		RangeOpt: opt,
+		Width:    60,
+		Height:   5,
+	}
+
+	skill := TemplateFixedRangeSkill(config)
 
 	return skill
 }
@@ -51,13 +52,17 @@ func NewUnknown9cb3(cast int64) *model.Skill {
 func NewThePathOfLight(cast int64) *model.Skill {
 	opt, cast := differByCastTime(cast)
 
-	skill := TemplateFixedRangeSkill(S_ThePathOfLight, "The Path of Light", cast, object.NewRectObject(
-		opt,
-		vector.Vector{},
-		object.AnchorBottomMiddle,
-		60*METER,
-		5*METER,
-	))
+	config := TemplateConfigure{
+		ID:       S_ThePathOfLight,
+		Name:     "The Path of Light",
+		Cast:     cast,
+		Range:    RangeTypeRect,
+		RangeOpt: opt,
+		Width:    60,
+		Height:   5,
+	}
+
+	skill := TemplateFixedRangeSkill(config)
 
 	return skill
 }
@@ -65,13 +70,17 @@ func NewThePathOfLight(cast int64) *model.Skill {
 func NewThePathOfDarkness(cast int64) *model.Skill {
 	opt, cast := differByCastTime(cast)
 
-	skill := TemplateFixedRangeSkill(S_ThePathOfDarkness, "The Path of Darkness", cast, object.NewRectObject(
-		opt,
-		vector.Vector{},
-		object.AnchorBottomMiddle,
-		60*METER,
-		5*METER,
-	))
+	config := TemplateConfigure{
+		ID:       S_ThePathOfDarkness,
+		Name:     "The Path of Darkness",
+		Cast:     cast,
+		Range:    RangeTypeRect,
+		RangeOpt: opt,
+		Width:    60,
+		Height:   5,
+	}
+
+	skill := TemplateFixedRangeSkill(config)
 
 	return skill
 }
@@ -79,13 +88,17 @@ func NewThePathOfDarkness(cast int64) *model.Skill {
 func NewTidalLightA(cast int64) *model.Skill {
 	opt, cast := differByCastTime(cast)
 
-	skill := TemplateFixedRangeSkill(S_TidalLightA, "Tidal Light", cast, object.NewRectObject(
-		opt,
-		vector.Vector{},
-		object.AnchorBottomMiddle,
-		60*METER,
-		10*METER,
-	))
+	config := TemplateConfigure{
+		ID:       S_TidalLightA,
+		Name:     "Tidal Light",
+		Cast:     cast,
+		Range:    RangeTypeRect,
+		RangeOpt: opt,
+		Width:    60,
+		Height:   10,
+	}
+
+	skill := TemplateFixedRangeSkill(config)
 
 	return skill
 }
@@ -93,13 +106,17 @@ func NewTidalLightA(cast int64) *model.Skill {
 func NewTidalLightB(cast int64) *model.Skill {
 	opt, cast := differByCastTime(cast)
 
-	skill := TemplateFixedRangeSkill(S_TidalLightB, "Tidal Light", cast, object.NewRectObject(
-		opt,
-		vector.Vector{},
-		object.AnchorBottomMiddle,
-		60*METER,
-		10*METER,
-	))
+	config := TemplateConfigure{
+		ID:       S_TidalLightB,
+		Name:     "Tidal Light",
+		Cast:     cast,
+		Range:    RangeTypeRect,
+		RangeOpt: opt,
+		Width:    60,
+		Height:   10,
+	}
+
+	skill := TemplateFixedRangeSkill(config)
 
 	return skill
 }
@@ -107,18 +124,18 @@ func NewTidalLightB(cast int64) *model.Skill {
 func NewHallowedWingsL(cast int64) *model.Skill {
 	opt, cast := differByCastTime(cast)
 
-	skill := TemplateFixedRangeSkill(S_HallowedWingsL, "allowed Wings", cast, object.NewRectObject(
-		opt,
-		vector.Vector{},
-		object.AnchorBottomMiddle,
-		60*METER,
-		20*METER,
-	))
-
-	skill.Initialize = func(r object.Object, facing float64, pos vector.Vector) {
-		generalInitializer(r, facing, pos)
-		r.UpdateRotate(facing - math.Pi/2)
+	config := TemplateConfigure{
+		ID:       S_HallowedWingsL,
+		Name:     "Hallowed Wings",
+		Cast:     cast,
+		Range:    RangeTypeRect,
+		Anchor:   object.AnchorRightMiddle,
+		RangeOpt: opt,
+		Width:    20,
+		Height:   60,
 	}
+
+	skill := TemplateFixedRangeSkill(config)
 
 	return skill
 }
@@ -126,18 +143,18 @@ func NewHallowedWingsL(cast int64) *model.Skill {
 func NewHallowedWingsR(cast int64) *model.Skill {
 	opt, cast := differByCastTime(cast)
 
-	skill := TemplateFixedRangeSkill(S_HallowedWingsR, "allowed Wings", cast, object.NewRectObject(
-		opt,
-		vector.Vector{},
-		object.AnchorBottomMiddle,
-		60*METER,
-		20*METER,
-	))
-
-	skill.Initialize = func(r object.Object, facing float64, pos vector.Vector) {
-		generalInitializer(r, facing, pos)
-		r.UpdateRotate(facing + math.Pi/2)
+	config := TemplateConfigure{
+		ID:       S_HallowedWingsR,
+		Name:     "Hallowed Wings",
+		Cast:     cast,
+		Range:    RangeTypeRect,
+		Anchor:   object.AnchorLeftMiddle,
+		RangeOpt: opt,
+		Width:    20,
+		Height:   60,
 	}
+
+	skill := TemplateFixedRangeSkill(config)
 
 	return skill
 }
@@ -145,98 +162,141 @@ func NewHallowedWingsR(cast int64) *model.Skill {
 func NewApocalypse(cast int64) *model.Skill {
 	opt, cast := differByCastTime(cast)
 
-	return TemplateFixedRangeSkill(S_Apocalypse, "Apocalypse", cast, object.NewCircleObject(
-		opt,
-		vector.Vector{},
-		9*METER,
-	))
+	config := TemplateConfigure{
+		ID:       S_Apocalypse,
+		Name:     "Apocalypse",
+		Cast:     cast,
+		Range:    RangeTypeCircle,
+		RangeOpt: opt,
+		Radius:   9,
+	}
+
+	return TemplateFixedRangeSkill(config)
 }
 
 func NewSinboundMeltdownA(cast int64) *model.Skill {
 	opt, cast := differByCastTime(cast)
 
-	return TemplateFixedRangeSkill(S_SinboundMeltdownA, "Sinbound Meltdown", cast, object.NewRectObject(
-		opt,
-		vector.Vector{},
-		object.AnchorBottomMiddle,
-		4*METER,
-		40*METER,
-	))
+	config := TemplateConfigure{
+		ID:       S_SinboundMeltdownA,
+		Name:     "Sinbound Meltdown",
+		Cast:     cast,
+		Range:    RangeTypeRect,
+		RangeOpt: opt,
+		Width:    4,
+		Height:   40,
+	}
+
+	return TemplateFixedRangeSkill(config)
 }
 
 func NewSinboundMeltdownB(cast int64) *model.Skill {
 	opt, cast := differByCastTime(cast)
 
-	return TemplateFixedRangeSkill(S_SinboundMeltdownB, "Sinbound Meltdown", cast, object.NewRectObject(
-		opt,
-		vector.Vector{},
-		object.AnchorBottomMiddle,
-		4*METER,
-		40*METER,
-	))
+	config := TemplateConfigure{
+		ID:       S_SinboundMeltdownB,
+		Name:     "Sinbound Meltdown",
+		Cast:     cast,
+		Range:    RangeTypeRect,
+		RangeOpt: opt,
+		Width:    4,
+		Height:   40,
+	}
+
+	return TemplateFixedRangeSkill(config)
 }
 
 func NewICicleImpact(cast int64) *model.Skill {
 	opt, cast := differByCastTime(cast)
 
-	return TemplateFixedRangeSkill(S_ICicleImpact, "ICicle Impact", cast, object.NewCircleObject(
-		opt,
-		vector.Vector{},
-		10*METER,
-	))
+	config := TemplateConfigure{
+		ID:       S_ICicleImpact,
+		Name:     "ICicle Impact",
+		Cast:     cast,
+		Range:    RangeTypeCircle,
+		RangeOpt: opt,
+		Radius:   10,
+	}
+
+	return TemplateFixedRangeSkill(config)
 }
 
 func NewTheHouseOfLight(cast int64) *model.Skill {
 	opt, cast := differByCastTime(cast)
 
-	return TemplateFixedRangeSkill(S_TheHouseOfLight, "The House of Light", cast, object.NewFanObject(
-		opt,
-		vector.Vector{},
-		22.5,
-		40*METER,
-	))
+	config := TemplateConfigure{
+		ID:       S_TheHouseOfLight,
+		Name:     "The House of Light",
+		Cast:     cast,
+		Range:    RangeTypeFan,
+		RangeOpt: opt,
+		Angle:    22.5,
+		Radius:   40,
+	}
+
+	return TemplateFixedRangeSkill(config)
 }
 
 func NewBowShock(cast int64) *model.Skill {
 	opt, cast := differByCastTime(cast)
 
-	return TemplateFixedRangeSkill(S_BowShock, "Bow Shock", cast, object.NewFanObject(
-		opt,
-		vector.Vector{},
-		120,
-		40*METER,
-	))
+	config := TemplateConfigure{
+		ID:       S_BowShock,
+		Name:     "Bow Shock",
+		Cast:     cast,
+		Range:    RangeTypeFan,
+		RangeOpt: opt,
+		Angle:    120,
+		Radius:   40,
+	}
+
+	return TemplateFixedRangeSkill(config)
 }
 
 func NewSinblaze(cast int64) *model.Skill {
 	opt, cast := differByCastTime(cast)
 
-	return TemplateFixedRangeSkill(s_Sinblaze, "Sinblaze", cast, object.NewFanObject(
-		opt,
-		vector.Vector{},
-		90,
-		40*METER,
-	))
+	config := TemplateConfigure{
+		ID:       s_Sinblaze,
+		Name:     "Sinblaze",
+		Cast:     cast,
+		Range:    RangeTypeFan,
+		RangeOpt: opt,
+		Angle:    90,
+		Radius:   40,
+	}
+
+	return TemplateFixedRangeSkill(config)
 }
 
 func NewCyclonicBreakA(cast int64) *model.Skill {
 	opt, cast := differByCastTime(cast)
 
-	return TemplateFixedRangeSkill(S_CyclonicBreakA, "Cyclonic Break", cast, object.NewFanObject(
-		opt,
-		vector.Vector{},
-		22.5,
-		40*METER,
-	))
+	config := TemplateConfigure{
+		ID:       S_CyclonicBreakA,
+		Name:     "Cyclonic Break",
+		Cast:     cast,
+		Range:    RangeTypeFan,
+		RangeOpt: opt,
+		Angle:    22.5,
+		Radius:   40,
+	}
+
+	return TemplateFixedRangeSkill(config)
 }
 
 func NewCyclonicBreakB(cast int64) *model.Skill {
 	opt, cast := differByCastTime(cast)
 
-	return TemplateFixedRangeSkill(S_CyclonicBreakB, "Cyclonic Break", cast, object.NewFanObject(
-		opt,
-		vector.Vector{},
-		22.5,
-		40*METER,
-	))
+	config := TemplateConfigure{
+		ID:       S_CyclonicBreakB,
+		Name:     "Cyclonic Break",
+		Cast:     cast,
+		Range:    RangeTypeFan,
+		RangeOpt: opt,
+		Angle:    22.5,
+		Radius:   40,
+	}
+
+	return TemplateFixedRangeSkill(config)
 }

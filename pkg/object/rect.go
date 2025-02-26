@@ -20,8 +20,10 @@ type RectObject struct {
 var _ Object = (*RectObject)(nil)
 
 const (
-	AnchorMiddle = iota
-	AnchorBottomMiddle
+	AnchorBottomMiddle = iota
+	AnchorLeftMiddle
+	AnchorRightMiddle
+	AnchorMiddle
 )
 
 // NewRectObject creates a new RectObject with given position and size.
@@ -30,17 +32,20 @@ func NewRectObject(opt ObjectOption, pos Vector, anchor int, rw, rh float64) *Re
 	w := rw + opt.StrokeWidth
 	h := rh + opt.StrokeWidth
 	initialM := ebiten.GeoM{}
+	initialM.Rotate(-math.Pi)
 
 	switch anchor {
 	case AnchorMiddle:
-		initialM.Translate(-w/2, -h/2)
+		initialM.Translate(w/2, h/2)
 	case AnchorBottomMiddle:
-		initialM.Translate(-w/2, 0)
+		initialM.Translate(w/2, 0)
+	case AnchorLeftMiddle:
+		initialM.Translate(w, h/2)
+	case AnchorRightMiddle:
+		initialM.Translate(0, h/2)
 	default:
-		initialM.Translate(-w/2, 0)
+		initialM.Translate(w/2, 0)
 	}
-
-	initialM.Rotate(-math.Pi)
 
 	if cachedTexture, ok := objectTextureCache[hashStr]; ok {
 		return &RectObject{
