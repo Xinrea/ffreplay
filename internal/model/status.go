@@ -20,7 +20,13 @@ type StatusData struct {
 	MaxMana  int
 	BuffList *BuffList
 	Marker   int
+	Tethers  []Tether
 	death    bool
+}
+
+type Tether struct {
+	ApplyTick int64
+	Target    *SpriteData
 }
 
 func (r *StatusData) Reset() {
@@ -28,6 +34,7 @@ func (r *StatusData) Reset() {
 	r.Mana = r.MaxMana
 	r.death = false
 	r.BuffList.Clear()
+	r.ClearTether()
 }
 
 func (r *StatusData) TakeDamage(d Damage) {
@@ -63,4 +70,19 @@ func (r *StatusData) TakeHeal(h Heal) {
 
 func (r StatusData) RoleTexture() *ebiten.Image {
 	return texture.NewTextureFromFile("asset/role/" + r.Role.String() + ".png")
+}
+
+func (r *StatusData) AddTether(tick int64, target *SpriteData) {
+	r.Tethers = append(r.Tethers, Tether{
+		ApplyTick: tick,
+		Target:    target,
+	})
+}
+
+func (r *StatusData) GetTethers() []Tether {
+	return r.Tethers
+}
+
+func (r *StatusData) ClearTether() {
+	r.Tethers = nil
 }
