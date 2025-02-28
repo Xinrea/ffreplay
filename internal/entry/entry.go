@@ -103,22 +103,21 @@ func NewEnemy(
 		})
 	}
 
-	component.Sprite.Set(enemy, &model.SpriteData{
-		Texture:     textureRing,
-		Scale:       ringSize,
-		Instances:   instances,
-		Initialized: true,
-	})
 	component.Status.Set(enemy, &model.StatusData{
-		GameID:   gameID,
-		ID:       id,
-		Name:     name,
-		Role:     erole,
-		HP:       1,
-		MaxHP:    1,
-		Mana:     10000,
-		MaxMana:  10000,
-		BuffList: model.NewBuffList(),
+		GameID:    gameID,
+		ID:        id,
+		Name:      name,
+		Role:      erole,
+		HP:        1,
+		MaxHP:     1,
+		Mana:      10000,
+		MaxMana:   10000,
+		BuffList:  model.NewBuffList(),
+		Instances: instances,
+		RingConfig: model.RingConfiguration{
+			Texture: textureRing,
+			Scale:   ringSize,
+		},
 	})
 
 	return enemy
@@ -136,22 +135,17 @@ func NewPet(ecs *ecs.ECS, gameID int64, id int64, name string, instanceCount int
 		})
 	}
 
-	component.Sprite.Set(pet, &model.SpriteData{
-		Texture:     nil,
-		Scale:       0,
-		Instances:   instances,
-		Initialized: true,
-	})
 	component.Status.Set(pet, &model.StatusData{
-		GameID:   gameID,
-		ID:       id,
-		Name:     name,
-		Role:     role.Pet,
-		HP:       1,
-		MaxHP:    1,
-		Mana:     10000,
-		MaxMana:  10000,
-		BuffList: model.NewBuffList(),
+		GameID:    gameID,
+		ID:        id,
+		Name:      name,
+		Role:      role.Pet,
+		HP:        1,
+		MaxHP:     1,
+		Mana:      10000,
+		MaxMana:   10000,
+		BuffList:  model.NewBuffList(),
+		Instances: instances,
 	})
 
 	return pet
@@ -167,21 +161,15 @@ func NewLimitBreakNPC(ecs *ecs.ECS, gameID int64, id int64) *donburi.Entry {
 		LastActive: -1,
 	})
 
-	component.Sprite.Set(limitBreak, &model.SpriteData{
-		Texture:     nil,
-		Scale:       0,
-		Instances:   instances,
-		Initialized: true,
-	})
-
 	component.Status.Set(limitBreak, &model.StatusData{
-		GameID:   gameID,
-		ID:       id,
-		Name:     "LimitBreak",
-		Role:     role.LimitBreak,
-		HP:       1,
-		MaxHP:    1,
-		BuffList: model.NewBuffList(),
+		GameID:    gameID,
+		ID:        id,
+		Name:      "LimitBreak",
+		Role:      role.LimitBreak,
+		HP:        1,
+		MaxHP:     1,
+		BuffList:  model.NewBuffList(),
+		Instances: instances,
 	})
 
 	log.Println("LimitBreak:", id)
@@ -204,17 +192,6 @@ func NewPlayer(ecs *ecs.ECS, role role.RoleType, pos f64.Vec2, detail *fflogs.Pl
 
 	obj := object.NewPointObject(vector.NewVector(pos[0], pos[1]))
 	// this scales target ring into size 50pixel, which means 1m in game
-	component.Sprite.Set(player, &model.SpriteData{
-		Texture: texture.NewTextureFromFile("asset/target_normal.png"),
-		Scale:   0.1842,
-		Instances: []*model.Instance{
-			{
-				Face:   0,
-				Object: obj,
-			},
-		},
-		Initialized: true,
-	})
 	component.Status.Set(player, &model.StatusData{
 		GameID:   -1,
 		ID:       id,
@@ -225,6 +202,16 @@ func NewPlayer(ecs *ecs.ECS, role role.RoleType, pos f64.Vec2, detail *fflogs.Pl
 		Mana:     10000,
 		MaxMana:  10000,
 		BuffList: model.NewBuffList(),
+		RingConfig: model.RingConfiguration{
+			Texture: texture.NewTextureFromFile("asset/target_normal.png"),
+			Scale:   0.1842,
+		},
+		Instances: []*model.Instance{
+			{
+				Face:   0,
+				Object: obj,
+			},
+		},
 	})
 
 	return player

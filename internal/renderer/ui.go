@@ -54,7 +54,7 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 
 	// render target player casting history
 	if global.TargetPlayer != nil {
-		player := component.Sprite.Get(global.TargetPlayer)
+		player := component.Status.Get(global.TargetPlayer)
 		casts := player.Instances[0].GetHistoryCast(tick)
 
 		currentCasting := player.Instances[0].GetCast()

@@ -19,12 +19,9 @@ func (s *System) SkillUpdate(ecs *ecs.ECS) {
 	}
 
 	for e := range tag.GameObject.Iter(ecs.World) {
-		sprite := component.Sprite.Get(e)
-		if !sprite.Initialized {
-			continue
-		}
+		status := component.Status.Get(e)
 
-		for _, instance := range sprite.Instances {
+		for _, instance := range status.Instances {
 			casting := instance.GetCast()
 			if casting == nil {
 				continue
@@ -38,6 +35,8 @@ func (s *System) SkillUpdate(ecs *ecs.ECS) {
 				// remove skill
 				instance.DoneCast()
 			}
+
+			casting.Update(instance.Face, instance.Object.Position())
 		}
 	}
 }
@@ -51,7 +50,7 @@ func (s *System) Cast(
 	skill *model.Skill,
 	tick int64,
 ) {
-	casterSprite := component.Sprite.Get(caster)
+	casterSprite := component.Status.Get(caster)
 	if casterSprite == nil {
 		log.Println("Cast with nil caster")
 
@@ -66,9 +65,7 @@ func (s *System) Cast(
 
 	inst := casterSprite.Instances[casterInstance]
 
-	if skill.Initialize != nil {
-		skill.Initialize(skill.EffectRange, inst.Face, inst.Object.Position())
-	}
+	skill.Initialize(inst.Face, inst.Object.Position())
 
 	inst.Cast(skill)
 }
