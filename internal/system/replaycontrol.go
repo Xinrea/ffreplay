@@ -29,7 +29,7 @@ func (s *System) replayModeControl(ecs *ecs.ECS) {
 	}
 
 	if global.TargetPlayer != nil {
-		camera.Position = component.Sprite.Get(global.TargetPlayer).Instances[0].Object.Position()
+		camera.Position = component.Status.Get(global.TargetPlayer).Instances[0].Object.Position()
 
 		return
 	}

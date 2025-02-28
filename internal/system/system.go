@@ -132,7 +132,7 @@ func (s *System) doReset(ecs *ecs.ECS) {
 	for e := range component.Status.Iter(ecs.World) {
 		component.Status.Get(e).Reset()
 
-		for _, instance := range component.Sprite.Get(e).Instances {
+		for _, instance := range component.Status.Get(e).Instances {
 			instance.Reset()
 		}
 	}

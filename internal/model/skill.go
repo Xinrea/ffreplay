@@ -28,12 +28,32 @@ type Skill struct {
 	Recast      int64
 	IsGCD       bool
 	EffectRange object.Object
+	Target      object.Object
 
-	Initialize func(r object.Object, facing float64, pos vector.Vector)
+	Initializer func(target object.Object, effectRange object.Object, facing float64, pos vector.Vector)
+	Updater     func(target object.Object, effectRange object.Object, facing float64, pos vector.Vector)
 }
 
 func (s Skill) Texture() *ebiten.Image {
 	return texture.NewAbilityTexture(s.Icon)
+}
+
+// Initialize initializes the skill's effect range, should be called before the skill is used.
+func (s *Skill) Initialize(facing float64, pos vector.Vector) {
+	if s.Initializer == nil {
+		return
+	}
+
+	s.Initializer(s.Target, s.EffectRange, facing, pos)
+}
+
+// Update updates the skill's effect range, should be called every tick.
+func (s *Skill) Update(facing float64, pos vector.Vector) {
+	if s.Updater == nil {
+		return
+	}
+
+	s.Updater(s.Target, s.EffectRange, facing, pos)
 }
 
 type ActionInfo struct {

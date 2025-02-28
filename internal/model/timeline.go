@@ -1,33 +1,27 @@
 package model
 
 import (
+	"github.com/Xinrea/ffreplay/pkg/object"
 	"github.com/Xinrea/ffreplay/util"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"
 )
 
 type TimelineData struct {
-	Name           string
-	StartTick      int64
-	Caster         *donburi.Entry
-	CasterInstance int
-	Target         *donburi.Entry
-	TargetInstance int
-	Events         []Event
+	Name      string `yaml:"name"`
+	StartTick int64  `yaml:"-"`
+	// Caster is the entity that handles all skills in the timeline
+	Caster *donburi.Entry `yaml:"-"`
+	Events []Event        `yaml:"events"`
 }
 
 func (t *TimelineData) InstanceWith(
-	tick int64,
 	caster *donburi.Entry,
-	casterInstance int,
-	target *donburi.Entry,
+	tick int64,
 	targetInstance int,
 ) *TimelineData {
 	t.StartTick = tick
 	t.Caster = caster
-	t.CasterInstance = casterInstance
-	t.Target = target
-	t.TargetInstance = targetInstance
 
 	return t
 }
@@ -37,70 +31,70 @@ func (t TimelineData) IsDone(tick int64) bool {
 		return true
 	}
 
-	d := tick - t.StartTick
+	isDone := true
 
-	return d > t.EndTick() || d < 0
-}
+	for _, e := range t.Events {
+		if !e.Started {
+			isDone = false
 
-func (t TimelineData) EndTick() int64 {
-	return util.MSToTick(t.Events[len(t.Events)-1].Offset + t.Events[len(t.Events)-1].Duration)
+			break
+		}
+	}
+
+	return isDone
 }
 
 func (t TimelineData) Begin(ecs *ecs.ECS, index int) {
-	t.Events[index].Started = true
-
-	if t.Events[index].Begin == nil {
-		return
-	}
-
-	t.Events[index].Begin(ecs, t.Caster, t.CasterInstance, t.Target, t.TargetInstance)
-}
-
-func (t TimelineData) Finish(ecs *ecs.ECS, index int) {
-	t.Events[index].Finished = true
-
-	if t.Events[index].Finish == nil {
-		return
-	}
-
-	t.Events[index].Finish(ecs, t.Caster, t.CasterInstance, t.Target, t.TargetInstance)
-}
-
-func (t TimelineData) Update(ecs *ecs.ECS, index int) {
-	if t.Events[index].Update == nil {
-		return
-	}
-
-	t.Events[index].Update(ecs, t.Caster, t.CasterInstance, t.Target, t.TargetInstance)
+	t.Events[index].Start(ecs)
 }
 
 func (t *TimelineData) Reset() {
 	t.StartTick = 0
 }
 
-type EventCallback func(
-	ecs *ecs.ECS,
-	caster *donburi.Entry,
-	casterInstance int,
-	target *donburi.Entry,
-	targetInstance int,
+type RangeType int
+
+const (
+	RangeTypeRect RangeType = iota
+	RangeTypeCircle
+	RangeTypeFan
+	RangeTypeRing
 )
 
-type Event struct {
-	Offset   int64
-	Duration int64
-	Begin    EventCallback
-	Update   EventCallback
-	Finish   EventCallback
+type SkillTemplateConfigure struct {
+	ID          int64
+	Name        string
+	Cast        int64
+	Range       RangeType
+	RangeOpt    object.ObjectOption
+	Anchor      int
+	Width       int
+	Height      int
+	Radius      int
+	InnerRadius int
+	Angle       float64
+}
 
-	Started  bool
-	Finished bool
+// Event is a single skill trigger in the timeline
+//
+// when world tick >= offset + timeline.StartTick, the event will be triggered
+// and the skill will be casted. After this, skill will be handled by skill system.
+type Event struct {
+	CasterID      int64                  `yaml:"caster"`
+	TargetID      int64                  `yaml:"target"`
+	Offset        int64                  `yaml:"offset"`
+	SkillTemplate string                 `yaml:"skill"`
+	SkillConfig   SkillTemplateConfigure `yaml:"config"`
+
+	Started bool   `yaml:"-"`
+	Skill   *Skill `yaml:"-"`
+}
+
+func (e *Event) Start(ecs *ecs.ECS) {
+	e.Started = true
+	e.Skill = SkillTemplates[e.SkillTemplate](e.SkillConfig)
 }
 
 func (e Event) OffsetTick() int64 {
 	return util.MSToTick(e.Offset)
-}
-
-func (e Event) DurationTick() int64 {
-	return util.MSToTick(e.Duration)
 }
