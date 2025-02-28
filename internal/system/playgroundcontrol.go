@@ -22,8 +22,8 @@ func (s *System) playgroundControl(ecs *ecs.ECS) {
 	}
 
 	if global.TargetPlayer != nil {
-		obj := component.Sprite.Get(global.TargetPlayer).Instances[0]
 		status := component.Status.Get(global.TargetPlayer)
+		obj := status.Instances[0]
 
 		if !status.IsDead() {
 			handleMovementInput(&vel, obj)

@@ -7,8 +7,6 @@ import (
 	"github.com/Xinrea/ffreplay/pkg/object"
 )
 
-const METER = 25
-
 // QueryCastingSkill returns a skill from the skillDB, which contains more detailed event timeline to action.
 // Some skills are not enabled because they depends on npc's precise face and position
 // which is not available in fflogs.

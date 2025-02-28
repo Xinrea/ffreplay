@@ -155,7 +155,7 @@ func (ms *FFScene) loadFFLogsReport() {
 	ms.createEnemies(fight, actors)
 
 	// create environment NPC
-	ms.system.AddEntry(-1, entry.NewEnemy(ms.ecs, f64.Vec2{}, 1, 0, -1, "environment", false, 1))
+	ms.system.AddEntry(-1, entry.NewEnemy(ms.ecs, f64.Vec2{}, 0.5, 0, -1, "environment", false, 1))
 
 	wg.Wait()
 	log.Println("Loading cost", time.Since(pBeforeLoad))
@@ -281,12 +281,18 @@ func (ms *FFScene) createPets(pets []fflogs.ReportFightNPC) {
 func (ms *FFScene) createEnemies(fight fflogs.ReportFight, actors []fflogs.Actor) {
 	for _, e := range fight.EnemyNPCs {
 		info := ms.actorInfo(e.ID, actors)
+		ringSize := 0.5
+
+		if info.SubType == "Boss" {
+			ringSize = 1.0
+		}
+
 		ms.system.AddEntry(
 			e.ID,
 			entry.NewEnemy(
 				ms.ecs,
 				f64.Vec2{0, 0},
-				5,
+				ringSize,
 				info.GameID,
 				e.ID,
 				info.Name,

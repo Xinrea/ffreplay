@@ -37,16 +37,4 @@ func updateEvent(timeline *model.TimelineData, i int, p int64, ecs *ecs.ECS) {
 
 		return
 	}
-
-	if timeline.Events[i].OffsetTick() < p && p < timeline.Events[i].OffsetTick()+timeline.Events[i].DurationTick() {
-		timeline.Update(ecs, i)
-
-		return
-	}
-
-	if !timeline.Events[i].Finished && p >= timeline.Events[i].OffsetTick()+timeline.Events[i].DurationTick() {
-		timeline.Finish(ecs, i)
-
-		return
-	}
 }

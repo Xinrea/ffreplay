@@ -79,7 +79,9 @@ func NewTextureFromFile(filepath string) *ebiten.Image {
 
 	f, err := asset.AssetFS.Open(filepath)
 	if err != nil {
-		log.Panic(err)
+		log.Println(err)
+
+		return nil
 	}
 
 	img, _, err := ebitenutil.NewImageFromReader(f)

@@ -20,13 +20,10 @@ func (r *Renderer) RangeRender(ecs *ecs.ECS, screen *ebiten.Image) {
 
 	tick := entry.GetTick(ecs)
 
-	for entry := range component.Sprite.Iter(ecs.World) {
-		sprite := component.Sprite.Get(entry)
-		if sprite.Texture == nil {
-			continue
-		}
+	for entry := range component.Status.Iter(ecs.World) {
+		status := component.Status.Get(entry)
 
-		for _, inst := range sprite.Instances {
+		for _, inst := range status.Instances {
 			skill := inst.GetCast()
 			if skill == nil {
 				continue

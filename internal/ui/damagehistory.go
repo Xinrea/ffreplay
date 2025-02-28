@@ -36,7 +36,7 @@ func DamageHistoryView() *furex.View {
 
 		view.AddChild(DamageHistoryHeaderView())
 
-		instance := component.Sprite.Get(global.TargetPlayer).Instances[0]
+		instance := component.Status.Get(global.TargetPlayer).Instances[0]
 
 		damageHistory := instance.GetHistoryDamageTaken(5)
 		for _, damage := range damageHistory {

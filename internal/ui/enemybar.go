@@ -26,12 +26,9 @@ func EnemyBarsView() *furex.View {
 				v.RemoveAll()
 				cnt := 0
 				for e := range tag.Enemy.Iter(ecsInstance.World) {
-					sprite := component.Sprite.Get(e)
-					if !sprite.Initialized {
-						continue
-					}
+					status := component.Status.Get(e)
 					enemy := component.Status.Get(e)
-					if enemy.Role != role.Boss || !sprite.Instances[0].IsActive(entry.GetTick(ecsInstance)) {
+					if enemy.Role != role.Boss || !status.Instances[0].IsActive(entry.GetTick(ecsInstance)) {
 						continue
 					}
 					v.AddChild(CreateEnemyBarView(cnt, e))
@@ -43,7 +40,6 @@ func EnemyBarsView() *furex.View {
 }
 
 func CreateEnemyBarView(i int, enemy *donburi.Entry) *furex.View {
-	sprite := component.Sprite.Get(enemy)
 	status := component.Status.Get(enemy)
 
 	view := furex.NewView(
@@ -66,7 +62,7 @@ func CreateEnemyBarView(i int, enemy *donburi.Entry) *furex.View {
 		furex.AlignItems(furex.AlignItemEnd),
 	)
 	nameCast.AddChild(nameView)
-	nameCast.AddChild(createEnemyCastingView(sprite))
+	nameCast.AddChild(createEnemyCastingView(status))
 	view.AddChild(nameCast)
 
 	view.AddChild(
@@ -92,11 +88,11 @@ func CreateEnemyBarView(i int, enemy *donburi.Entry) *furex.View {
 	return view
 }
 
-func createEnemyCastingView(sprite *model.SpriteData) *furex.View {
+func createEnemyCastingView(status *model.StatusData) *furex.View {
 	castView := furex.NewView(furex.Height(24), furex.Direction(furex.Column), furex.AlignItems(furex.AlignItemEnd))
 
-	if sprite.Instances[0].GetCast() != nil {
-		cast := sprite.Instances[0].GetCast()
+	if status.Instances[0].GetCast() != nil {
+		cast := status.Instances[0].GetCast()
 		castView.AddChild(furex.NewView(furex.Width(210), furex.Height(12), furex.Handler(&Bar{
 			Progress: float64(util.TickToMS(entry.GetTick(ecsInstance)-cast.StartTick)) / float64(cast.Cast),
 			BG:       castAtlas.GetNineSlice("casting_frame.png"),

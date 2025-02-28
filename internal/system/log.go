@@ -116,7 +116,7 @@ func (s *System) consumeEvents(tick int64, lineMap map[*donburi.Entry]*EventLine
 }
 
 func (s *System) updateInstances(e *donburi.Entry, line *EventLine, tick int64) {
-	for i, sprite := range component.Sprite.Get(e).Instances {
+	for i, sprite := range component.Status.Get(e).Instances {
 		isNPC := component.Status.Get(e).Role == role.NPC
 		instanceID := i + 1
 		index := sort.Search(len(line.Status[instanceID]), func(i int) bool {
@@ -226,9 +226,9 @@ func handleTether(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event ffl
 	}
 
 	sourceStatus := component.Status.Get(source)
-	targetSprite := component.Sprite.Get(target)
+	targetStatus := component.Status.Get(target)
 
-	sourceStatus.AddTether(event.LocalTick, targetSprite)
+	sourceStatus.AddTether(event.LocalTick, targetStatus)
 
 	return
 }
@@ -459,7 +459,7 @@ func (s *System) updateEventTargetStatus(event fflogs.FFLogsEvent) {
 	}
 
 	status := component.Status.Get(s.EntryMap[*event.TargetID])
-	target := component.Sprite.Get(s.EntryMap[*event.TargetID])
+	target := component.Status.Get(s.EntryMap[*event.TargetID])
 	target.Instances[instanceID].LastActive = event.LocalTick
 
 	if event.TargetMarker != nil {
@@ -475,7 +475,7 @@ func (s *System) updateEventSourceStatus(event fflogs.FFLogsEvent) {
 		instanceID = int(*event.SourceInstance) - 1
 	}
 
-	source := component.Sprite.Get(s.EntryMap[*event.SourceID])
+	source := component.Status.Get(s.EntryMap[*event.SourceID])
 	status := component.Status.Get(s.EntryMap[*event.SourceID])
 	source.Instances[instanceID].LastActive = event.LocalTick
 
@@ -540,8 +540,8 @@ func handleDamage(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event ffl
 		return
 	}
 
-	targetSprite := component.Sprite.Get(target)
-	targetInstance := targetSprite.Instances[0]
+	targetStatus := component.Status.Get(target)
+	targetInstance := targetStatus.Instances[0]
 
 	relatedBuffs := make([]*model.BasicBuffInfo, 0)
 

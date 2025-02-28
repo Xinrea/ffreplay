@@ -105,7 +105,7 @@ func (p *PlayerItem) Update(v *furex.View) {
 	}
 
 	// if player is casting, hide name
-	if component.Sprite.Get(p.Player).Instances[0].GetCast() != nil {
+	if component.Status.Get(p.Player).Instances[0].GetCast() != nil {
 		v.MustGetByID("name").Attrs.Hidden = true
 		v.MustGetByID("cast").Attrs.Hidden = false
 	} else {
@@ -250,7 +250,7 @@ func createCastingView(e *donburi.Entry) *furex.View {
 			furex.Height(BarHeight),
 			furex.Handler(&Bar{
 				Progress: func() float64 {
-					cast := component.Sprite.Get(e).Instances[0].GetCast()
+					cast := component.Status.Get(e).Instances[0].GetCast()
 					if cast == nil {
 						return 0
 					}
@@ -263,7 +263,7 @@ func createCastingView(e *donburi.Entry) *furex.View {
 	castView.AddChild(furex.NewView(furex.Height(CastNameTextSize), furex.Handler(&Text{
 		Align: furex.AlignItemStart,
 		Content: func() string {
-			cast := component.Sprite.Get(e).Instances[0].GetCast()
+			cast := component.Status.Get(e).Instances[0].GetCast()
 			if cast == nil {
 				return ""
 			}

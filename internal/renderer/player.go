@@ -27,11 +27,6 @@ func (r *Renderer) renderPlayer(ecs *ecs.ECS, camera *model.CameraData, screen *
 	tick := entry.GetTick(ecs)
 	global := component.Global.Get(component.Global.MustFirst(ecs.World))
 
-	sprite := component.Sprite.Get(player)
-	if !sprite.Initialized {
-		return
-	}
-
 	status := component.Status.Get(player)
 
 	worldM := camera.WorldMatrixInverted()
@@ -46,7 +41,7 @@ func (r *Renderer) renderPlayer(ecs *ecs.ECS, camera *model.CameraData, screen *
 	tethers := status.GetTethers()
 	for _, tether := range tethers {
 		// draw a line from player to target
-		sp := sprite.Instances[0].Object.Position()
+		sp := status.Instances[0].Object.Position()
 		tp := tether.Target.Instances[0].Object.Position()
 
 		spx, spy := camera.WorldToScreen(sp[0], sp[1])
@@ -63,46 +58,29 @@ func (r *Renderer) renderPlayer(ecs *ecs.ECS, camera *model.CameraData, screen *
 			true)
 	}
 
-	// player only has one instance
-	pos := sprite.Instances[0].Object.Position()
-	geoM := texture.CenterGeoM(sprite.Texture)
-	geoM.Scale(sprite.Scale, sprite.Scale)
-	geoM.Rotate(sprite.Instances[0].Face)
-	geoM.Translate(pos[0], pos[1])
-	geoM.Concat(worldM)
-
-	if global.ShowTargetRing {
-		op := &colorm.DrawImageOptions{}
-		op.GeoM = geoM
-		colorm.DrawImage(screen, sprite.Texture, c, op)
-	}
-
-	c = colorm.ColorM{}
-	if status.IsDead() {
-		c.ChangeHSV(0, 0, 1)
-	}
-	// render icon
-	geoM = texture.CenterGeoM(status.RoleTexture())
-	geoM.Scale(0.5, 0.5)
-	geoM.Rotate(camera.Rotation)
-	geoM.Translate(pos[0], pos[1])
-	geoM.Concat(worldM)
-
-	op := &colorm.DrawImageOptions{}
-	op.GeoM = geoM
-	colorm.DrawImage(screen, status.RoleTexture(), c, op)
+	status.Render(tick, camera, screen, global.ShowTargetRing, global.Debug)
 
 	// render debuffs on side of player
-	screenX, screenY := camera.WorldToScreen(pos[0], pos[1])
-	RenderBuffList(screen, tick, status.BuffList.DeBuffs(), screenX+30/math.Pow(1.01, float64(camera.ZoomFactor)), screenY)
+	for i := range status.Instances {
+		pos := status.Instances[i].Object.Position()
+		screenX, screenY := camera.WorldToScreen(pos[0], pos[1])
+		RenderBuffList(
+			screen,
+			tick,
+			status.BuffList.DeBuffs(),
+			screenX+30/math.Pow(1.01, float64(camera.ZoomFactor)),
+			screenY)
 
-	// render marker on player
-	if status.Marker > 0 {
-		markerTexture := model.MarkerTextures[status.Marker-1]
-		geoM = texture.CenterGeoM(markerTexture)
-		geoM.Rotate(camera.Rotation)
-		geoM.Translate(pos[0], pos[1]-30)
-		geoM.Concat(worldM)
-		screen.DrawImage(markerTexture, &ebiten.DrawImageOptions{GeoM: geoM})
+		// render marker on player
+		if status.Marker > 0 {
+			markerTexture := model.MarkerTextures[status.Marker-1]
+			geoM := texture.CenterGeoM(markerTexture)
+			geoM.Rotate(camera.Rotation)
+			geoM.Translate(pos[0], pos[1]-30)
+			geoM.Concat(worldM)
+			screen.DrawImage(markerTexture, &ebiten.DrawImageOptions{GeoM: geoM})
+		}
+
+		break
 	}
 }
