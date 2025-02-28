@@ -78,6 +78,7 @@ func NewRectObject(opt ObjectOption, pos Vector, anchor int, rw, rh float64) *Re
 
 	return &RectObject{
 		DefaultObject: DefaultObject{
+			otype:    TypeRect,
 			anchor:   pos,
 			rotate:   0,
 			scale:    1,

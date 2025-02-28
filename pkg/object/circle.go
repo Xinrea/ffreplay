@@ -50,6 +50,7 @@ func NewCircleObject(opt ObjectOption, pos Vector, radius float64) *CircleObject
 
 	return &CircleObject{
 		DefaultObject: DefaultObject{
+			otype:    TypeCircle,
 			anchor:   pos,
 			rotate:   0,
 			scale:    1,
