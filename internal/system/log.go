@@ -389,11 +389,24 @@ func handleBeginCast(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event 
 		return
 	}
 
-	instanceID := 0
+	target := s.EntryMap[*event.TargetID]
+	if target == nil {
+		return
+	}
+
+	casterInstanceID := 0
+	targetInstanceID := 0
 
 	if event.SourceInstance != nil {
-		instanceID = int(*event.SourceInstance) - 1
+		casterInstanceID = int(*event.SourceInstance) - 1
 	}
+
+	if event.TargetInstance != nil {
+		targetInstanceID = int(*event.TargetInstance) - 1
+	}
+
+	casterInstance := component.Status.Get(caster).Instances[casterInstanceID]
+	targetInstance := component.Status.Get(target).Instances[targetInstanceID]
 
 	skill := skills.QueryCastingSkill(event.Ability.ToSkill(*event.Duration))
 	skill.StartTick = event.LocalTick
@@ -402,7 +415,7 @@ func handleBeginCast(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event 
 		log.Println("NPC begin cast", skill.ID, skill.Name, *event.Duration)
 	}
 
-	s.Cast(ecs, caster, instanceID, nil, 0, skill, event.LocalTick)
+	s.Cast(ecs, casterInstance, targetInstance, skill, event.LocalTick)
 
 	return
 }
@@ -507,10 +520,15 @@ func handleCast(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflog
 		return
 	}
 
-	instanceID := 0
+	casterInstanceID := 0
+	targetInstanceID := 0
 
 	if event.SourceInstance != nil {
-		instanceID = int(*event.SourceInstance) - 1
+		casterInstanceID = int(*event.SourceInstance) - 1
+	}
+
+	if event.TargetInstance != nil {
+		targetInstanceID = int(*event.TargetInstance) - 1
 	}
 
 	if event.Ability == nil {
@@ -521,16 +539,17 @@ func handleCast(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflog
 		return
 	}
 
-	target := s.EntryMap[*event.TargetID]
+	casterInstance := component.Status.Get(caster).Instances[casterInstanceID]
+	targetInstance := component.Status.Get(s.EntryMap[*event.TargetID]).Instances[targetInstanceID]
 
 	skill := skills.QueryCastingSkill(event.Ability.ToSkill(0))
 	skill.StartTick = event.LocalTick
 
 	if entry.GetGlobal(ecs).Debug && component.Status.Get(caster).Role == role.NPC {
-		log.Println("NPC inst-cast", *event.SourceID, instanceID, skill.ID, skill.Name)
+		log.Println("NPC inst-cast", *event.SourceID, casterInstanceID, skill.ID, skill.Name)
 	}
 
-	s.Cast(ecs, caster, instanceID, target, 0, skill, event.LocalTick)
+	s.Cast(ecs, casterInstance, targetInstance, skill, event.LocalTick)
 }
 
 func handleDamage(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {

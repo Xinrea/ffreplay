@@ -57,6 +57,7 @@ func NewFanObject(opt ObjectOption, pos Vector, angle, length float64) *FanObjec
 
 	return &FanObject{
 		DefaultObject: DefaultObject{
+			otype:    TypeFan,
 			anchor:   pos,
 			rotate:   0,
 			scale:    1,

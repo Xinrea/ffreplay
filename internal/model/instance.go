@@ -6,6 +6,7 @@ import (
 )
 
 type Instance struct {
+	Status             *StatusData
 	Face               float64
 	Object             object.Object
 	LastActive         int64

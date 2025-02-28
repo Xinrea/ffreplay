@@ -3,6 +3,7 @@ package entry
 import (
 	"fmt"
 	"log"
+	"sync"
 
 	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/data/fflogs"
@@ -94,31 +95,34 @@ func NewEnemy(
 		erole = role.NPC
 	}
 
+	status := &model.StatusData{
+		GameID:   gameID,
+		ID:       id,
+		Name:     name,
+		Role:     erole,
+		HP:       1,
+		MaxHP:    1,
+		Mana:     10000,
+		MaxMana:  10000,
+		BuffList: model.NewBuffList(),
+		RingConfig: model.RingConfiguration{
+			Texture: textureRing,
+			Scale:   ringSize,
+		},
+	}
+
 	instances := []*model.Instance{}
 	for i := 0; i < instanceCount; i++ {
 		instances = append(instances, &model.Instance{
+			Status:     status,
 			Face:       0,
 			Object:     object.NewPointObject(vector.NewVector(pos[0], pos[1])),
 			LastActive: -1,
 		})
 	}
 
-	component.Status.Set(enemy, &model.StatusData{
-		GameID:    gameID,
-		ID:        id,
-		Name:      name,
-		Role:      erole,
-		HP:        1,
-		MaxHP:     1,
-		Mana:      10000,
-		MaxMana:   10000,
-		BuffList:  model.NewBuffList(),
-		Instances: instances,
-		RingConfig: model.RingConfiguration{
-			Texture: textureRing,
-			Scale:   ringSize,
-		},
-	})
+	status.Instances = instances
+	component.Status.Set(enemy, status)
 
 	return enemy
 }
@@ -126,27 +130,30 @@ func NewEnemy(
 func NewPet(ecs *ecs.ECS, gameID int64, id int64, name string, instanceCount int) *donburi.Entry {
 	pet := Pet.Spawn(ecs)
 
+	status := &model.StatusData{
+		GameID:   gameID,
+		ID:       id,
+		Name:     name,
+		Role:     role.Pet,
+		HP:       1,
+		MaxHP:    1,
+		Mana:     10000,
+		MaxMana:  10000,
+		BuffList: model.NewBuffList(),
+	}
+
 	instances := []*model.Instance{}
 	for i := 0; i < instanceCount; i++ {
 		instances = append(instances, &model.Instance{
+			Status:     status,
 			Face:       0,
 			Object:     object.NewPointObject(vector.NewVector(0, 0)),
 			LastActive: -1,
 		})
 	}
 
-	component.Status.Set(pet, &model.StatusData{
-		GameID:    gameID,
-		ID:        id,
-		Name:      name,
-		Role:      role.Pet,
-		HP:        1,
-		MaxHP:     1,
-		Mana:      10000,
-		MaxMana:   10000,
-		BuffList:  model.NewBuffList(),
-		Instances: instances,
-	})
+	status.Instances = instances
+	component.Status.Set(pet, status)
 
 	return pet
 }
@@ -154,23 +161,26 @@ func NewPet(ecs *ecs.ECS, gameID int64, id int64, name string, instanceCount int
 func NewLimitBreakNPC(ecs *ecs.ECS, gameID int64, id int64) *donburi.Entry {
 	limitBreak := LimitBreak.Spawn(ecs)
 
+	status := &model.StatusData{
+		GameID:   gameID,
+		ID:       id,
+		Name:     "LimitBreak",
+		Role:     role.LimitBreak,
+		HP:       1,
+		MaxHP:    1,
+		BuffList: model.NewBuffList(),
+	}
+
 	instances := []*model.Instance{}
 	instances = append(instances, &model.Instance{
+		Status:     status,
 		Face:       0,
 		Object:     object.NewPointObject(vector.NewVector(0, 0)),
 		LastActive: -1,
 	})
 
-	component.Status.Set(limitBreak, &model.StatusData{
-		GameID:    gameID,
-		ID:        id,
-		Name:      "LimitBreak",
-		Role:      role.LimitBreak,
-		HP:        1,
-		MaxHP:     1,
-		BuffList:  model.NewBuffList(),
-		Instances: instances,
-	})
+	status.Instances = instances
+	component.Status.Set(limitBreak, status)
 
 	log.Println("LimitBreak:", id)
 
@@ -191,8 +201,8 @@ func NewPlayer(ecs *ecs.ECS, role role.RoleType, pos f64.Vec2, detail *fflogs.Pl
 	}
 
 	obj := object.NewPointObject(vector.NewVector(pos[0], pos[1]))
-	// this scales target ring into size 50pixel, which means 1m in game
-	component.Status.Set(player, &model.StatusData{
+
+	status := &model.StatusData{
 		GameID:   -1,
 		ID:       id,
 		Name:     name,
@@ -206,13 +216,19 @@ func NewPlayer(ecs *ecs.ECS, role role.RoleType, pos f64.Vec2, detail *fflogs.Pl
 			Texture: texture.NewTextureFromFile("asset/target_normal.png"),
 			Scale:   0.1842,
 		},
-		Instances: []*model.Instance{
-			{
-				Face:   0,
-				Object: obj,
-			},
+	}
+
+	instances := []*model.Instance{
+		{
+			Status: status,
+			Face:   0,
+			Object: obj,
 		},
-	})
+	}
+	status.Instances = instances
+
+	// this scales target ring into size 50pixel, which means 1m in game
+	component.Status.Set(player, status)
 
 	return player
 }
@@ -310,4 +326,25 @@ func GetPhase(ecs *ecs.ECS) int {
 	}
 
 	return len(global.Phases) - 1
+}
+
+var statusCache sync.Map
+
+func GetStatusByID(ecs *ecs.ECS, id int64) *model.StatusData {
+	if v, ok := statusCache.Load(id); ok {
+		if status, ok := v.(*model.StatusData); ok {
+			return status
+		}
+	}
+
+	for e := range component.Status.Iter(ecs.World) {
+		status := component.Status.Get(e)
+		if status.ID == id {
+			statusCache.Store(id, status)
+
+			return status
+		}
+	}
+
+	return nil
 }

@@ -14,6 +14,7 @@ var _ Object = (*PointObject)(nil)
 func NewPointObject(pos Vector) *PointObject {
 	return &PointObject{
 		DefaultObject{
+			otype:  TypePoint,
 			anchor: pos,
 		},
 	}

@@ -32,8 +32,22 @@ func (s *System) TimelineUpdate(ecs *ecs.ECS) {
 }
 
 func updateEvent(timeline *model.TimelineData, i int, p int64, ecs *ecs.ECS) {
-	if !timeline.Events[i].Started && p >= timeline.Events[i].OffsetTick() {
+	event := timeline.Events[i]
+	if !event.Started && p >= event.OffsetTick() {
 		timeline.Begin(ecs, i)
+
+		// handle this event
+		skill := model.SkillTemplates[event.SkillTemplate](event.SkillConfig)
+		if skill == nil {
+			return
+		}
+
+		caster := entry.GetStatusByID(ecs, event.CasterID)
+		target := entry.GetStatusByID(ecs, event.TargetID)
+
+		skill.Init(caster.Instances[event.CasterInstance], target.Instances[event.TargetInstance])
+
+		caster.Instances[0].Cast(skill)
 
 		return
 	}

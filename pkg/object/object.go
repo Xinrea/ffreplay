@@ -8,6 +8,17 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/colorm"
 )
 
+type ObjectType int
+
+const (
+	TypeUnknown ObjectType = iota
+	TypeRect
+	TypeCircle
+	TypeFan
+	TypeRing
+	TypePoint
+)
+
 var objectTextureCache = make(map[string]*ebiten.Image)
 
 type ObjectOption struct {
@@ -35,6 +46,7 @@ var DefaultEffectSkillRangeOption = ObjectOption{
 }
 
 type Object interface {
+	Type() ObjectType
 	Position() Vector
 	UpdatePosition(v Vector)
 	// Rotate rotates the Object by given angle in radian, and anchor is defined by the need of game (Position point).
@@ -49,6 +61,7 @@ type Object interface {
 }
 
 type DefaultObject struct {
+	otype    ObjectType
 	anchor   Vector
 	rotate   float64
 	scale    float64
@@ -57,6 +70,10 @@ type DefaultObject struct {
 }
 
 var _ Object = (*DefaultObject)(nil)
+
+func (d *DefaultObject) Type() ObjectType {
+	return d.otype
+}
 
 func (d *DefaultObject) Position() Vector {
 	return d.anchor

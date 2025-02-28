@@ -45,7 +45,7 @@ func (t TimelineData) IsDone(tick int64) bool {
 }
 
 func (t TimelineData) Begin(ecs *ecs.ECS, index int) {
-	t.Events[index].Start(ecs)
+	t.Events[index].Started = true
 }
 
 func (t *TimelineData) Reset() {
@@ -80,19 +80,15 @@ type SkillTemplateConfigure struct {
 // when world tick >= offset + timeline.StartTick, the event will be triggered
 // and the skill will be casted. After this, skill will be handled by skill system.
 type Event struct {
-	CasterID      int64                  `yaml:"caster"`
-	TargetID      int64                  `yaml:"target"`
-	Offset        int64                  `yaml:"offset"`
-	SkillTemplate string                 `yaml:"skill"`
-	SkillConfig   SkillTemplateConfigure `yaml:"config"`
+	CasterID       int64                  `yaml:"caster"`
+	CasterInstance int                    `yaml:"casterins"`
+	TargetID       int64                  `yaml:"target"`
+	TargetInstance int                    `yaml:"targetins"`
+	Offset         int64                  `yaml:"offset"`
+	SkillTemplate  string                 `yaml:"skill"`
+	SkillConfig    SkillTemplateConfigure `yaml:"config"`
 
-	Started bool   `yaml:"-"`
-	Skill   *Skill `yaml:"-"`
-}
-
-func (e *Event) Start(ecs *ecs.ECS) {
-	e.Started = true
-	e.Skill = SkillTemplates[e.SkillTemplate](e.SkillConfig)
+	Started bool `yaml:"-"`
 }
 
 func (e Event) OffsetTick() int64 {

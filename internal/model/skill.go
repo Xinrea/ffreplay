@@ -13,7 +13,6 @@ import (
 	asset "github.com/Xinrea/ffreplay"
 	"github.com/Xinrea/ffreplay/pkg/object"
 	"github.com/Xinrea/ffreplay/pkg/texture"
-	"github.com/Xinrea/ffreplay/pkg/vector"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -28,32 +27,35 @@ type Skill struct {
 	Recast      int64
 	IsGCD       bool
 	EffectRange object.Object
-	Target      object.Object
+	Caster      *Instance
+	Target      *Instance
 
-	Initializer func(target object.Object, effectRange object.Object, facing float64, pos vector.Vector)
-	Updater     func(target object.Object, effectRange object.Object, facing float64, pos vector.Vector)
+	Initializer func(caster *Instance, target *Instance, effectRange object.Object)
+	Updater     func(caster *Instance, target *Instance, effectRange object.Object)
 }
 
 func (s Skill) Texture() *ebiten.Image {
 	return texture.NewAbilityTexture(s.Icon)
 }
 
-// Initialize initializes the skill's effect range, should be called before the skill is used.
-func (s *Skill) Initialize(facing float64, pos vector.Vector) {
+func (s *Skill) Init(caster *Instance, target *Instance) {
+	s.Caster = caster
+	s.Target = target
+
 	if s.Initializer == nil {
 		return
 	}
 
-	s.Initializer(s.Target, s.EffectRange, facing, pos)
+	s.Initializer(s.Caster, s.Target, s.EffectRange)
 }
 
 // Update updates the skill's effect range, should be called every tick.
-func (s *Skill) Update(facing float64, pos vector.Vector) {
+func (s *Skill) Update() {
 	if s.Updater == nil {
 		return
 	}
 
-	s.Updater(s.Target, s.EffectRange, facing, pos)
+	s.Updater(s.Caster, s.Target, s.EffectRange)
 }
 
 type ActionInfo struct {
