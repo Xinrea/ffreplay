@@ -77,28 +77,37 @@ func rangeObjectFromConfig(configure SkillTemplateConfigure) object.Object {
 	}
 }
 
-func generalInitializer(target object.Object, effectRange object.Object, facing float64, pos vector.Vector) {
+// generalInitializer is a general initializer for skill effect range.
+// It will initialize the effect range's position and facing based on caster only.
+func generalInitializer(caster *Instance, target *Instance, effectRange object.Object) {
 	if effectRange == nil {
 		return
 	}
 
-	effectRange.UpdateRotate(facing)
-	effectRange.UpdatePosition(pos)
+	effectRange.UpdateRotate(caster.Face)
+	effectRange.UpdatePosition(caster.Object.Position())
 }
 
-func lockedSkillHandler(target object.Object, effectRange object.Object, facing float64, pos vector.Vector) {
+// lockedSkillHandler is a general handler for skill effect range.
+// It will update the effect range's position and facing based on caster and target.
+func lockedSkillHandler(caster *Instance, target *Instance, effectRange object.Object) {
 	if effectRange == nil {
 		return
 	}
 
-	effectRange.UpdateRotate(facing)
-	effectRange.UpdatePosition(pos)
-
-	if target != nil {
-		pTarget := target.Position()
-		pSelf := effectRange.Position()
+	switch effectRange.Type() {
+	case object.TypeRect:
+		fallthrough
+	case object.TypeFan:
+		pTarget := target.Object.Position()
+		pSelf := caster.Object.Position()
 		// facing to the target
 		facing := pTarget.Sub(pSelf).Radian()
-		effectRange.UpdateRotate(facing)
+		effectRange.UpdateRotate(facing + caster.Face)
+		effectRange.UpdatePosition(pSelf)
+	case object.TypeCircle:
+		fallthrough
+	case object.TypeRing:
+		effectRange.UpdatePosition(target.Object.Position())
 	}
 }

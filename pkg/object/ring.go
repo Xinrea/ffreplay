@@ -69,6 +69,7 @@ func NewRingObject(opt ObjectOption, pos Vector, innerRadius float64, outerRadiu
 
 	return &RingObject{
 		DefaultObject: DefaultObject{
+			otype:    TypeRing,
 			anchor:   pos,
 			rotate:   0,
 			scale:    1,
