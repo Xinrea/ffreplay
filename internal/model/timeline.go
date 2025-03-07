@@ -2,7 +2,6 @@ package model
 
 import (
 	"github.com/Xinrea/ffreplay/pkg/object"
-	"github.com/Xinrea/ffreplay/util"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"
 )
@@ -73,24 +72,4 @@ type SkillTemplateConfigure struct {
 	Radius      int
 	InnerRadius int
 	Angle       float64
-}
-
-// Event is a single skill trigger in the timeline
-//
-// when world tick >= offset + timeline.StartTick, the event will be triggered
-// and the skill will be casted. After this, skill will be handled by skill system.
-type Event struct {
-	CasterID       int64                  `yaml:"caster"`
-	CasterInstance int                    `yaml:"casterins"`
-	TargetID       int64                  `yaml:"target"`
-	TargetInstance int                    `yaml:"targetins"`
-	Offset         int64                  `yaml:"offset"`
-	SkillTemplate  string                 `yaml:"skill"`
-	SkillConfig    SkillTemplateConfigure `yaml:"config"`
-
-	Started bool `yaml:"-"`
-}
-
-func (e Event) OffsetTick() int64 {
-	return util.MSToTick(e.Offset)
 }

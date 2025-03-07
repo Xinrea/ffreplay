@@ -52,3 +52,6 @@ func updateEvent(timeline *model.TimelineData, i int, p int64, ecs *ecs.ECS) {
 		return
 	}
 }
+
+func mapEventHandler(event model.Event, ecs *ecs.ECS) {
+}
