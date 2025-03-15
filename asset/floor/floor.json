@@ -292,6 +292,58 @@
           }
         }
       ]
+    },
+    {
+      "id": 573,
+      "path": "asset/floor/tea-p1.png",
+      "offset": {
+        "x": 100,
+        "y": 100
+      },
+      "phases": [
+        {
+          "path": "asset/floor/tea-p1.png",
+          "offset": {
+            "x": 100,
+            "y": 100
+          }
+        },
+        {
+          "path": "asset/floor/tea-p1.png",
+          "offset": {
+            "x": 100,
+            "y": 100
+          }
+        },
+        {
+          "path": "asset/floor/tea-p2.png",
+          "offset": {
+            "x": 100,
+            "y": 100
+          }
+        },
+        {
+          "path": "asset/floor/tea-p2.png",
+          "offset": {
+            "x": 100,
+            "y": 100
+          }
+        },
+        {
+          "path": "asset/floor/tea-p3.png",
+          "offset": {
+            "x": 100,
+            "y": 100
+          }
+        },
+        {
+          "path": "asset/floor/tea-p4.png",
+          "offset": {
+            "x": 100,
+            "y": 100
+          }
+        }
+      ]
     }
   ]
 }
