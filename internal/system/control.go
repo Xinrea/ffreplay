@@ -35,7 +35,7 @@ func (s *System) ControlUpdate(ecs *ecs.ECS) {
 		camera.ZoomFactor -= int(dy * 3)
 	}
 
-	if global.ReplayMode || global.TargetPlayer == nil {
+	if global.ReplayMode {
 		s.replayModeControl(ecs)
 	} else {
 		s.playgroundControl(ecs)

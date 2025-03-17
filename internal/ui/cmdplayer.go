@@ -7,6 +7,7 @@ import (
 	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/data/fflogs"
 	"github.com/Xinrea/ffreplay/internal/entry"
+	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/internal/model/role"
 	"github.com/Xinrea/ffreplay/internal/tag"
 	"golang.org/x/image/math/f64"
@@ -24,6 +25,8 @@ func (c *CommandHandler) playerHandler(cmds []string) {
 		c.playerAdd(cmds)
 	case "remove":
 		c.playerRemove(cmds)
+	case "headmarker":
+		c.playerHeadMarker(cmds)
 	default:
 		c.AddError("Invalid player command")
 	}
@@ -87,6 +90,37 @@ func (c *CommandHandler) playerRemove(cmds []string) {
 
 			p.Remove()
 			c.AddResult("Player " + status.Name + " removed")
+
+			return
+		}
+	}
+}
+
+func (c *CommandHandler) playerHeadMarker(cmds []string) {
+	if len(cmds) < 3 {
+		c.AddError("Invalid player headmarker command")
+
+		return
+	}
+
+	id, err := strconv.Atoi(cmds[2])
+	if err != nil {
+		c.AddError("Invalid player id")
+
+		return
+	}
+
+	for p := range tag.Player.Iter(ecsInstance.World) {
+		status := component.Status.Get(p)
+		if int(status.ID) == id {
+			switch cmds[1] {
+			case "add":
+				status.AddHeadMarker(model.HeadMarkerType1)
+			case "remove":
+				status.ClearHeadMarker()
+			default:
+				c.AddError("Invalid player headmarker command")
+			}
 
 			return
 		}

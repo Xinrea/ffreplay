@@ -81,12 +81,31 @@ func NewFFScene(opt *FFLogsOpt) *FFScene {
 		go ms.loadFFLogsReport()
 	} else {
 		ms.ui = ui.NewPlaygroundUI(ecs)
+		ms.setupBasicPlayground()
 		ms.global.Loaded.Store(true)
 	}
 
 	log.Println("Scene created")
 
 	return ms
+}
+
+func (ms *FFScene) setupBasicPlayground() {
+	m := model.MapCache[77]
+	config := m.Load()
+	current := config.Maps[config.CurrentMap]
+	ms.camera.Position = vector.NewVector(current.Offset.X*25, current.Offset.Y*25)
+	component.Map.Get(component.Map.MustFirst(ms.ecs.World)).Config = config
+	defaultPlayer := entry.NewPlayer(ms.ecs, role.H2, f64.Vec2{current.Offset.X * 25, current.Offset.Y * 25}, nil)
+	playerStatus := component.Status.Get(defaultPlayer)
+	playerStatus.AddHeadMarker(model.HeadMarkerType1)
+
+	entry.GetGlobal(ms.ecs).TargetPlayer = defaultPlayer
+
+	// create a dummy enemy
+	enemy := entry.NewEnemy(ms.ecs, f64.Vec2{current.Offset.X * 25, current.Offset.Y * 25}, 1.0, 0, -1, "dummy", true, 1)
+	enemyStatus := component.Status.Get(enemy)
+	enemyStatus.Charater = texture.NewTextureFromFile("asset/boss/1.png")
 }
 
 func (ms *FFScene) loadFFLogsReport() {

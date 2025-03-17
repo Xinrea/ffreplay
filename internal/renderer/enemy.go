@@ -31,7 +31,7 @@ func (r *Renderer) renderEnemy(ecs *ecs.ECS, screen *ebiten.Image, enemy *donbur
 
 	status := component.Status.Get(enemy)
 
-	status.Render(tick, camera, screen, global.ShowTargetRing, global.Debug)
+	status.Render(tick, camera, screen, global.ShowTargetRing, global.Debug || !global.ReplayMode)
 
 	// print some extra debug info
 	if global.Debug {

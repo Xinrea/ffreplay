@@ -11,21 +11,25 @@ import (
 var Status = donburi.NewComponentType[StatusData]()
 
 type StatusData struct {
-	GameID     int64
-	ID         int64
-	Name       string
-	Role       role.RoleType
-	HP         int
-	MaxHP      int
-	Mana       int
-	MaxMana    int
-	BuffList   *BuffList
-	Marker     int
-	Tethers    []Tether
-	Instances  []*Instance
-	RingConfig RingConfiguration
-	death      bool
+	GameID      int64
+	ID          int64
+	Name        string
+	Role        role.RoleType
+	HP          int
+	MaxHP       int
+	Mana        int
+	MaxMana     int
+	BuffList    *BuffList
+	Charater    *ebiten.Image
+	Marker      int
+	HeadMarkers []*HeadMarker
+	Tethers     []Tether
+	Instances   []*Instance
+	RingConfig  RingConfiguration
+	death       bool
 }
+
+const STANDARD_RING_SCALE = 0.5
 
 type RingConfiguration struct {
 	Texture *ebiten.Image
@@ -51,41 +55,29 @@ func (r *StatusData) Render(
 	wordM := camera.WorldMatrixInverted()
 
 	for _, instance := range r.Instances {
-		if !renderAllInstances && !instance.IsActive(tick) {
-			continue
+		if !renderAllInstances {
+			if (r.Role == role.NPC || r.Role == role.Boss) && !instance.IsActive(tick) {
+				continue
+			}
 		}
 
+		instance.Render(r, renderTargetRing, camera, screen)
+
+		// render head markers, marker position is relative to the instance position
 		colorM := colorm.ColorM{}
 
-		if r.IsDead() {
-			colorM.ChangeHSV(0, 0, 1)
-		}
-
-		if renderTargetRing {
-			geoM := texture.CenterGeoM(r.RingConfig.Texture)
-			geoM.Rotate(instance.Face)
-			geoM.Scale(r.RingConfig.Scale, r.RingConfig.Scale)
-			geoM.Translate(instance.Object.Position()[0], instance.Object.Position()[1])
-
+		for _, headMarker := range r.HeadMarkers {
+			pos := instance.Object.Position()
+			geoM := texture.CenterGeoM(headMarker.Texture())
+			geoM.Scale(r.RingConfig.Scale/STANDARD_RING_SCALE, r.RingConfig.Scale/STANDARD_RING_SCALE)
+			geoM.Rotate(camera.Rotation)
+			geoM.Translate(pos[0], pos[1])
 			geoM.Concat(wordM)
 
-			colorm.DrawImage(screen, r.RingConfig.Texture, colorM, &colorm.DrawImageOptions{
+			colorm.DrawImage(screen, headMarker.Texture(), colorM, &colorm.DrawImageOptions{
 				GeoM: geoM,
 			})
 		}
-
-		if r.RoleTexture() == nil {
-			continue
-		}
-
-		geoM := texture.CenterGeoM(r.RoleTexture())
-		geoM.Scale(0.5, 0.5)
-		geoM.Translate(instance.Object.Position()[0], instance.Object.Position()[1])
-		geoM.Concat(wordM)
-
-		colorm.DrawImage(screen, r.RoleTexture(), colorM, &colorm.DrawImageOptions{
-			GeoM: geoM,
-		})
 	}
 }
 
@@ -149,4 +141,12 @@ func (r *StatusData) GetTethers() []Tether {
 
 func (r *StatusData) ClearTether() {
 	r.Tethers = nil
+}
+
+func (r *StatusData) AddHeadMarker(t HeadMarkerType) {
+	r.HeadMarkers = append(r.HeadMarkers, NewHeadMarker(t))
+}
+
+func (r *StatusData) ClearHeadMarker() {
+	r.HeadMarkers = nil
 }
