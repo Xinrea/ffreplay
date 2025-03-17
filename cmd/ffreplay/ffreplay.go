@@ -27,9 +27,9 @@ type Game struct {
 	sceneManager *scene.SceneManager
 }
 
-func NewGame(opt *scenes.FFLogsOpt) *Game {
+func NewGame(sceneName string, opt *scenes.FFLogsOpt) *Game {
 	sceneManager := scene.NewSceneManager()
-	sceneManager.AddScene("default", scenes.NewFFScene(opt))
+	sceneManager.AddScene(sceneName, opt)
 	g := &Game{
 		bounds:       image.Rectangle{},
 		sceneManager: sceneManager,
@@ -77,6 +77,8 @@ func main() {
 	model.Init()
 	// ffreplay -r report_code -f fight_id
 	// ffpreplay -u https://www.fflogs.com/reports/wrLFVz2QtvnGT9j1?fight=9
+	var scene string
+
 	var report string
 
 	var fight int
@@ -84,6 +86,7 @@ func main() {
 	var code string
 
 	reportUrl := flag.String("u", "", "FFLogs fight url")
+	flag.StringVar(&scene, "s", "replay", "Scene to start")
 	flag.StringVar(&report, "r", "", "FFLogs report code")
 	flag.IntVar(&fight, "f", 0, "FFlogs report fight code. Report may contains multiple fights")
 	flag.StringVar(&code, "c", "", "FFLogs OAuth code")
@@ -98,17 +101,31 @@ func main() {
 	ebiten.SetWindowSize(1920, 1080)
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
-	if credential == "" {
-		credential = loadCredentialFromFile()
-	}
-
-	credentials := strings.Split(credential, ":")
-
-	if len(credentials) != 2 || report == "" {
+	if scene == "playground" {
 		startPlayground()
-	} else {
-		startReplay(code, credentials[0], credentials[1], report, fight)
+
+		return
 	}
+
+	if scene == "replay" {
+		report, fight = parseFightURL(reportUrl)
+
+		if credential == "" {
+			credential = loadCredentialFromFile()
+		}
+
+		credentials := strings.Split(credential, ":")
+
+		if len(credentials) != 2 || report == "" {
+			log.Fatal("Invalid credential:", credential)
+		}
+
+		startReplay(code, credentials[0], credentials[1], report, fight)
+
+		return
+	}
+
+	startCustomScene(scene)
 }
 
 func parseFightURL(reportUrl *string) (string, int) {
@@ -144,7 +161,15 @@ func parseFightURL(reportUrl *string) (string, int) {
 func startPlayground() {
 	ebiten.SetWindowTitle("FFReplay Playground")
 
-	if err := ebiten.RunGame(NewGame(nil)); err != nil {
+	if err := ebiten.RunGame(NewGame("playground", nil)); err != nil {
+		log.Panic(err)
+	}
+}
+
+func startCustomScene(scene string) {
+	ebiten.SetWindowTitle("FFReplay " + scene)
+
+	if err := ebiten.RunGame(NewGame(scene, nil)); err != nil {
 		log.Panic(err)
 	}
 }
@@ -154,6 +179,7 @@ func startReplay(code string, clientID string, clientSecret string, report strin
 
 	if err := ebiten.RunGame(
 		NewGame(
+			"replay",
 			&scenes.FFLogsOpt{
 				ClientID:     clientID,
 				ClientSecret: clientSecret,

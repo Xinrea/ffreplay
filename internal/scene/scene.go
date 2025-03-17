@@ -1,6 +1,7 @@
 package scene
 
 import (
+	"github.com/Xinrea/ffreplay/internal/scene/scenes"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -32,7 +33,18 @@ func (sm *SceneManager) SetScene(name string) {
 	sm.current = sm.scenes[name]
 }
 
-func (sm *SceneManager) AddScene(name string, scene Scene) {
+func (sm *SceneManager) AddScene(name string, opt *scenes.FFLogsOpt) {
+	var scene Scene = nil
+
+	switch name {
+	case "playground":
+		scene = scenes.NewPlayGroundScene()
+	case "replay":
+		scene = scenes.NewFFScene(opt)
+	case "falloffaith":
+		scene = scenes.NewFallOfFaithScene()
+	}
+
 	sm.scenes[name] = scene
 	if sm.current == nil {
 		sm.current = scene
