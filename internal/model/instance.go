@@ -2,7 +2,10 @@ package model
 
 import (
 	"github.com/Xinrea/ffreplay/pkg/object"
+	"github.com/Xinrea/ffreplay/pkg/texture"
 	"github.com/Xinrea/ffreplay/util"
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/colorm"
 )
 
 type Instance struct {
@@ -137,4 +140,49 @@ func isSucceed(x, y *Skill) bool {
 	}
 
 	return x.Cast > 0 && y.Cast == 0
+}
+
+func (i *Instance) Render(parentStatus *StatusData, renderTargetRing bool, camera *CameraData, screen *ebiten.Image) {
+	worldM := camera.WorldMatrixInverted()
+	colorM := colorm.ColorM{}
+
+	if parentStatus.IsDead() {
+		colorM.ChangeHSV(0, 0, 1)
+	}
+
+	if renderTargetRing {
+		geoM := texture.CenterGeoM(parentStatus.RingConfig.Texture)
+		geoM.Rotate(i.Face)
+		geoM.Scale(parentStatus.RingConfig.Scale, parentStatus.RingConfig.Scale)
+		geoM.Translate(i.Object.Position()[0], i.Object.Position()[1])
+
+		geoM.Concat(worldM)
+
+		colorm.DrawImage(screen, parentStatus.RingConfig.Texture, colorM, &colorm.DrawImageOptions{
+			GeoM: geoM,
+		})
+	}
+
+	if parentStatus.RoleTexture() != nil {
+		// role icon never rotate with player but camera
+		geoM := texture.CenterGeoM(parentStatus.RoleTexture())
+		geoM.Scale(0.5, 0.5)
+		geoM.Rotate(camera.Rotation)
+		geoM.Translate(i.Object.Position()[0], i.Object.Position()[1])
+		geoM.Concat(worldM)
+
+		colorm.DrawImage(screen, parentStatus.RoleTexture(), colorM, &colorm.DrawImageOptions{
+			GeoM: geoM,
+		})
+	}
+
+	if parentStatus.Charater != nil {
+		geoM := texture.CenterGeoM(parentStatus.Charater)
+		geoM.Translate(i.Object.Position()[0], i.Object.Position()[1])
+		geoM.Concat(worldM)
+
+		colorm.DrawImage(screen, parentStatus.Charater, colorM, &colorm.DrawImageOptions{
+			GeoM: geoM,
+		})
+	}
 }

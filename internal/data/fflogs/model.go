@@ -190,6 +190,7 @@ const (
 	WorldMarkerPlaced  EventType = "worldmarkerplaced"
 	DungeonStart       EventType = "dungeonstart"
 	Tether             EventType = "tether"
+	HeadMarker         EventType = "headmarker"
 )
 
 type Actor struct {
