@@ -11,10 +11,10 @@ import (
 )
 
 func ProgressBarView() *furex.View {
-	global := entry.GetGlobal(ecsInstance)
+	global := entry.GetGlobal()
 	newHandler := furex.ViewHandler{
 		Update: func(v *furex.View) {
-			current := float64(entry.GetTick(ecsInstance)) / 60
+			current := float64(entry.GetTick()) / 60
 			progress := 0.0
 			if global.FightDuration.Load() > 0 {
 				progress = current / (float64(global.FightDuration.Load()) / 1000)
@@ -63,7 +63,7 @@ func ProgressBarView() *furex.View {
 }
 
 func createProgressBar(newHandler furex.ViewHandler) *furex.View {
-	global := entry.GetGlobal(ecsInstance)
+	global := entry.GetGlobal()
 	view := furex.NewView(
 		furex.Direction(furex.Column),
 		furex.AlignItems(furex.AlignItemEnd),

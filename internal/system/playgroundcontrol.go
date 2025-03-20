@@ -7,14 +7,14 @@ import (
 	"github.com/Xinrea/ffreplay/internal/entry"
 	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/pkg/vector"
+	"github.com/Xinrea/ffreplay/util"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-	"github.com/yohamta/donburi/ecs"
 )
 
-func (s *System) playgroundControl(ecs *ecs.ECS) {
-	global := entry.GetGlobal(ecs)
-	camera := entry.GetCamera(ecs)
+func (s *System) playgroundControl() {
+	global := entry.GetGlobal()
+	camera := entry.GetCamera()
 	vel := vector.Vector{}
 
 	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
@@ -26,50 +26,58 @@ func (s *System) playgroundControl(ecs *ecs.ECS) {
 		obj := status.Instances[0]
 
 		if !status.IsDead() {
-			handleMovementInput(&vel, obj)
-			handleRotationInput(obj)
+			handleRotationInput(camera)
+			handleMovementInput(&vel, obj, camera)
+
+			x, y := ebiten.CursorPosition()
+			wx, wy := camera.ScreenToWorld(float64(x), float64(y))
+
+			face := obj.Object.Position().Sub(vector.Vector{wx, wy}).Radian()
+			obj.Face = util.NormalizeRadians(face + math.Pi)
+
 			obj.Object.Translate(vel)
 			// bind camera on player
 			camera.Position = obj.Object.Position()
-			camera.Rotation = obj.Face
 		}
 	}
 }
 
-func handleMovementInput(vel *vector.Vector, obj *model.Instance) {
+func handleMovementInput(vel *vector.Vector, obj *model.Instance, camera *model.CameraData) {
+	face := camera.Rotation
+
 	if ebiten.IsKeyPressed(ebiten.KeyW) {
-		(*vel)[1] = -MaxVelocity * math.Cos(obj.Face)
-		(*vel)[0] = MaxVelocity * math.Sin(obj.Face)
+		(*vel)[1] = -MaxVelocity * math.Cos(face)
+		(*vel)[0] = MaxVelocity * math.Sin(face)
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyS) {
-		(*vel)[1] = MaxVelocity * math.Cos(obj.Face)
-		(*vel)[0] = -MaxVelocity * math.Sin(obj.Face)
+		(*vel)[1] = MaxVelocity * math.Cos(face)
+		(*vel)[0] = -MaxVelocity * math.Sin(face)
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyD) {
-		(*vel)[1] = MaxVelocity * math.Sin(obj.Face)
-		(*vel)[0] = MaxVelocity * math.Cos(obj.Face)
+		(*vel)[1] = MaxVelocity * math.Sin(face)
+		(*vel)[0] = MaxVelocity * math.Cos(face)
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyA) {
-		(*vel)[1] = -MaxVelocity * math.Sin(obj.Face)
-		(*vel)[0] = -MaxVelocity * math.Cos(obj.Face)
+		(*vel)[1] = -MaxVelocity * math.Sin(face)
+		(*vel)[0] = -MaxVelocity * math.Cos(face)
 	}
 }
 
-func handleRotationInput(obj *model.Instance) {
+func handleRotationInput(camera *model.CameraData) {
 	if ebiten.IsKeyPressed(ebiten.KeyE) {
-		obj.Face += 0.05
-		if obj.Face > math.Pi {
-			obj.Face -= 2 * math.Pi
+		camera.Rotation += 0.05
+		if camera.Rotation > math.Pi {
+			camera.Rotation -= 2 * math.Pi
 		}
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyQ) {
-		obj.Face -= 0.05
-		if obj.Face < -math.Pi {
-			obj.Face += 2 * math.Pi
+		camera.Rotation -= 0.05
+		if camera.Rotation < -math.Pi {
+			camera.Rotation += 2 * math.Pi
 		}
 	}
 }

@@ -32,8 +32,8 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 		screen,
 		fmt.Sprintf(
 			"Tick: %d, Time: %d, TPS: %.2f, FPS: %.2f",
-			entry.GetTick(ecs),
-			util.TickToMS(entry.GetTick(ecs)),
+			entry.GetTick(),
+			util.TickToMS(entry.GetTick()),
 			ebiten.ActualTPS(),
 			ebiten.ActualFPS(),
 		), 0, 15)

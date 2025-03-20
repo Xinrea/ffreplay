@@ -24,7 +24,7 @@ func (r *Renderer) PlayerRender(ecs *ecs.ECS, screen *ebiten.Image) {
 }
 
 func (r *Renderer) renderPlayer(ecs *ecs.ECS, camera *model.CameraData, screen *ebiten.Image, player *donburi.Entry) {
-	tick := entry.GetTick(ecs)
+	tick := entry.GetTick()
 	global := component.Global.Get(component.Global.MustFirst(ecs.World))
 
 	status := component.Status.Get(player)

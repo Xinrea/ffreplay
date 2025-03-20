@@ -1,6 +1,6 @@
 module github.com/Xinrea/ffreplay
 
-go 1.23.1
+go 1.24.1
 
 replace github.com/yohamta/furex/v2 => github.com/Xinrea/furex/v2 v2.5.1
 
@@ -14,6 +14,8 @@ require (
 	golang.org/x/image v0.23.0
 	golang.org/x/text v0.21.0
 )
+
+require github.com/yuin/gopher-lua v1.1.1 // indirect
 
 require (
 	github.com/PuerkitoBio/goquery v1.10.1 // indirect

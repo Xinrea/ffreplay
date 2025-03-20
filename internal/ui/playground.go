@@ -39,7 +39,7 @@ func NewPlaygroundUI(ecs *ecs.ECS) *PlaygroundUI {
 			}
 		}
 
-		entry.GetGlobal(ecsInstance).UIFocus = false
+		entry.GetGlobal().UIFocus = false
 
 		return false
 	}
@@ -52,7 +52,7 @@ func NewPlaygroundUI(ecs *ecs.ECS) *PlaygroundUI {
 }
 
 func (p *PlaygroundUI) Update(w, h int) {
-	global := entry.GetGlobal(ecsInstance)
+	global := entry.GetGlobal()
 	if global.Loaded.Load() {
 		p.once.Do(func() {
 			command := CommandView()
@@ -65,7 +65,9 @@ func (p *PlaygroundUI) Update(w, h int) {
 				furex.Justify(furex.JustifySpaceBetween),
 			)
 
-			partyList := NewPartyList(nil)
+			players := entry.GetPlayerList()
+
+			partyList := NewPartyList(players)
 			partyList.Attrs.MarginTop = 40
 			partyList.Attrs.MarginLeft = UIPadding
 
@@ -110,8 +112,8 @@ func (p *PlaygroundUI) SetupHotBar(v *furex.View, w, h int) {
 			Name: "test",
 			Icon: model.WorldMarkerConfigs[marker].Texture,
 			ClickHandler: func() {
-				global := entry.GetGlobal(ecsInstance)
-				camera := entry.GetCamera(ecsInstance)
+				global := entry.GetGlobal()
+				camera := entry.GetCamera()
 				// if marker exists, remove it
 				for markerEntry := range component.WorldMarker.Iter(ecsInstance.World) {
 					markerData := component.WorldMarker.Get(markerEntry)
@@ -124,7 +126,7 @@ func (p *PlaygroundUI) SetupHotBar(v *furex.View, w, h int) {
 
 				x, y := ebiten.CursorPosition()
 				wx, wy := camera.ScreenToWorld(float64(x), float64(y))
-				entry.NewWorldMarker(ecsInstance, marker, f64.Vec2{wx, wy})
+				entry.NewWorldMarker(marker, f64.Vec2{wx, wy})
 				global.WorldMarkerSelected = int(marker)
 			},
 		})

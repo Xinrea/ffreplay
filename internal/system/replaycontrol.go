@@ -9,12 +9,11 @@ import (
 	"github.com/Xinrea/ffreplay/util"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-	"github.com/yohamta/donburi/ecs"
 )
 
-func (s *System) replayModeControl(ecs *ecs.ECS) {
-	global := entry.GetGlobal(ecs)
-	camera := entry.GetCamera(ecs)
+func (s *System) replayModeControl() {
+	global := entry.GetGlobal()
+	camera := entry.GetCamera()
 
 	s.handleSpeedControl()
 	s.handleRewindControl()
@@ -38,7 +37,7 @@ func (s *System) replayModeControl(ecs *ecs.ECS) {
 }
 
 func (s *System) handleSpeedControl() {
-	global := entry.GetGlobal(s.ecs)
+	global := entry.GetGlobal()
 
 	if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
 		s.Pause = !s.Pause
@@ -65,7 +64,7 @@ func (s *System) handleSpeedControl() {
 }
 
 func (s *System) handleRewindControl() {
-	global := entry.GetGlobal(s.ecs)
+	global := entry.GetGlobal()
 
 	if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) {
 		global.Tick -= 60 * 10 // 1s tick
@@ -100,7 +99,7 @@ func (s *System) handleTargetSelection() {
 }
 
 func (s *System) setTargetPlayer(newTarget int) {
-	global := entry.GetGlobal(s.ecs)
+	global := entry.GetGlobal()
 	if newTarget == 0 {
 		global.TargetPlayer = nil
 	} else {
@@ -114,7 +113,7 @@ func (s *System) setTargetPlayer(newTarget int) {
 }
 
 func (s *System) handleCameraPosControl() {
-	camera := entry.GetCamera(s.ecs)
+	camera := entry.GetCamera()
 	vel := vector.Vector{}
 
 	if ebiten.IsKeyPressed(ebiten.KeyW) {

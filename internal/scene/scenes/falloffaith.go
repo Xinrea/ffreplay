@@ -9,6 +9,7 @@ import (
 	"github.com/Xinrea/ffreplay/internal/model/role"
 	"github.com/Xinrea/ffreplay/internal/renderer"
 	"github.com/Xinrea/ffreplay/internal/system"
+	"github.com/Xinrea/ffreplay/internal/system/script"
 	"github.com/Xinrea/ffreplay/internal/ui"
 	"github.com/Xinrea/ffreplay/pkg/texture"
 	"github.com/Xinrea/ffreplay/pkg/vector"
@@ -31,16 +32,18 @@ type FallOfFaithScene struct {
 
 func NewFallOfFaithScene() *FallOfFaithScene {
 	ecs := ecs.NewECS(donburi.NewWorld())
+	entry.SetContext(ecs)
+
 	system := system.NewSystem()
 	renderer := renderer.NewRenderer()
 	ui := ui.NewPlaygroundUI(ecs)
 
-	globalEntry := entry.NewGlobal(ecs)
+	globalEntry := entry.NewGlobal()
 	global := component.Global.Get(globalEntry)
-	cameraEntry := entry.NewCamera(ecs)
+	cameraEntry := entry.NewCamera()
 	camera := component.Camera.Get(cameraEntry)
 
-	entry.NewMap(ecs, nil)
+	entry.NewMap(nil)
 
 	ms := &FallOfFaithScene{
 		ecs:      ecs,
@@ -68,16 +71,26 @@ func (ms *FallOfFaithScene) setup() {
 	ms.camera.Position = vector.NewVector(current.Offset.X*25, current.Offset.Y*25)
 	component.Map.Get(component.Map.MustFirst(ms.ecs.World)).Config = config
 
-	defaultPlayer := entry.NewPlayer(ms.ecs, role.H2, f64.Vec2{current.Offset.X * 25, current.Offset.Y * 25}, nil)
+	defaultPlayer := entry.NewPlayer(role.H2, f64.Vec2{current.Offset.X * 25, current.Offset.Y * 25}, nil)
 	playerStatus := component.Status.Get(defaultPlayer)
 	playerStatus.AddHeadMarker(model.HeadMarkerType1)
 
-	entry.GetGlobal(ms.ecs).TargetPlayer = defaultPlayer
+	entry.GetGlobal().TargetPlayer = defaultPlayer
 
 	// create a dummy enemy
-	enemy := entry.NewEnemy(ms.ecs, f64.Vec2{current.Offset.X * 25, current.Offset.Y * 25}, 1.0, 0, -1, "dummy", true, 1)
+	enemy := entry.NewEnemy(f64.Vec2{current.Offset.X * 25, current.Offset.Y * 25}, 1.0, 0, -1, "dummy", true, 1)
 	enemyStatus := component.Status.Get(enemy)
 	enemyStatus.Charater = texture.NewTextureFromFile("asset/boss/1.png")
+
+	// setup a basic timeline
+	vm := script.NewScriptRunner()
+	vm.Run(`
+		local ff = require("ff")
+		print(ff.party())
+		p = player.new("MT", 20, 25)
+		print(p:id())
+		print(ff.party())
+  `)
 }
 
 func (ms *FallOfFaithScene) Reset() {
@@ -100,3 +113,15 @@ func (ms *FallOfFaithScene) Draw(screen *ebiten.Image) {
 	ms.ecs.Draw(screen)
 	ms.ui.Draw(screen)
 }
+
+const TIMELINE = `
+name: TestTimeline
+events:
+    - type: 1
+      offset: 1000
+      target: 1
+      instance: 1
+      duration: 5000
+      x: 300
+      y: 300
+`

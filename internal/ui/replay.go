@@ -50,7 +50,7 @@ func NewReplayUI(ecs *ecs.ECS) *FFUI {
 }
 
 func (f *FFUI) Update(w, h int) {
-	global := entry.GetGlobal(ecsInstance)
+	global := entry.GetGlobal()
 	if !global.Loaded.Load() {
 		return
 	}

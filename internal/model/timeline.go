@@ -1,54 +1,48 @@
 package model
 
 import (
+	"log"
+
 	"github.com/Xinrea/ffreplay/pkg/object"
-	"github.com/yohamta/donburi"
-	"github.com/yohamta/donburi/ecs"
+	"gopkg.in/yaml.v3"
 )
 
 type TimelineData struct {
 	Name      string `yaml:"name"`
 	StartTick int64  `yaml:"-"`
 	// Caster is the entity that handles all skills in the timeline
-	Caster *donburi.Entry `yaml:"-"`
-	Events []Event        `yaml:"events"`
+	Events []*Event `yaml:"events"`
 }
 
-func (t *TimelineData) InstanceWith(
-	caster *donburi.Entry,
+func LoadTimelineRaw(raw string) *TimelineData {
+	var tl TimelineData
+
+	err := yaml.Unmarshal([]byte(raw), &tl)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return &tl
+}
+
+func (t *TimelineData) Init(
 	tick int64,
-	targetInstance int,
 ) *TimelineData {
 	t.StartTick = tick
-	t.Caster = caster
 
 	return t
 }
 
-func (t TimelineData) IsDone(tick int64) bool {
-	if len(t.Events) == 0 {
-		return true
-	}
-
-	isDone := true
-
-	for _, e := range t.Events {
-		if !e.Started {
-			isDone = false
-
-			break
-		}
-	}
-
-	return isDone
-}
-
-func (t TimelineData) Begin(ecs *ecs.ECS, index int) {
-	t.Events[index].Started = true
-}
-
 func (t *TimelineData) Reset() {
 	t.StartTick = 0
+}
+
+func (t *TimelineData) OffsetTickOf(index int) int64 {
+	return t.Events[index].OffsetTick()
+}
+
+func (t *TimelineData) ProgressedTickOf(index int, currentTick int64) int64 {
+	return t.Events[index].ProgressedTick(t.StartTick, currentTick)
 }
 
 type RangeType int

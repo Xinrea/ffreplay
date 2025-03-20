@@ -125,3 +125,50 @@ func StringToRole(s string) RoleType {
 
 	return -1
 }
+
+type RoleClass int
+
+const (
+	Tank RoleClass = iota
+	Healer
+	DPS
+)
+
+var roleClassToStringMap = map[RoleClass]string{
+	Tank:   "Tank",
+	Healer: "Healer",
+	DPS:    "DPS",
+}
+
+func (r RoleClass) String() string {
+	if str, ok := roleClassToStringMap[r]; ok {
+		return str
+	}
+
+	return "Unknown"
+}
+
+var stringToRoleClassMap = map[string]RoleClass{
+	"Tank":   Tank,
+	"Healer": Healer,
+	"DPS":    DPS,
+}
+
+func StringToRoleClass(s string) RoleClass {
+	if role, ok := stringToRoleClassMap[s]; ok {
+		return role
+	}
+
+	return -1
+}
+
+func RoleToClass(r RoleType) RoleClass {
+	switch r {
+	case MT, ST, Paladin, Warrior, DarkKnight, Gunbreaker:
+		return Tank
+	case H1, H2, WhiteMage, Scholar, Astrologian, Sage:
+		return Healer
+	default:
+		return DPS
+	}
+}

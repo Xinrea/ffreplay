@@ -3,27 +3,26 @@ package system
 import (
 	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/entry"
-	"github.com/Xinrea/ffreplay/internal/tag"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-	"github.com/yohamta/donburi/ecs"
 	"golang.org/x/image/math/f64"
 )
 
-func (s *System) WorldMarkerUpdate(ecs *ecs.ECS) {
-	global := entry.GetGlobal(s.ecs)
+func (s *System) WorldMarkerUpdate() {
+	global := entry.GetGlobal()
 	if global.ReplayMode {
 		return
 	}
 
-	camera := component.Camera.Get(tag.Camera.MustFirst(ecs.World))
+	camera := entry.GetCamera()
 
 	if global.WorldMarkerSelected >= 0 {
 		if !global.UIFocus && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 			global.WorldMarkerSelected = -1
 		}
 		// Update selected marker
-		for marker := range component.WorldMarker.Iter(ecs.World) {
+		worldMarkers := entry.GetWorldMarkers()
+		for _, marker := range worldMarkers {
 			markerData := component.WorldMarker.Get(marker)
 			if int(markerData.Type) == global.WorldMarkerSelected {
 				x, y := ebiten.CursorPosition()

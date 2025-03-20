@@ -15,23 +15,21 @@ import (
 	"github.com/Xinrea/ffreplay/internal/game/skills"
 	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/internal/model/role"
-	"github.com/Xinrea/ffreplay/internal/tag"
 	"github.com/Xinrea/ffreplay/util"
 	"github.com/fogleman/ease"
 	"github.com/yohamta/donburi"
-	"github.com/yohamta/donburi/ecs"
 	"golang.org/x/image/math/f64"
 )
 
 // Update only do update-work every 30 ticks, which means 0.5 second in default 60 TPS.
-func (s *System) LogUpdate(ecs *ecs.ECS, tick int64) {
-	if entry.GetGlobal(s.ecs).ReplayMode {
-		s.replayUpdate(ecs, tick)
+func (s *System) LogUpdate(tick int64) {
+	if entry.GetGlobal().ReplayMode {
+		s.replayUpdate(tick)
 	}
 }
 
-func (s *System) replayUpdate(ecs *ecs.ECS, tick int64) {
-	global := component.Global.Get(tag.Global.MustFirst(ecs.World))
+func (s *System) replayUpdate(tick int64) {
+	global := entry.GetGlobal()
 	if !global.Loaded.Load() {
 		return
 	}
@@ -46,7 +44,7 @@ func (s *System) replayUpdate(ecs *ecs.ECS, tick int64) {
 	}
 
 	// map event
-	gamemap := component.Map.Get(component.Map.MustFirst(ecs.World))
+	gamemap := entry.GetMap()
 	if gamemap.Config != nil {
 		index = sort.Search(len(s.MapChangeEvents), func(i int) bool {
 			return s.MapChangeEvents[i].LocalTick > tick
@@ -60,18 +58,19 @@ func (s *System) replayUpdate(ecs *ecs.ECS, tick int64) {
 	for s.WorldMarkerEvents.Cursor < len(s.WorldMarkerEvents.Events) &&
 		s.WorldMarkerEvents.Events[s.WorldMarkerEvents.Cursor].LocalTick <= tick {
 		event := s.WorldMarkerEvents.Events[s.WorldMarkerEvents.Cursor]
-		s.applyLog(ecs, nil, event)
+		s.applyLog(nil, event)
 
 		s.WorldMarkerEvents.Cursor++
 	}
 
-	s.handleFFlogsEvents(ecs, tick)
+	s.handleFFlogsEvents(tick)
 }
 
-func (s *System) handleFFlogsEvents(ecs *ecs.ECS, tick int64) {
+func (s *System) handleFFlogsEvents(tick int64) {
 	lineMap := make(map[*donburi.Entry]*EventLine)
+	gameObjects := entry.GetGameObjects()
 
-	for e := range tag.GameObject.Iter(ecs.World) {
+	for _, e := range gameObjects {
 		id := component.Status.Get(e).ID
 
 		line := s.EventLines[id]
@@ -109,7 +108,7 @@ func (s *System) consumeEvents(tick int64, lineMap map[*donburi.Entry]*EventLine
 			break
 		}
 
-		s.applyLog(s.ecs, topTarget, topLine.Events[topLine.Cursor])
+		s.applyLog(topTarget, topLine.Events[topLine.Cursor])
 
 		topLine.Cursor++
 	}
@@ -171,7 +170,7 @@ func (s *System) lerpUpdate(e *donburi.Entry, sprite *model.Instance, previous, 
 	component.Status.Get(e).MaxMana = status.MaxMP
 }
 
-type EventHandler func(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent)
+type EventHandler func(s *System, eventSource *donburi.Entry, event fflogs.FFLogsEvent)
 
 var EventHandlerMap = map[fflogs.EventType]EventHandler{
 	fflogs.Combatantinfo:      handleCombatantinfo,
@@ -192,7 +191,7 @@ var EventHandlerMap = map[fflogs.EventType]EventHandler{
 	fflogs.Tether:             handleTether,
 }
 
-func (s *System) applyLog(ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+func (s *System) applyLog(eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
 	if event.SourceID != nil && s.EntryMap[*event.SourceID] != nil {
 		s.updateEventSourceStatus(event)
 	}
@@ -202,7 +201,7 @@ func (s *System) applyLog(ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs
 	}
 
 	if handler, ok := EventHandlerMap[event.Type]; ok {
-		handler(s, ecs, eventSource, event)
+		handler(s, eventSource, event)
 
 		return
 	}
@@ -212,8 +211,8 @@ var TETHER_SUPPORTED_MAPS = map[int]bool{
 	77: true, // FRU
 }
 
-func handleTether(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
-	currentMapID := component.Map.Get(component.Map.MustFirst(ecs.World)).Config.CurrentMap
+func handleTether(s *System, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+	currentMapID := entry.GetMap().Config.CurrentMap
 	if _, ok := TETHER_SUPPORTED_MAPS[currentMapID]; !ok {
 		return
 	}
@@ -233,14 +232,14 @@ func handleTether(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event ffl
 	return
 }
 
-func handleCombatantinfo(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+func handleCombatantinfo(s *System, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
 	status := component.Status.Get(eventSource)
 	status.BuffList.SetBuffs(aurasToBuffs(event.Auras))
 
 	return
 }
 
-func handleRefreshBuff(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+func handleRefreshBuff(s *System, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
 	buffTarget := s.EntryMap[*event.TargetID]
 	if buffTarget == nil {
 		return
@@ -255,7 +254,7 @@ func handleRefreshBuff(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, even
 	return
 }
 
-func handleRefreshDebuff(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+func handleRefreshDebuff(s *System, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
 	buffTarget := s.EntryMap[*event.TargetID]
 	if buffTarget == nil {
 		return
@@ -270,7 +269,7 @@ func handleRefreshDebuff(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, ev
 	return
 }
 
-func handleRemoveBuffStack(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+func handleRemoveBuffStack(s *System, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
 	buffTarget := s.EntryMap[*event.TargetID]
 	if buffTarget == nil {
 		return
@@ -282,7 +281,7 @@ func handleRemoveBuffStack(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, 
 	return
 }
 
-func handleApplyBuffStack(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+func handleApplyBuffStack(s *System, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
 	buffTarget := s.EntryMap[*event.TargetID]
 	if buffTarget == nil {
 		return
@@ -294,7 +293,7 @@ func handleApplyBuffStack(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, e
 	return
 }
 
-func handleRemoveBuff(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+func handleRemoveBuff(s *System, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
 	buffTarget := s.EntryMap[*event.TargetID]
 	if buffTarget == nil {
 		return
@@ -307,7 +306,7 @@ func handleRemoveBuff(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event
 	return
 }
 
-func handleRemoveDebuff(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+func handleRemoveDebuff(s *System, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
 	buffTarget := s.EntryMap[*event.TargetID]
 	if buffTarget == nil {
 		return
@@ -318,14 +317,14 @@ func handleRemoveDebuff(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, eve
 	ability := (*event.Ability).ToBuff()
 	status.BuffList.Remove(ability)
 
-	if entry.GetGlobal(ecs).Debug {
+	if entry.GetGlobal().Debug {
 		util.PrintJson(ability)
 	}
 
 	return
 }
 
-func handleDeath(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+func handleDeath(s *System, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
 	if event.TargetID == nil {
 		return
 	}
@@ -341,10 +340,12 @@ func handleDeath(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflo
 	return
 }
 
-func handleWorldMarkerRemoved(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+func handleWorldMarkerRemoved(s *System, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
 	var targetMarker *donburi.Entry = nil
 
-	for m := range component.WorldMarker.Iter(ecs.World) {
+	worldMarkers := entry.GetWorldMarkers()
+
+	for _, m := range worldMarkers {
 		if component.WorldMarker.Get(m).Type == model.WorldMarkerType(*event.Icon) {
 			targetMarker = m
 
@@ -356,15 +357,17 @@ func handleWorldMarkerRemoved(s *System, ecs *ecs.ECS, eventSource *donburi.Entr
 		return
 	}
 
-	ecs.World.Remove(targetMarker.Entity())
+	targetMarker.Remove()
 
 	return
 }
 
-func handleWorldMarkerPlaced(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+func handleWorldMarkerPlaced(s *System, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
 	found := false
 
-	for m := range component.WorldMarker.Iter(ecs.World) {
+	worldMarkers := entry.GetWorldMarkers()
+
+	for _, m := range worldMarkers {
 		marker := component.WorldMarker.Get(m)
 		if marker.Type == model.WorldMarkerType(*event.Icon-1) {
 			marker.Position[0] = float64(*event.X) / 100 * 25
@@ -376,14 +379,14 @@ func handleWorldMarkerPlaced(s *System, ecs *ecs.ECS, eventSource *donburi.Entry
 	}
 
 	if !found {
-		entry.NewWorldMarker(ecs, model.WorldMarkerType(*event.Icon-1), f64.Vec2{
+		entry.NewWorldMarker(model.WorldMarkerType(*event.Icon-1), f64.Vec2{
 			float64(*event.X) / 100 * 25,
 			float64(*event.Y) / 100 * 25,
 		})
 	}
 }
 
-func handleBeginCast(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+func handleBeginCast(s *System, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
 	caster := s.EntryMap[*event.SourceID]
 	if caster == nil {
 		return
@@ -411,16 +414,16 @@ func handleBeginCast(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event 
 	skill := skills.QueryCastingSkill(event.Ability.ToSkill(*event.Duration))
 	skill.StartTick = event.LocalTick
 
-	if entry.GetGlobal(ecs).Debug && component.Status.Get(caster).Role == role.NPC {
+	if entry.GetGlobal().Debug && component.Status.Get(caster).Role == role.NPC {
 		log.Println("NPC begin cast", skill.ID, skill.Name, *event.Duration)
 	}
 
-	s.Cast(ecs, casterInstance, targetInstance, skill, event.LocalTick)
+	s.Cast(casterInstance, targetInstance, skill, event.LocalTick)
 
 	return
 }
 
-func handleApplyBuff(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+func handleApplyBuff(s *System, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
 	buffTarget := s.EntryMap[*event.TargetID]
 	if buffTarget == nil {
 		return
@@ -443,7 +446,7 @@ func handleApplyBuff(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event 
 	return
 }
 
-func handleApplyDebuff(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+func handleApplyDebuff(s *System, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
 	sourceTarget := s.EntryMap[*event.SourceID]
 
 	buffTarget := s.EntryMap[*event.TargetID]
@@ -453,7 +456,6 @@ func handleApplyDebuff(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, even
 
 	status := component.Status.Get(buffTarget)
 	ability := (*event.Ability).ToBuff()
-	ability.ECS = ecs
 	ability.Source = sourceTarget
 	ability.Target = buffTarget
 	ability.RemoveCallback = buffs.BuffRemoveCallBackDB[ability.ID]
@@ -514,7 +516,7 @@ func aurasToBuffs(auras []fflogs.Aura) []*model.Buff {
 	return buffs
 }
 
-func handleCast(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+func handleCast(s *System, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
 	caster := s.EntryMap[*event.SourceID]
 	if caster == nil {
 		return
@@ -545,14 +547,14 @@ func handleCast(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflog
 	skill := skills.QueryCastingSkill(event.Ability.ToSkill(0))
 	skill.StartTick = event.LocalTick
 
-	if entry.GetGlobal(ecs).Debug && component.Status.Get(caster).Role == role.NPC {
+	if entry.GetGlobal().Debug && component.Status.Get(caster).Role == role.NPC {
 		log.Println("NPC inst-cast", *event.SourceID, casterInstanceID, skill.ID, skill.Name)
 	}
 
-	s.Cast(ecs, casterInstance, targetInstance, skill, event.LocalTick)
+	s.Cast(casterInstance, targetInstance, skill, event.LocalTick)
 }
 
-func handleDamage(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
+func handleDamage(s *System, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
 	// source := s.EntryMap[*event.SourceID]
 	target, ok := s.EntryMap[*event.TargetID]
 	if !ok {

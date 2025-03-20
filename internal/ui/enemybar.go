@@ -28,7 +28,7 @@ func EnemyBarsView() *furex.View {
 				for e := range tag.Enemy.Iter(ecsInstance.World) {
 					status := component.Status.Get(e)
 					enemy := component.Status.Get(e)
-					if enemy.Role != role.Boss || !status.Instances[0].IsActive(entry.GetTick(ecsInstance)) {
+					if enemy.Role != role.Boss || !status.Instances[0].IsActive(entry.GetTick()) {
 						continue
 					}
 					v.AddChild(CreateEnemyBarView(cnt, e))
@@ -94,7 +94,7 @@ func createEnemyCastingView(status *model.StatusData) *furex.View {
 	if status.Instances[0].GetCast() != nil {
 		cast := status.Instances[0].GetCast()
 		castView.AddChild(furex.NewView(furex.Width(210), furex.Height(12), furex.Handler(&Bar{
-			Progress: float64(util.TickToMS(entry.GetTick(ecsInstance)-cast.StartTick)) / float64(cast.Cast),
+			Progress: float64(util.TickToMS(entry.GetTick()-cast.StartTick)) / float64(cast.Cast),
 			BG:       castAtlas.GetNineSlice("casting_frame.png"),
 			FG:       castAtlas.GetNineSlice("casting_fg.png"),
 		})))
