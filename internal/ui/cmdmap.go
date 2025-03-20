@@ -56,7 +56,7 @@ func (c *CommandHandler) mapPhase(cmds []string) {
 
 func (c *CommandHandler) mapSet(cmds []string) {
 	mapData := component.Map.Get(component.Map.MustFirst(ecsInstance.World))
-	cameraData := entry.GetCamera(ecsInstance)
+	cameraData := entry.GetCamera()
 	id, _ := strconv.Atoi(cmds[1])
 
 	if m, ok := model.MapCache[id]; ok {

@@ -52,11 +52,12 @@ type FFLogsOpt struct {
 
 func NewFFScene(opt *FFLogsOpt) *FFScene {
 	ecs := ecs.NewECS(donburi.NewWorld())
+	entry.SetContext(ecs)
 	// create a global config entry
-	entry.NewGlobal(ecs)
+	entry.NewGlobal()
 	// create basic camera
-	entry.NewCamera(ecs)
-	entry.NewMap(ecs, nil)
+	entry.NewCamera()
+	entry.NewMap(nil)
 	// init system
 	system := system.NewSystem()
 	system.Init(ecs)
@@ -65,8 +66,8 @@ func NewFFScene(opt *FFLogsOpt) *FFScene {
 	renderer.Init(ecs)
 	ms := &FFScene{
 		ecs:      ecs,
-		global:   entry.GetGlobal(ecs),
-		camera:   entry.GetCamera(ecs),
+		global:   entry.GetGlobal(),
+		camera:   entry.GetCamera(),
 		system:   system,
 		renderer: renderer,
 	}
@@ -164,7 +165,7 @@ func (ms *FFScene) loadFFLogsReport() {
 	ms.createEnemies(fight, actors)
 
 	// create environment NPC
-	ms.system.AddEntry(-1, entry.NewEnemy(ms.ecs, f64.Vec2{}, 0.5, 0, -1, "environment", false, 1))
+	ms.system.AddEntry(-1, entry.NewEnemy(f64.Vec2{}, 0.5, 0, -1, "environment", false, 1))
 
 	wg.Wait()
 	log.Println("Loading cost", time.Since(pBeforeLoad))
@@ -253,21 +254,21 @@ func (ms *FFScene) loadSpecialEvents(events []fflogs.FFLogsEvent, fight fflogs.R
 
 func (ms *FFScene) createPlayers(players *fflogs.PlayerDetails, actors []fflogs.Actor) {
 	for _, t := range players.Tanks {
-		ms.system.AddEntry(t.ID, entry.NewPlayer(ms.ecs, role.StringToRole(t.Type), f64.Vec2{}, &t))
+		ms.system.AddEntry(t.ID, entry.NewPlayer(role.StringToRole(t.Type), f64.Vec2{}, &t))
 	}
 
 	for _, h := range players.Healers {
-		ms.system.AddEntry(h.ID, entry.NewPlayer(ms.ecs, role.StringToRole(h.Type), f64.Vec2{}, &h))
+		ms.system.AddEntry(h.ID, entry.NewPlayer(role.StringToRole(h.Type), f64.Vec2{}, &h))
 	}
 
 	for _, d := range players.DPS {
-		ms.system.AddEntry(d.ID, entry.NewPlayer(ms.ecs, role.StringToRole(d.Type), f64.Vec2{}, &d))
+		ms.system.AddEntry(d.ID, entry.NewPlayer(role.StringToRole(d.Type), f64.Vec2{}, &d))
 	}
 
 	// create limitbreak npc
 	limitBreakNPC := findLimitBreakNPC(actors)
 	if limitBreakNPC != nil {
-		ms.system.AddEntry(limitBreakNPC.ID, entry.NewLimitBreakNPC(ms.ecs, limitBreakNPC.GameID, limitBreakNPC.ID))
+		ms.system.AddEntry(limitBreakNPC.ID, entry.NewLimitBreakNPC(limitBreakNPC.GameID, limitBreakNPC.ID))
 	}
 }
 
@@ -283,7 +284,7 @@ func findLimitBreakNPC(actors []fflogs.Actor) *fflogs.Actor {
 
 func (ms *FFScene) createPets(pets []fflogs.ReportFightNPC) {
 	for _, p := range pets {
-		ms.system.AddEntry(p.ID, entry.NewPet(ms.ecs, p.GameID, p.ID, "", p.InstanceCount))
+		ms.system.AddEntry(p.ID, entry.NewPet(p.GameID, p.ID, "", p.InstanceCount))
 	}
 }
 
@@ -299,7 +300,6 @@ func (ms *FFScene) createEnemies(fight fflogs.ReportFight, actors []fflogs.Actor
 		ms.system.AddEntry(
 			e.ID,
 			entry.NewEnemy(
-				ms.ecs,
 				f64.Vec2{0, 0},
 				ringSize,
 				info.GameID,
@@ -447,7 +447,6 @@ func (ms *FFScene) setupMap(fight fflogs.ReportFight) {
 		}
 
 		entry.NewWorldMarker(
-			ms.ecs,
 			model.WorldMarkerA+model.WorldMarkerType(m.Icon-1),
 			f64.Vec2{
 				float64(m.X) / 100 * 25,

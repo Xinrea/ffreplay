@@ -19,6 +19,12 @@ import (
 	"golang.org/x/image/math/f64"
 )
 
+var ctx *ecs.ECS
+
+func SetContext(ecs *ecs.ECS) {
+	ctx = ecs
+}
+
 var (
 	Player = newArchetype(
 		tag.GameObject,
@@ -67,8 +73,8 @@ func newArchetype(cs ...donburi.IComponentType) *archetype {
 	}
 }
 
-func (a *archetype) Spawn(ecs *ecs.ECS, cs ...donburi.IComponentType) *donburi.Entry {
-	e := ecs.World.Entry(ecs.Create(
+func (a *archetype) Spawn(cs ...donburi.IComponentType) *donburi.Entry {
+	e := ctx.World.Entry(ctx.Create(
 		layer.Default,
 		append(a.components, cs...)...,
 	))
@@ -78,7 +84,6 @@ func (a *archetype) Spawn(ecs *ecs.ECS, cs ...donburi.IComponentType) *donburi.E
 
 // boss gameID is unique in ffxiv, id is used in events.
 func NewEnemy(
-	ecs *ecs.ECS,
 	pos f64.Vec2,
 	ringSize float64,
 	gameID int64,
@@ -87,7 +92,7 @@ func NewEnemy(
 	isBoss bool,
 	instanceCount int,
 ) *donburi.Entry {
-	enemy := Enemy.Spawn(ecs)
+	enemy := Enemy.Spawn()
 	textureRing := texture.NewTextureFromFile("asset/target_enemy.png")
 
 	erole := role.Boss
@@ -127,8 +132,8 @@ func NewEnemy(
 	return enemy
 }
 
-func NewPet(ecs *ecs.ECS, gameID int64, id int64, name string, instanceCount int) *donburi.Entry {
-	pet := Pet.Spawn(ecs)
+func NewPet(gameID int64, id int64, name string, instanceCount int) *donburi.Entry {
+	pet := Pet.Spawn()
 
 	status := &model.StatusData{
 		GameID:   gameID,
@@ -158,8 +163,8 @@ func NewPet(ecs *ecs.ECS, gameID int64, id int64, name string, instanceCount int
 	return pet
 }
 
-func NewLimitBreakNPC(ecs *ecs.ECS, gameID int64, id int64) *donburi.Entry {
-	limitBreak := LimitBreak.Spawn(ecs)
+func NewLimitBreakNPC(gameID int64, id int64) *donburi.Entry {
+	limitBreak := LimitBreak.Spawn()
 
 	status := &model.StatusData{
 		GameID:   gameID,
@@ -187,8 +192,8 @@ func NewLimitBreakNPC(ecs *ecs.ECS, gameID int64, id int64) *donburi.Entry {
 	return limitBreak
 }
 
-func NewPlayer(ecs *ecs.ECS, role role.RoleType, pos f64.Vec2, detail *fflogs.PlayerDetail) *donburi.Entry {
-	player := Player.Spawn(ecs)
+func NewPlayer(role role.RoleType, pos f64.Vec2, detail *fflogs.PlayerDetail) *donburi.Entry {
+	player := Player.Spawn()
 
 	var id int64 = 0
 
@@ -233,8 +238,8 @@ func NewPlayer(ecs *ecs.ECS, role role.RoleType, pos f64.Vec2, detail *fflogs.Pl
 	return player
 }
 
-func NewMap(ecs *ecs.ECS, m *model.MapConfig) *donburi.Entry {
-	bg := Background.Spawn(ecs)
+func NewMap(m *model.MapConfig) *donburi.Entry {
+	bg := Background.Spawn()
 	component.Map.Set(bg, &model.MapData{
 		Config: m,
 	})
@@ -242,8 +247,8 @@ func NewMap(ecs *ecs.ECS, m *model.MapConfig) *donburi.Entry {
 	return bg
 }
 
-func NewGlobal(ecs *ecs.ECS) *donburi.Entry {
-	global := Global.Spawn(ecs)
+func NewGlobal() *donburi.Entry {
+	global := Global.Spawn()
 	component.Global.Set(global, &model.GlobalData{
 		Tick:                0,
 		Speed:               10,
@@ -255,8 +260,8 @@ func NewGlobal(ecs *ecs.ECS) *donburi.Entry {
 	return global
 }
 
-func NewCamera(ecs *ecs.ECS) *donburi.Entry {
-	camera := Camera.Spawn(ecs)
+func NewCamera() *donburi.Entry {
+	camera := Camera.Spawn()
 	component.Camera.Set(camera, &model.CameraData{
 		ZoomFactor: 0,
 		Rotation:   0,
@@ -265,16 +270,16 @@ func NewCamera(ecs *ecs.ECS) *donburi.Entry {
 	return camera
 }
 
-func NewTimeline(ecs *ecs.ECS, data *model.TimelineData) *donburi.Entry {
-	timeline := Timeline.Spawn(ecs)
+func NewTimeline(data *model.TimelineData) *donburi.Entry {
+	timeline := Timeline.Spawn()
 	component.Timeline.Set(timeline, data)
 
 	return timeline
 }
 
-func NewWorldMarker(ecs *ecs.ECS, markerType model.WorldMarkerType, pos f64.Vec2) *donburi.Entry {
+func NewWorldMarker(markerType model.WorldMarkerType, pos f64.Vec2) *donburi.Entry {
 	// each type of marker can only exists one instance
-	for m := range component.WorldMarker.Iter(ecs.World) {
+	for m := range component.WorldMarker.Iter(ctx.World) {
 		marker := component.WorldMarker.Get(m)
 		if marker.Type == markerType {
 			marker.Position = pos
@@ -283,7 +288,7 @@ func NewWorldMarker(ecs *ecs.ECS, markerType model.WorldMarkerType, pos f64.Vec2
 		}
 	}
 
-	marker := WorldMarker.Spawn(ecs)
+	marker := WorldMarker.Spawn()
 	component.WorldMarker.Set(marker, &model.WorldMarkerData{
 		Type:     markerType,
 		Position: pos,
@@ -292,28 +297,32 @@ func NewWorldMarker(ecs *ecs.ECS, markerType model.WorldMarkerType, pos f64.Vec2
 	return marker
 }
 
-func GetGlobal(ecs *ecs.ECS) *model.GlobalData {
-	return component.Global.Get(tag.Global.MustFirst(ecs.World))
+func GetGlobal() *model.GlobalData {
+	return component.Global.Get(tag.Global.MustFirst(ctx.World))
 }
 
-func GetCamera(ecs *ecs.ECS) *model.CameraData {
-	return component.Camera.Get(tag.Camera.MustFirst(ecs.World))
+func GetCamera() *model.CameraData {
+	return component.Camera.Get(tag.Camera.MustFirst(ctx.World))
 }
 
-func IsDebug(ecs *ecs.ECS) bool {
-	return component.Global.Get(tag.Global.MustFirst(ecs.World)).Debug
+func IsDebug() bool {
+	return component.Global.Get(tag.Global.MustFirst(ctx.World)).Debug
 }
 
-func GetTick(ecs *ecs.ECS) int64 {
-	return component.Global.Get(tag.Global.MustFirst(ecs.World)).Tick / 10
+func GetTick() int64 {
+	return component.Global.Get(tag.Global.MustFirst(ctx.World)).Tick / 10
 }
 
-func GetSpeed(ecs *ecs.ECS) int64 {
-	return component.Global.Get(tag.Global.MustFirst(ecs.World)).Speed
+func GetSpeed() int64 {
+	return component.Global.Get(tag.Global.MustFirst(ctx.World)).Speed
 }
 
-func GetPhase(ecs *ecs.ECS) int {
-	global := component.Global.Get(tag.Global.MustFirst(ecs.World))
+func GetMap() *model.MapData {
+	return component.Map.Get(tag.Background.MustFirst(ctx.World))
+}
+
+func GetPhase() int {
+	global := component.Global.Get(tag.Global.MustFirst(ctx.World))
 	if global.Phases == nil {
 		return 0
 	}
@@ -330,14 +339,14 @@ func GetPhase(ecs *ecs.ECS) int {
 
 var statusCache sync.Map
 
-func GetStatusByID(ecs *ecs.ECS, id int64) *model.StatusData {
+func GetStatusByID(id int64) *model.StatusData {
 	if v, ok := statusCache.Load(id); ok {
 		if status, ok := v.(*model.StatusData); ok {
 			return status
 		}
 	}
 
-	for e := range component.Status.Iter(ecs.World) {
+	for e := range component.Status.Iter(ctx.World) {
 		status := component.Status.Get(e)
 		if status.ID == id {
 			statusCache.Store(id, status)
@@ -347,4 +356,44 @@ func GetStatusByID(ecs *ecs.ECS, id int64) *model.StatusData {
 	}
 
 	return nil
+}
+
+func GetPlayerList() []*donburi.Entry {
+	players := []*donburi.Entry{}
+	for e := range tag.Player.Iter(ctx.World) {
+		players = append(players, e)
+	}
+
+	return players
+}
+
+func GetBuffables() []*donburi.Entry {
+	buffables := []*donburi.Entry{}
+	for e := range tag.Buffable.Iter(ctx.World) {
+		buffables = append(buffables, e)
+	}
+
+	return buffables
+}
+
+func GetGameObjects() []*donburi.Entry {
+	objects := []*donburi.Entry{}
+	for e := range tag.GameObject.Iter(ctx.World) {
+		objects = append(objects, e)
+	}
+
+	return objects
+}
+
+func GetWorldMarkers() []*donburi.Entry {
+	markers := []*donburi.Entry{}
+	for e := range tag.WorldMarker.Iter(ctx.World) {
+		markers = append(markers, e)
+	}
+
+	return markers
+}
+
+func StatusOf(e *donburi.Entry) *model.StatusData {
+	return component.Status.Get(e)
 }

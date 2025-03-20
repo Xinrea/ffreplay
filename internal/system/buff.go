@@ -3,25 +3,26 @@ package system
 import (
 	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/entry"
-	"github.com/Xinrea/ffreplay/internal/tag"
-	"github.com/yohamta/donburi/ecs"
 )
 
-func (s *System) BuffUpdate(ecs *ecs.ECS, tick int64) {
-	global := entry.GetGlobal(ecs)
+func (s *System) BuffUpdate(tick int64) {
+	global := entry.GetGlobal()
 	if !global.Loaded.Load() {
 		return
 	}
 
-	for e := range tag.Buffable.Iter(ecs.World) {
+	buffables := entry.GetBuffables()
+
+	for _, e := range buffables {
 		component.Status.Get(e).BuffList.Update(tick)
 	}
 
-	if entry.GetGlobal(s.ecs).ReplayMode {
+	// in replay mode, buff expires are ctrolled by logs events.
+	if entry.GetGlobal().ReplayMode {
 		return
 	}
 
-	for e := range tag.Buffable.Iter(ecs.World) {
-		component.Status.Get(e).BuffList.UpdateExpire(tick)
+	for _, e := range buffables {
+		component.Status.Get(e).BuffList.Update(tick)
 	}
 }

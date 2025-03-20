@@ -66,7 +66,7 @@ func (i *InputHandler) SetFocus(b bool) {
 // HandleJustPressedMouseButtonLeft implements furex.MouseLeftButtonHandler.
 func (i *InputHandler) HandleJustPressedMouseButtonLeft(frame image.Rectangle, x int, y int) bool {
 	i.focused = true
-	entry.GetGlobal(ecsInstance).UIFocus = true
+	entry.GetGlobal().UIFocus = true
 
 	return true
 }

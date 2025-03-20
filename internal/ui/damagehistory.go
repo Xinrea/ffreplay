@@ -16,7 +16,7 @@ import (
 )
 
 func DamageHistoryView() *furex.View {
-	global := entry.GetGlobal(ecsInstance)
+	global := entry.GetGlobal()
 
 	view := furex.NewView(
 		furex.TagName("damage-history"),

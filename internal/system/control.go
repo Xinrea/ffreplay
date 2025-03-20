@@ -5,16 +5,15 @@ import (
 	"github.com/Xinrea/ffreplay/util"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-	"github.com/yohamta/donburi/ecs"
 )
 
 const MaxVelocity = 4
 
-func (s *System) ControlUpdate(ecs *ecs.ECS) {
-	camera := entry.GetCamera(s.ecs)
+func (s *System) ControlUpdate() {
+	camera := entry.GetCamera()
 	camera.Update(s.ViewPort)
 
-	global := entry.GetGlobal(s.ecs)
+	global := entry.GetGlobal()
 	if !global.Loaded.Load() {
 		return
 	}
@@ -36,8 +35,8 @@ func (s *System) ControlUpdate(ecs *ecs.ECS) {
 	}
 
 	if global.ReplayMode {
-		s.replayModeControl(ecs)
+		s.replayModeControl()
 	} else {
-		s.playgroundControl(ecs)
+		s.playgroundControl()
 	}
 }

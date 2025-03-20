@@ -17,7 +17,6 @@ import (
 // Remember that system is updated in TPS (Ticks Per Second) rate, in ebiten, it's 60 TPS.
 type System struct {
 	lock              sync.Mutex
-	ecs               *ecs.ECS
 	ViewPort          f64.Vec2
 	PlayerList        []*donburi.Entry
 	MapChangeEvents   []fflogs.FFLogsEvent
@@ -47,7 +46,6 @@ func NewSystem() *System {
 }
 
 func (s *System) Init(ecs *ecs.ECS) {
-	s.ecs = ecs
 	ecs.AddSystem(s.Update)
 }
 
@@ -106,19 +104,22 @@ func (s *System) Update(ecs *ecs.ECS) {
 	}
 
 	if globalData.Loaded.Load() {
-		s.LogUpdate(ecs, globalData.Tick/10)
+		s.LogUpdate(globalData.Tick / 10)
 	}
 
-	s.ControlUpdate(ecs)
-	s.TimelineUpdate(ecs)
-	s.BuffUpdate(ecs, globalData.Tick/10)
-	s.SkillUpdate(ecs)
-	s.WorldMarkerUpdate(ecs)
+	s.ControlUpdate()
+	s.BuffUpdate(globalData.Tick / 10)
+	s.SkillUpdate()
+	s.WorldMarkerUpdate()
 	s.BackgroundUpdate()
 
 	if globalData.Loaded.Load() && !s.Pause && util.MSToTick(globalData.FightDuration.Load())*10 > globalData.Tick {
 		globalData.Tick += globalData.Speed
 		globalData.Tick = min(globalData.Tick, util.MSToTick(globalData.FightDuration.Load())*10)
+	}
+
+	if globalData.Loaded.Load() && !globalData.ReplayMode {
+		globalData.Tick += globalData.Speed
 	}
 }
 

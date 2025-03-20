@@ -15,7 +15,7 @@ import (
 )
 
 func (r *Renderer) EnemyRender(ecs *ecs.ECS, screen *ebiten.Image) {
-	if !entry.GetGlobal(ecs).Loaded.Load() {
+	if !entry.GetGlobal().Loaded.Load() {
 		return
 	}
 
@@ -27,7 +27,7 @@ func (r *Renderer) EnemyRender(ecs *ecs.ECS, screen *ebiten.Image) {
 func (r *Renderer) renderEnemy(ecs *ecs.ECS, screen *ebiten.Image, enemy *donburi.Entry) {
 	camera := component.Camera.Get(tag.Camera.MustFirst(ecs.World))
 	global := component.Global.Get(tag.Global.MustFirst(ecs.World))
-	tick := entry.GetTick(ecs)
+	tick := entry.GetTick()
 
 	status := component.Status.Get(enemy)
 

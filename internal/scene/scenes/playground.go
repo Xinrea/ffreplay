@@ -18,16 +18,18 @@ type PlayGroundScene struct {
 
 func NewPlayGroundScene() *PlayGroundScene {
 	ecs := ecs.NewECS(donburi.NewWorld())
+	entry.SetContext(ecs)
+
 	system := system.NewSystem()
 	renderer := renderer.NewRenderer()
 	ui := ui.NewPlaygroundUI(ecs)
 
-	globalEntry := entry.NewGlobal(ecs)
+	globalEntry := entry.NewGlobal()
 	global := component.Global.Get(globalEntry)
-	cameraEntry := entry.NewCamera(ecs)
+	cameraEntry := entry.NewCamera()
 	camera := component.Camera.Get(cameraEntry)
 
-	entry.NewMap(ecs, nil)
+	entry.NewMap(nil)
 
 	ms := &PlayGroundScene{
 		BasicScene: BasicScene{

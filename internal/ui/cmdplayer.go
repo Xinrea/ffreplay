@@ -48,13 +48,13 @@ func (c *CommandHandler) playerAdd(cmds []string) {
 
 	initialPos := f64.Vec2{0, 0}
 
-	mapData := component.Map.Get(component.Map.MustFirst(ecsInstance.World))
+	mapData := entry.GetMap()
 	if mapData.Config != nil {
 		current := mapData.Config.Maps[mapData.Config.CurrentMap]
 		initialPos = f64.Vec2{current.Offset.X * 25, current.Offset.Y * 25}
 	}
 
-	p := entry.NewPlayer(ecsInstance, r, initialPos, &fflogs.PlayerDetail{
+	p := entry.NewPlayer(r, initialPos, &fflogs.PlayerDetail{
 		ID:     c.player.idcnt,
 		Name:   fmt.Sprintf("[%d]%s", c.player.idcnt, cmds[1]),
 		Server: "ffreplay",
@@ -65,7 +65,7 @@ func (c *CommandHandler) playerAdd(cmds []string) {
 }
 
 func (c *CommandHandler) playerRemove(cmds []string) {
-	global := entry.GetGlobal(ecsInstance)
+	global := entry.GetGlobal()
 
 	if len(cmds) < 2 {
 		c.AddError("Invalid player remove command")

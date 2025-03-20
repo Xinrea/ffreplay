@@ -15,6 +15,8 @@ require (
 	golang.org/x/text v0.21.0
 )
 
+require github.com/yuin/gopher-lua v1.1.1 // indirect
+
 require (
 	github.com/PuerkitoBio/goquery v1.10.1 // indirect
 	github.com/andybalholm/cascadia v1.3.3 // indirect

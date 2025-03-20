@@ -97,7 +97,7 @@ func (p *PlayerItem) Update(v *furex.View) {
 		v.MustGetByID("hover").Attrs.Display = furex.DisplayNone
 	}
 
-	targetPlayer := entry.GetGlobal(ecsInstance).TargetPlayer
+	targetPlayer := entry.GetGlobal().TargetPlayer
 	if targetPlayer == p.Player {
 		v.MustGetByID("selected").Attrs.Display = furex.DisplayFlex
 	} else {
@@ -115,7 +115,7 @@ func (p *PlayerItem) Update(v *furex.View) {
 }
 
 func (p *PlayerItem) HandleJustPressedMouseButtonLeft(_ image.Rectangle, x, y int) bool {
-	entry.GetGlobal(ecsInstance).TargetPlayer = p.Player
+	entry.GetGlobal().TargetPlayer = p.Player
 
 	return false
 }
@@ -255,7 +255,7 @@ func createCastingView(e *donburi.Entry) *furex.View {
 						return 0
 					}
 
-					return float64(util.TickToMS(entry.GetTick(ecsInstance)-cast.StartTick)) / float64(cast.Cast)
+					return float64(util.TickToMS(entry.GetTick()-cast.StartTick)) / float64(cast.Cast)
 				},
 				BG: castAtlas.GetNineSlice("casting_frame.png"),
 				FG: castAtlas.GetNineSlice("casting_fg.png"),

@@ -11,7 +11,7 @@ import (
 )
 
 func (r *Renderer) WorldMarkerRender(ecs *ecs.ECS, screen *ebiten.Image) {
-	global := entry.GetGlobal(ecs)
+	global := entry.GetGlobal()
 	camera := component.Camera.Get(tag.Camera.MustFirst(ecs.World))
 
 	if !global.Loaded.Load() {

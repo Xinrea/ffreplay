@@ -1,22 +1,21 @@
 package system
 
 import (
-	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/entry"
 )
 
 func (s *System) BackgroundUpdate() {
-	global := entry.GetGlobal(s.ecs)
+	global := entry.GetGlobal()
 	if !global.Loaded.Load() {
 		return
 	}
 
-	ground := component.Map.Get(component.Map.MustFirst(s.ecs.World))
+	ground := entry.GetMap()
 	// only auto update phase in replay mode
 	if global.ReplayMode {
 		if len(ground.Config.Phases) > 0 {
 			// find current phase
-			p := entry.GetPhase(s.ecs)
+			p := entry.GetPhase()
 			if p < 0 || p >= len(ground.Config.Phases) {
 				p = 0
 			}
