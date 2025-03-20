@@ -11,7 +11,7 @@ COMMIT_HASH=$(git rev-parse --short HEAD)
 # Build ffreplay to wasm named public/ffreplay-$commithash.wasm
 # Build with credential that read from environment variable
 GOOS=js GOARCH=wasm go build -ldflags "-X main.credential=$CREDENTIAL" -o public/ffreplay-$COMMIT_HASH.wasm ./cmd/ffreplay/ffreplay.go
-cp $(go env GOROOT)/misc/wasm/wasm_exec.js ./public
+cp $(go env GOROOT)/lib/wasm/wasm_exec.js ./public
 
 cp index.html ./public/index.html
 cp ffreplay.html ./public/ffreplay.html
