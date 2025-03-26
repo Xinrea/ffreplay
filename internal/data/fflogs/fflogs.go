@@ -7,21 +7,28 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
+	"os"
 	"strings"
+	"time"
 
 	"github.com/Xinrea/ffreplay/internal/data/markers"
 	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/util"
 )
 
-const ENDPOINT = "https://cn.fflogs.com/api/v2/client"
+const ENDPOINT_CLIENT = "https://cn.fflogs.com/api/v2/client"
+
+const ENDPOINT_USER = "https://cn.fflogs.com/api/v2/user"
 
 type FFLogsClient struct {
-	client *http.Client
+	clientID     string
+	client       *http.Client
+	isAuthorized bool
 }
 
-func NewFFLogsClient(clientID, clientSecret string) *FFLogsClient {
-	creds, err := getFFLogsToken(clientID, clientSecret)
+func NewFFLogsClient(authCode, clientID, clientSecret string) *FFLogsClient {
+	creds, err := getToken(authCode, clientID, clientSecret)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -34,8 +41,18 @@ func NewFFLogsClient(clientID, clientSecret string) *FFLogsClient {
 	}
 
 	return &FFLogsClient{
-		client: httpClient,
+		clientID:     clientID,
+		client:       httpClient,
+		isAuthorized: creds.IsAuthorized,
 	}
+}
+
+func (c *FFLogsClient) Endpoint() string {
+	if c.isAuthorized {
+		return ENDPOINT_USER
+	}
+
+	return ENDPOINT_CLIENT
 }
 
 // Have to do this, as fflogs graphql not providing ways to query worldmarkers.
@@ -59,7 +76,7 @@ func (c *FFLogsClient) RawQuery(query string, variables map[string]any, result a
 		log.Panic(err)
 	}
 
-	resp, err := c.client.Post(ENDPOINT, "application/json", bytes.NewReader(requestBody))
+	resp, err := c.client.Post(c.Endpoint(), "application/json", bytes.NewReader(requestBody))
 	if err != nil {
 		log.Panic(err)
 	}
@@ -161,6 +178,9 @@ func findFightIndex(fights []ReportFight, fight int) int {
 
 func (c *FFLogsClient) QueryReportFight(reportCode string, fight int) ReportFight {
 	var Query struct {
+		Errors []struct {
+			Message string
+		}
 		Data struct {
 			ReportData struct {
 				Report struct {
@@ -205,6 +225,26 @@ func (c *FFLogsClient) QueryReportFight(reportCode string, fight int) ReportFigh
 				}
 			}
 		`, variables, &Query)
+
+	if len(Query.Errors) > 0 {
+		if !c.isAuthorized && strings.Contains(Query.Errors[0].Message, "permission") {
+			state := util.GenerateNonce()
+			util.UpdateLocalStorage(state, fmt.Sprintf("%s:%d", reportCode, fight))
+			// oauth to get token
+			util.Redirect(
+				fmt.Sprintf(
+					"https://www.fflogs.com/oauth/authorize?client_id=%s&redirect_uri=%s&state=%s&response_type=code",
+					c.clientID,
+					util.CurrentOrigin(),
+					state,
+				),
+			)
+
+			os.Exit(0)
+		}
+
+		log.Panic(Query.Errors)
+	}
 
 	if len(Query.Data.ReportData.Report.Fights) == 0 {
 		log.Panic("No fight found")
@@ -382,12 +422,19 @@ func (a Ability) ToSkill(duration int64) model.Skill {
 	}
 }
 
-func getFFLogsToken(clientID, clientSecret string) (*Credentials, error) {
-	data := []byte(`grant_type=client_credentials`)
+func getFFLogsToken(authCode, clientID, clientSecret string) (*Credentials, error) {
+	values := url.Values{}
+	if authCode != "" {
+		values.Set("grant_type", "authorization_code")
+		values.Set("code", authCode)
+		values.Set("redirect_uri", util.CurrentOrigin())
+	} else {
+		values.Set("grant_type", "client_credentials")
+	}
 
-	req, err := http.NewRequest(http.MethodPost, "https://www.fflogs.com/oauth/token", bytes.NewBuffer(data))
+	req, err := http.NewRequest(http.MethodPost, "https://www.fflogs.com/oauth/token", strings.NewReader(values.Encode()))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.SetBasicAuth(clientID, clientSecret)
@@ -397,18 +444,82 @@ func getFFLogsToken(clientID, clientSecret string) (*Credentials, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
+
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to get credentials: %s", resp.Status)
+		body, _ := io.ReadAll(resp.Body)
+		// format body to json
+		var bodyMap map[string]interface{}
+
+		err = json.Unmarshal(body, &bodyMap)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse body: %w", err)
+		}
+
+		bodyJson, _ := json.MarshalIndent(bodyMap, "", "  ")
+
+		return nil, fmt.Errorf("failed to get credentials: %s\n%s", resp.Status, string(bodyJson))
 	}
 
 	var creds Credentials
 	if err := json.NewDecoder(resp.Body).Decode(&creds); err != nil {
 		return nil, err
 	}
+
+	creds.IsAuthorized = authCode != ""
+	creds.ExpiresAt = time.Now().Unix() + int64(creds.ExpiresIn)/1000 - 60
+
+	return &creds, nil
+}
+
+func getToken(authCode string, clientID string, clientSecret string) (*Credentials, error) {
+	tokenString := util.GetLocalStorage("access_token")
+
+	// must get a new token if authCode is not empty or no token in local storage
+	if tokenString == "" || authCode != "" {
+		creds, err := getFFLogsToken(authCode, clientID, clientSecret)
+		if err != nil {
+			return nil, err
+		}
+
+		credsJson, _ := json.Marshal(creds)
+		util.UpdateLocalStorage("access_token", string(credsJson))
+
+		return creds, nil
+	}
+
+	// get token from local storage
+
+	var creds Credentials
+
+	err := json.Unmarshal([]byte(tokenString), &creds)
+	if err != nil {
+		log.Println("Failed to unmarshal access token", err)
+		util.RemoveLocalStorage("access_token")
+
+		return getFFLogsToken(authCode, clientID, clientSecret)
+	}
+
+	// check if expired, if expired, get a new token
+	if time.Now().Unix() > creds.ExpiresAt {
+		log.Println("Access token expired, removing from local storage")
+		util.RemoveLocalStorage("access_token")
+
+		new_creds, err := getFFLogsToken(authCode, clientID, clientSecret)
+		if err != nil {
+			return nil, err
+		}
+
+		credsJson, _ := json.Marshal(new_creds)
+		util.UpdateLocalStorage("access_token", string(credsJson))
+
+		return new_creds, nil
+	}
+
+	log.Println("Using cached token, expires at", time.Unix(creds.ExpiresAt, 0))
 
 	return &creds, nil
 }
