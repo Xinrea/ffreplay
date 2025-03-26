@@ -1,6 +1,8 @@
 package util
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"image"
@@ -99,4 +101,15 @@ func Clamp(v, mi, ma float64) float64 {
 func PrintJson(v any) {
 	b, _ := json.MarshalIndent(v, "", "  ")
 	fmt.Println(string(b))
+}
+
+func GenerateNonce() string {
+	b := make([]byte, 32)
+
+	_, err := rand.Read(b)
+	if err != nil {
+		return ""
+	}
+
+	return hex.EncodeToString(b)
 }

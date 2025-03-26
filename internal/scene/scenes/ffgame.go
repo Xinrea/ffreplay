@@ -43,6 +43,7 @@ type FFScene struct {
 }
 
 type FFLogsOpt struct {
+	AuthCode     string
 	ClientID     string
 	ClientSecret string
 	Report       string
@@ -72,7 +73,7 @@ func NewFFScene(opt *FFLogsOpt) *FFScene {
 
 	if opt != nil {
 		ms.ui = ui.NewReplayUI(ecs)
-		ms.client = fflogs.NewFFLogsClient(opt.ClientID, opt.ClientSecret)
+		ms.client = fflogs.NewFFLogsClient(opt.AuthCode, opt.ClientID, opt.ClientSecret)
 		ms.code = opt.Report
 		ms.fight = opt.Fight
 		ms.global.ReplayMode = true

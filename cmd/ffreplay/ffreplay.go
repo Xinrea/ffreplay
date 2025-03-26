@@ -81,17 +81,19 @@ func main() {
 
 	var fight int
 
-	var timelinePath string
+	var code string
 
 	reportUrl := flag.String("u", "", "FFLogs fight url")
 	flag.StringVar(&report, "r", "", "FFLogs report code")
 	flag.IntVar(&fight, "f", 0, "FFlogs report fight code. Report may contains multiple fights")
-	flag.StringVar(&timelinePath, "t", "", "Cutom scene with timeline")
+	flag.StringVar(&code, "c", "", "FFLogs OAuth code")
 	flag.Parse()
 
 	log.Println(os.Args)
 
-	report, fight = parseFightURL(reportUrl)
+	if *reportUrl != "" {
+		report, fight = parseFightURL(reportUrl)
+	}
 
 	ebiten.SetWindowSize(1920, 1080)
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
@@ -101,10 +103,11 @@ func main() {
 	}
 
 	credentials := strings.Split(credential, ":")
+
 	if len(credentials) != 2 || report == "" {
 		startPlayground()
 	} else {
-		startReplay(credentials[0], credentials[1], report, fight)
+		startReplay(code, credentials[0], credentials[1], report, fight)
 	}
 }
 
@@ -146,7 +149,7 @@ func startPlayground() {
 	}
 }
 
-func startReplay(clientID string, clientSecret string, report string, fight int) {
+func startReplay(code string, clientID string, clientSecret string, report string, fight int) {
 	ebiten.SetWindowTitle(fmt.Sprintf("FFReplay %s-%d", report, fight))
 
 	if err := ebiten.RunGame(
@@ -156,6 +159,7 @@ func startReplay(clientID string, clientSecret string, report string, fight int)
 				ClientSecret: clientSecret,
 				Report:       report,
 				Fight:        fight,
+				AuthCode:     code,
 			},
 		),
 	); err != nil {

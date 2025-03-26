@@ -71,6 +71,8 @@
       const queryString = window.location.search;
       const urlParams = new URLSearchParams(queryString);
       const url = urlParams.get("url");
+      const state = urlParams.get("state");
+      const code = urlParams.get("code");
       const go = new Go();
 
       // 编译 Wasm 模块
@@ -79,19 +81,40 @@
         go.importObject
       );
       window.exitMessage = "";
+
       if (url) {
         go.argv = ["", "-u", url];
-        go.exit = (code) => {
-          progressText.style.display = "flex";
-          progressText.innerHTML =
-            '<p>回放程序异常退出，请检查 URL、网络或者使用其他浏览器；如果未能解决问题，请复制以下信息提供给<a href="https://message.bilibili.com/?#/whisper/mid475210">开发者</a></p>' +
-            "<pre>" +
-            window.exitMessage +
-            "</pre>";
-
-          document.body.removeChild(document.body.lastChild);
-        };
       }
+
+      if (state && code) {
+        const reportinfo = localStorage.getItem(state);
+        if (!reportinfo) {
+          progressText.innerText = "私人报告授权已失效，请重新授权";
+          return;
+        }
+        // example: reportcode:fightid
+        const reportcode = reportinfo.split(":")[0];
+        const fightid = reportinfo.split(":")[1];
+
+        go.argv = ["", "-r", reportcode, "-f", fightid, "-c", code];
+
+        localStorage.removeItem(state);
+      }
+
+      go.exit = (code) => {
+        if (code === 0) {
+          return;
+        }
+
+        progressText.style.display = "flex";
+        progressText.innerHTML =
+          '<p>回放程序异常退出，请检查 URL、网络或者使用其他浏览器；如果未能解决问题，请复制以下信息提供给<a href="https://message.bilibili.com/?#/whisper/mid475210">开发者</a></p>' +
+          "<pre>" +
+          window.exitMessage +
+          "</pre>";
+
+        document.body.removeChild(document.body.lastChild);
+      };
       go.run(instance);
 
       progressText.style.display = "none";
