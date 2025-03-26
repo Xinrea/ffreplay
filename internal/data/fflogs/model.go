@@ -19,9 +19,11 @@ type PlayerDetails struct {
 }
 
 type Credentials struct {
-	AccessToken string `json:"access_token"`
-	TokenType   string `json:"token_type"`
-	ExpiresIn   int    `json:"expires_in"`
+	IsAuthorized bool   `json:"is_authorized"`
+	AccessToken  string `json:"access_token"`
+	TokenType    string `json:"token_type"`
+	ExpiresIn    int    `json:"expires_in"`
+	ExpiresAt    int64  `json:"expires_at"`
 }
 
 type BearerAuthTransport struct {

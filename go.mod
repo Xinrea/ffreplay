@@ -1,6 +1,6 @@
 module github.com/Xinrea/ffreplay
 
-go 1.23.1
+go 1.24.1
 
 replace github.com/yohamta/furex/v2 => github.com/Xinrea/furex/v2 v2.5.1
 

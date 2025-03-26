@@ -28,4 +28,10 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 else
   SED_CMD=sed
 fi
+
 ${SED_CMD} -i "s/\$WASM_RELEASE/$COMMIT_HASH/g" ./public/ffreplay.html
+
+# get client_id from env CREDENTIAL, example: client_id:secret
+
+CLIENT_ID=$(echo $CREDENTIAL | cut -d: -f1)
+${SED_CMD} -i "s/\$CLIENT_ID/$CLIENT_ID/g" ./public/index.html
