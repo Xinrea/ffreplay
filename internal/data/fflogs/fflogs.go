@@ -28,7 +28,7 @@ type FFLogsClient struct {
 }
 
 func NewFFLogsClient(authCode, clientID, clientSecret string) *FFLogsClient {
-	creds, err := getFFLogsToken(authCode, clientID, clientSecret)
+	creds, err := getToken(authCode, clientID, clientSecret)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -423,31 +423,6 @@ func (a Ability) ToSkill(duration int64) model.Skill {
 }
 
 func getFFLogsToken(authCode, clientID, clientSecret string) (*Credentials, error) {
-	tokenString := util.GetLocalStorage("access_token")
-	if tokenString != "" && authCode == "" {
-		var creds Credentials
-
-		err := json.Unmarshal([]byte(tokenString), &creds)
-		if err != nil {
-			log.Println("Failed to unmarshal access token", err)
-			util.RemoveLocalStorage("access_token")
-
-			return getFFLogsToken(authCode, clientID, clientSecret)
-		}
-
-		// check if expired
-		if time.Now().Unix() > creds.ExpiresAt {
-			log.Println("Access token expired, removing from local storage")
-			util.RemoveLocalStorage("access_token")
-
-			return getFFLogsToken(authCode, clientID, clientSecret)
-		}
-
-		log.Println("Using cached token, expires at", time.Unix(creds.ExpiresAt, 0))
-
-		return &creds, nil
-	}
-
 	values := url.Values{}
 	if authCode != "" {
 		values.Set("grant_type", "authorization_code")
@@ -497,10 +472,54 @@ func getFFLogsToken(authCode, clientID, clientSecret string) (*Credentials, erro
 	creds.IsAuthorized = authCode != ""
 	creds.ExpiresAt = time.Now().Unix() + int64(creds.ExpiresIn)/1000 - 60
 
-	log.Println("Update access token, expires at", time.Unix(creds.ExpiresAt, 0))
-	credsJson, _ := json.Marshal(creds)
+	return &creds, nil
+}
 
-	util.UpdateLocalStorage("access_token", string(credsJson))
+func getToken(authCode string, clientID string, clientSecret string) (*Credentials, error) {
+	tokenString := util.GetLocalStorage("access_token")
+
+	// must get a new token if authCode is not empty or no token in local storage
+	if tokenString == "" || authCode != "" {
+		creds, err := getFFLogsToken(authCode, clientID, clientSecret)
+		if err != nil {
+			return nil, err
+		}
+
+		credsJson, _ := json.Marshal(creds)
+		util.UpdateLocalStorage("access_token", string(credsJson))
+
+		return creds, nil
+	}
+
+	// get token from local storage
+
+	var creds Credentials
+
+	err := json.Unmarshal([]byte(tokenString), &creds)
+	if err != nil {
+		log.Println("Failed to unmarshal access token", err)
+		util.RemoveLocalStorage("access_token")
+
+		return getFFLogsToken(authCode, clientID, clientSecret)
+	}
+
+	// check if expired, if expired, get a new token
+	if time.Now().Unix() > creds.ExpiresAt {
+		log.Println("Access token expired, removing from local storage")
+		util.RemoveLocalStorage("access_token")
+
+		new_creds, err := getFFLogsToken(authCode, clientID, clientSecret)
+		if err != nil {
+			return nil, err
+		}
+
+		credsJson, _ := json.Marshal(new_creds)
+		util.UpdateLocalStorage("access_token", string(credsJson))
+
+		return new_creds, nil
+	}
+
+	log.Println("Using cached token, expires at", time.Unix(creds.ExpiresAt, 0))
 
 	return &creds, nil
 }
