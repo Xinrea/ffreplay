@@ -27,7 +27,7 @@ jobs:
       - name: copy file to server
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.HOST }}
+          host: ${{ secrets.ECS_HOST }}
           key: ${{ secrets.ECS_KEY }}
           source: public/*
           target: /var/www/html/ffreplay
