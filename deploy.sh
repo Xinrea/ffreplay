@@ -1,0 +1,1 @@
+scp -r public/* jwebsite:/var/www/html/ffreplay
