@@ -130,5 +130,6 @@ func StringToRole(s string) RoleType {
 }
 
 var SpecialBoss = map[int64]bool{
+	17827: true,
 	17841: true,
 }
