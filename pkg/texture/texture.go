@@ -18,18 +18,15 @@ import (
 var textureCache = sync.Map{}
 
 func loadFromFFreplay(iconName string) *ebiten.Image {
-	u, err := url.Parse("https://ffreplay.vjoi.cn/img/ff/abilities/" + iconName)
+	img, _, err := ebitenutil.NewImageFromFileSystem(asset.AssetFS, "asset/abilities/"+iconName)
 	if err != nil {
-		log.Println(err)
+		log.Println("Load icon from ffreplay failed", err)
 
 		return nil
 	}
 
-	finalUrl := u.ResolveReference(u).String()
-
-	img, err := ebitenutil.NewImageFromURL(finalUrl)
-	if err != nil {
-		log.Println("Load icon from ffreplay failed", finalUrl, err)
+	if img == nil {
+		log.Println("Load icon from ffreplay failed", iconName)
 
 		return nil
 	}
@@ -58,8 +55,8 @@ func loadFromRPGLogs(iconName string) *ebiten.Image {
 }
 
 func loadFromLocal(iconName string) *ebiten.Image {
-	if _, err := os.Stat("public/img/ff/abilities/" + iconName); err == nil {
-		img, _, err := ebitenutil.NewImageFromFile("public/img/ff/abilities/" + iconName)
+	if _, err := os.Stat("asset/abilities/" + iconName); err == nil {
+		img, _, err := ebitenutil.NewImageFromFile("asset/abilities/" + iconName)
 		if err != nil {
 			log.Println("Load icon from local file failed", err)
 
@@ -69,7 +66,7 @@ func loadFromLocal(iconName string) *ebiten.Image {
 		return img
 	}
 
-	log.Println("Missing icon file", "public/img/ff/abilities/"+iconName)
+	log.Println("Missing icon file", "asset/abilities/"+iconName)
 
 	return nil
 }
@@ -106,16 +103,16 @@ func downloadAndLoadIcon(iconName string) *ebiten.Image {
 		return nil
 	}
 
-	os.MkdirAll("public/img/ff/abilities", os.ModePerm)
+	os.MkdirAll("asset/abilities/", os.ModePerm)
 
-	err = os.WriteFile("public/img/ff/abilities/"+iconName, imgData, 0644)
+	err = os.WriteFile("asset/abilities/"+iconName, imgData, 0644)
 	if err != nil {
 		log.Println("Write icon to local file failed", finalUrl)
 
 		return nil
 	}
 
-	img, _, err := ebitenutil.NewImageFromFile("public/img/ff/abilities/" + iconName)
+	img, _, err := ebitenutil.NewImageFromFile("asset/abilities/" + iconName)
 	if err != nil {
 		log.Println("Load icon from local file failed", finalUrl, err)
 

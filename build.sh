@@ -4,10 +4,7 @@
 sh update_actions.sh
 
 mkdir public
-# remove public/ffreplay*.wasm
-rm -f public/ffreplay*.wasm
-# remove public/wasm_exec.js
-rm -f public/wasm_exec.js public/ffreplay.html public/index.html
+rm -f public/*
 
 # Get currrent commit hash
 COMMIT_HASH=$(git rev-parse --short HEAD)
