@@ -9,7 +9,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Xinrea/ffreplay/internal/data/markers"
@@ -325,7 +327,74 @@ query {
 }
 `
 
-func (c *FFLogsClient) QueryFightEvents(query string, reportCode string, fight ReportFight) (ret []FFLogsEvent) {
+const CONCURRENT_LIMIT = 10
+
+func (c *FFLogsClient) QueryFightEvents(query string, reportCode string, fight ReportFight) []FFLogsEvent {
+	startTime := int64(fight.StartTime)
+	endTime := int64(fight.EndTime)
+	duration := endTime - startTime
+	// divide duration into chunks of 2 minutes
+	chunkSize := int64(2 * 60 * 1000)
+	chunks := int(duration / chunkSize)
+
+	if duration%chunkSize != 0 {
+		chunks++
+	}
+
+	// create a channel to limit concurrency
+	chunkChan := make(chan struct{}, CONCURRENT_LIMIT)
+	// create a wait group to wait for all chunks to finish
+	var wg sync.WaitGroup
+	// create a slice to store the results
+	var results []FFLogsEvent
+	// create a mutex to protect the results slice
+	var mu sync.Mutex
+	// create a slice to store the errors
+
+	for i := range chunks {
+		chunkChan <- struct{}{}
+
+		wg.Add(1)
+
+		go func(i int) {
+			defer wg.Done()
+			defer func() { <-chunkChan }()
+
+			start := startTime + chunkSize*int64(i)
+			end := start + chunkSize
+
+			if end > endTime {
+				end = endTime
+			}
+
+			log.Println("Querying events from", start, "to", end)
+			events := c.QueryFightEventsByRange(query, reportCode, fight.ID, start, end)
+
+			mu.Lock()
+			results = append(results, events...)
+			mu.Unlock()
+		}(i)
+	}
+
+	wg.Wait()
+	close(chunkChan)
+	log.Println("Finished querying events")
+
+	// sort the results by timestamp
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].Timestamp < results[j].Timestamp
+	})
+
+	return results
+}
+
+func (c *FFLogsClient) QueryFightEventsByRange(
+	query string,
+	reportCode string,
+	fightID int,
+	startTime int64,
+	endTime int64,
+) (ret []FFLogsEvent) {
 	var Query struct {
 		Data struct {
 			ReportData struct {
@@ -336,11 +405,11 @@ func (c *FFLogsClient) QueryFightEvents(query string, reportCode string, fight R
 		}
 	}
 
-	variables := map[string]interface{}{
+	variables := map[string]any{
 		"code":      reportCode,
-		"fightIDs":  []int{fight.ID},
-		"startTime": fight.StartTime,
-		"endTime":   fight.EndTime,
+		"fightIDs":  []int{fightID},
+		"startTime": startTime,
+		"endTime":   endTime,
 	}
 
 	c.RawQuery(query, variables, &Query)
