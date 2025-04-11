@@ -94,12 +94,19 @@ func NewEnemy(
 		erole = role.NPC
 	}
 
+	if role.SpecialBoss[gameID] {
+		erole = role.Special
+	}
+
+	log.Println("Enemy:", name, "isBoss:", isBoss, "gameID:", gameID, "id:", id)
+
 	instances := []*model.Instance{}
-	for i := 0; i < instanceCount; i++ {
+	for range instanceCount {
 		instances = append(instances, &model.Instance{
-			Face:       0,
-			Object:     object.NewPointObject(vector.NewVector(pos[0], pos[1])),
-			LastActive: -1,
+			Face:   0,
+			Object: object.NewPointObject(vector.NewVector(pos[0], pos[1])),
+			BTick:  -1,
+			ETick:  -1,
 		})
 	}
 
@@ -130,9 +137,8 @@ func NewPet(ecs *ecs.ECS, gameID int64, id int64, name string, instanceCount int
 	instances := []*model.Instance{}
 	for i := 0; i < instanceCount; i++ {
 		instances = append(instances, &model.Instance{
-			Face:       0,
-			Object:     object.NewPointObject(vector.NewVector(0, 0)),
-			LastActive: -1,
+			Face:   0,
+			Object: object.NewPointObject(vector.NewVector(0, 0)),
 		})
 	}
 
@@ -162,9 +168,8 @@ func NewLimitBreakNPC(ecs *ecs.ECS, gameID int64, id int64) *donburi.Entry {
 
 	instances := []*model.Instance{}
 	instances = append(instances, &model.Instance{
-		Face:       0,
-		Object:     object.NewPointObject(vector.NewVector(0, 0)),
-		LastActive: -1,
+		Face:   0,
+		Object: object.NewPointObject(vector.NewVector(0, 0)),
 	})
 
 	component.Sprite.Set(limitBreak, &model.SpriteData{

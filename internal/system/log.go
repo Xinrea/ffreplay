@@ -460,14 +460,7 @@ func handleApplyDebuff(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, even
 }
 
 func (s *System) updateEventTargetStatus(event fflogs.FFLogsEvent) {
-	instanceID := 0
-	if event.TargetInstance != nil {
-		instanceID = int(*event.TargetInstance) - 1
-	}
-
 	status := component.Status.Get(s.EntryMap[*event.TargetID])
-	target := component.Sprite.Get(s.EntryMap[*event.TargetID])
-	target.Instances[instanceID].LastActive = event.LocalTick
 
 	if event.TargetMarker != nil {
 		status.Marker = *event.TargetMarker
@@ -477,14 +470,7 @@ func (s *System) updateEventTargetStatus(event fflogs.FFLogsEvent) {
 }
 
 func (s *System) updateEventSourceStatus(event fflogs.FFLogsEvent) {
-	instanceID := 0
-	if event.SourceInstance != nil {
-		instanceID = int(*event.SourceInstance) - 1
-	}
-
-	source := component.Sprite.Get(s.EntryMap[*event.SourceID])
 	status := component.Status.Get(s.EntryMap[*event.SourceID])
-	source.Instances[instanceID].LastActive = event.LocalTick
 
 	if event.SourceMarker != nil {
 		status.Marker = *event.SourceMarker

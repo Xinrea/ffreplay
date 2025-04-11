@@ -36,6 +36,7 @@ const (
 	NPC
 	Pet
 	LimitBreak
+	Special
 )
 
 var roleToStringMap = map[RoleType]string{
@@ -72,6 +73,7 @@ var roleToStringMap = map[RoleType]string{
 	NPC:         "NPC",
 	Pet:         "Pet",
 	LimitBreak:  "LimitBreak",
+	Special:     "Special",
 }
 
 func (r RoleType) String() string {
@@ -116,6 +118,7 @@ var stringToRoleMap = map[string]RoleType{
 	"NPC":         NPC,
 	"Pet":         Pet,
 	"LimitBreak":  LimitBreak,
+	"Special":     Special,
 }
 
 func StringToRole(s string) RoleType {
@@ -124,4 +127,8 @@ func StringToRole(s string) RoleType {
 	}
 
 	return -1
+}
+
+var SpecialBoss = map[int64]bool{
+	17841: true,
 }

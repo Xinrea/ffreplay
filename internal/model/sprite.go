@@ -3,7 +3,6 @@ package model
 import (
 	"github.com/Xinrea/ffreplay/pkg/object"
 	"github.com/Xinrea/ffreplay/pkg/texture"
-	"github.com/Xinrea/ffreplay/util"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -19,11 +18,16 @@ type SpriteData struct {
 type Instance struct {
 	Face               float64
 	Object             object.Object
-	LastActive         int64
 	casting            *Skill
 	castHistory        []*Skill
 	damageTakenHistory []DamageTaken
 	tethers            []*Instance
+
+	// btick and etick should be set when preloading fflogs
+	// the first tick when game object is showed
+	BTick int64
+	// the last tick when game object is showed
+	ETick int64
 }
 
 type DamageTaken struct {
@@ -68,17 +72,7 @@ func (i *Instance) ClearTether() {
 }
 
 func (i *Instance) IsActive(tick int64) bool {
-	if i.LastActive == -1 {
-		return false
-	}
-
-	if i.casting != nil {
-		i.LastActive = tick
-
-		return true
-	}
-
-	return util.TickToMS(tick-i.LastActive) <= 2500
+	return tick >= i.BTick && tick <= i.ETick
 }
 
 func (i *Instance) Cast(gameSkill *Skill) {
@@ -162,7 +156,6 @@ func (i *Instance) GetHistoryDamageTaken(n int) []DamageTaken {
 }
 
 func (i *Instance) Reset() {
-	i.LastActive = -1
 	i.casting = nil
 	i.castHistory = nil
 	i.damageTakenHistory = nil

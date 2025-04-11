@@ -89,6 +89,42 @@ func (s *System) AddEventLine(id int64, status map[int][]data.StatusEvent, event
 		Events: events,
 		Status: status,
 	}
+
+	// preprocess BTick and ETick
+	sprite := component.Sprite.Get(s.EntryMap[id])
+	if sprite == nil {
+		return
+	}
+
+	for i := range sprite.Instances {
+		if len(status[i]) == 0 {
+			continue
+		}
+
+		first_event := status[i][0]
+		last_event := status[i][len(status[i])-1]
+		sprite.Instances[i].BTick = first_event.Tick
+		sprite.Instances[i].ETick = last_event.Tick
+	}
+
+	for _, event := range events {
+		instanceID := 0
+		if event.SourceInstance != nil {
+			instanceID = int(*event.SourceInstance) - 1
+		}
+
+		if sprite.Instances[instanceID].BTick == -1 {
+			sprite.Instances[instanceID].BTick = event.LocalTick
+		} else {
+			sprite.Instances[instanceID].BTick = min(sprite.Instances[instanceID].BTick, event.LocalTick)
+		}
+
+		if sprite.Instances[instanceID].ETick == -1 {
+			sprite.Instances[instanceID].ETick = event.LocalTick
+		} else {
+			sprite.Instances[instanceID].ETick = max(sprite.Instances[instanceID].ETick, event.LocalTick)
+		}
+	}
 }
 
 func (s *System) Update(ecs *ecs.ECS) {

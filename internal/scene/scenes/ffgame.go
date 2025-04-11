@@ -129,6 +129,18 @@ func (ms *FFScene) loadFFLogsReport() {
 
 	ms.global.LoadTotal = len(events)
 
+	// create players
+	ms.createPlayers(players, actors)
+
+	// create pets
+	ms.createPets(fight.FriendlyPets)
+
+	// create enemies
+	ms.createEnemies(fight, actors)
+
+	// create environment NPC
+	ms.system.AddEntry(-1, entry.NewEnemy(ms.ecs, f64.Vec2{}, 1, 0, -1, "environment", false, 1))
+
 	var wg sync.WaitGroup
 
 	ms.loadPlayerEvents(&wg, players.Tanks, status, events)
@@ -144,18 +156,6 @@ func (ms *FFScene) loadFFLogsReport() {
 	}
 
 	ms.loadSpecialEvents(events, fight, isDungeonReport)
-
-	// create players
-	ms.createPlayers(players, actors)
-
-	// create pets
-	ms.createPets(fight.FriendlyPets)
-
-	// create enemies
-	ms.createEnemies(fight, actors)
-
-	// create environment NPC
-	ms.system.AddEntry(-1, entry.NewEnemy(ms.ecs, f64.Vec2{}, 1, 0, -1, "environment", false, 1))
 
 	wg.Wait()
 	log.Println("Loading cost", time.Since(pBeforeLoad))

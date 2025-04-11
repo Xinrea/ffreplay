@@ -51,9 +51,9 @@ func (r *Renderer) renderEnemy(ecs *ecs.ECS, screen *ebiten.Image, enemy *donbur
 
 		var c colorm.ColorM
 		// render target ring
-		if global.Debug || status.Role == role.Boss || global.RenderNPC {
+		if global.Debug || status.Role == role.Boss || global.RenderNPC || status.Role == role.Special {
 			geoM := texture.CenterGeoM(sprite.Texture)
-			if status.Role == role.NPC {
+			if status.Role == role.NPC || status.Role == role.Special {
 				geoM.Scale(0.5, 0.5)
 			}
 
@@ -65,6 +65,19 @@ func (r *Renderer) renderEnemy(ecs *ecs.ECS, screen *ebiten.Image, enemy *donbur
 			op.GeoM = geoM
 
 			colorm.DrawImage(screen, sprite.Texture, c, op)
+		}
+
+		if status.Role == role.Special {
+			tex := status.RoleTexture()
+			geoM := texture.CenterGeoM(tex)
+
+			geoM.Translate(pos[0], pos[1])
+			geoM.Concat(wordM)
+
+			op := &colorm.DrawImageOptions{}
+			op.GeoM = geoM
+
+			colorm.DrawImage(screen, tex, c, op)
 		}
 	}
 

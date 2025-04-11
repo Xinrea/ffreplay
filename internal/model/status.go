@@ -1,6 +1,8 @@
 package model
 
 import (
+	"fmt"
+
 	"github.com/Xinrea/ffreplay/internal/model/role"
 	"github.com/Xinrea/ffreplay/pkg/texture"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -62,5 +64,9 @@ func (r *StatusData) TakeHeal(h Heal) {
 }
 
 func (r StatusData) RoleTexture() *ebiten.Image {
+	if r.Role == role.Special {
+		return texture.NewTextureFromFile(fmt.Sprintf("asset/boss/%d.png", r.GameID))
+	}
+
 	return texture.NewTextureFromFile("asset/role/" + r.Role.String() + ".png")
 }

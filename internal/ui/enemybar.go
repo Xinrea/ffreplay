@@ -31,7 +31,8 @@ func EnemyBarsView() *furex.View {
 						continue
 					}
 					enemy := component.Status.Get(e)
-					if enemy.Role != role.Boss || !sprite.Instances[0].IsActive(entry.GetTick(ecsInstance)) {
+					if (enemy.Role != role.Boss && enemy.Role != role.Special) ||
+						!sprite.Instances[0].IsActive(entry.GetTick(ecsInstance)) {
 						continue
 					}
 					v.AddChild(CreateEnemyBarView(cnt, e))
