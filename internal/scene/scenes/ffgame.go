@@ -105,9 +105,10 @@ func (ms *FFScene) loadFFLogsReport() {
 	ms.global.FightDuration.Store(int64(fight.EndTime - fight.StartTime))
 
 	ms.global.Phases = extractPhaseTicks(fight)
+	log.Println("Phases:", ms.global.Phases)
 
 	// setup map
-	ms.setupMap(fight)
+	ms.setupMap(fight, len(ms.global.Phases) > 0)
 
 	// initialize player events
 	players := ms.client.QueryFightPlayers(ms.code, fight.ID)
@@ -361,6 +362,9 @@ func (ms *FFScene) filterMapChangeEvents(
 		}
 	}
 
+	log.Println("Map change events:")
+	util.PrintJson(ret)
+
 	return ret
 }
 
@@ -376,15 +380,24 @@ func (ms *FFScene) filterMarkerChangeEvents(events []fflogs.FFLogsEvent) []fflog
 	return ret
 }
 
-func (ms *FFScene) setupMap(fight fflogs.ReportFight) {
+func (ms *FFScene) setupMap(fight fflogs.ReportFight, hasPhase bool) {
 	// create a background base on mapID
-	if m, ok := model.MapCache[fight.Maps[0].ID]; ok {
+	if m, ok := model.MapCache[fight.Maps[0].ID]; hasPhase && ok {
 		config := m.Load()
 		current := config.Maps[config.CurrentMap]
 		ms.camera.Position = vector.NewVector(current.Offset.X*25, current.Offset.Y*25)
 		component.Map.Get(component.Map.MustFirst(ms.ecs.World)).Config = config
 	} else {
 		queryMapItem := func(id int) model.MapItem {
+			// first check local map assets
+			if m, ok := model.MapCache[id]; ok {
+				config := m.Load()
+				current := config.Maps[config.CurrentMap]
+				ms.camera.Position = vector.NewVector(current.Offset.X*25, current.Offset.Y*25)
+
+				return current
+			}
+
 			// get default map from fflogs
 			gameMap := ms.client.QueryMapInfo(id)
 			// fflogs map offset is based on top-left corner

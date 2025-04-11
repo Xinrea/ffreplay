@@ -21,21 +21,28 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 	// render debug info
 	camera := component.Camera.Get(tag.Camera.MustFirst(ecs.World))
 	global := component.Global.Get(tag.Global.MustFirst(ecs.World))
+	mapData := component.Map.Get(tag.Background.MustFirst(ecs.World))
 	tick := global.Tick / 10
 	s := ebiten.Monitor().DeviceScaleFactor()
 	x, y := ebiten.CursorPosition()
 	wx, wy := camera.ScreenToWorld(float64(x), float64(y))
 	w, h := camera.WindowSize()
 
+	mapID := -1
+	if mapData != nil && mapData.Config != nil {
+		mapID = mapData.Config.CurrentMap
+	}
+
 	ebitenutil.DebugPrintAt(screen, fmt.Sprintf("Cursor: %f, %f, Debug: %t", wx, wy, global.Debug), 0, 0)
 	ebitenutil.DebugPrintAt(
 		screen,
 		fmt.Sprintf(
-			"Tick: %d, Time: %d, TPS: %.2f, FPS: %.2f",
+			"Tick: %d, Time: %d, TPS: %.2f, FPS: %.2f, Map: %d",
 			entry.GetTick(ecs),
 			util.TickToMS(entry.GetTick(ecs)),
 			ebiten.ActualTPS(),
 			ebiten.ActualFPS(),
+			mapID,
 		), 0, 15)
 
 	if !global.Loaded.Load() {

@@ -352,6 +352,62 @@
         "x": 100,
         "y": 100
       }
+    },
+    {
+      "id": 991,
+      "path": "asset/floor/m6s.jpg",
+      "offset": {
+        "x": 100,
+        "y": 100
+      }
+    },
+    {
+      "id": 1000,
+      "path": "asset/floor/m7s_1.jpg",
+      "offset": {
+        "x": 100,
+        "y": 100
+      }
+    },
+    {
+      "id": 1001,
+      "path": "asset/floor/m7s_2.jpg",
+      "offset": {
+        "x": 100,
+        "y": 5
+      }
+    },
+    {
+      "id": 1002,
+      "path": "asset/floor/m7s_3.jpg",
+      "offset": {
+        "x": 100,
+        "y": 5
+      }
+    },
+    {
+      "id": 1032,
+      "path": "asset/floor/m8s_1.jpg",
+      "offset": {
+        "x": 100,
+        "y": 100
+      },
+      "phases": [
+        {
+          "path": "asset/floor/m8s_1.jpg",
+          "offset": {
+            "x": 100,
+            "y": 100
+          }
+        },
+        {
+          "path": "asset/floor/m8s_2.png",
+          "offset": {
+            "x": 100,
+            "y": 100
+          }
+        }
+      ]
     }
   ]
 }
