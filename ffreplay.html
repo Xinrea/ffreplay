@@ -31,6 +31,7 @@
 
   <script>
     async function loadWasm() {
+      const chunkCount = 10;
       const progressText = document.getElementById("progress-text");
       progressText.style.position = "absolute";
       progressText.style.top = "50%";
@@ -38,34 +39,21 @@
       progressText.style.transform = "translate(-50%, -50%)";
 
       // 使用 Fetch API 加载 Wasm 模块
-      const response = await fetch("ffreplay-$WASM_RELEASE.wasm", {
-        method: "GET",
-      });
-
-      const reader = response.body.getReader();
-      const contentLength = +response.headers.get("Content-Length");
-
-      let receivedLength = 0; // 目前已接收的字节数
-      const chunks = []; // 用于存储接收到的字节块
-
-      // 读取数据
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        chunks.push(value);
-        receivedLength += value.length;
-
-        // 更新进度条
-        const percent = (receivedLength / contentLength) * 100;
-        progressText.innerText = `加载回放程序模块中... ${percent.toFixed(2)}%`;
-      }
-
-      // 完成读取
-      const chunksAll = new Uint8Array(receivedLength); // 创建一个新的 Uint8Array
-      let position = 0;
-      for (let chunk of chunks) {
-        chunksAll.set(chunk, position); // 将每个块放入数组中
-        position += chunk.length;
+      const chunkPromises = Array.from({ length: chunkCount }, (_, i) =>
+        fetch(`ffreplay-$WASM_RELEASE.wasm.chunk0${i}`).then((res) =>
+          res.arrayBuffer()
+        )
+      );
+      const chunks = await Promise.all(chunkPromises);
+      const totalSize = chunks.reduce(
+        (sum, chunk) => sum + chunk.byteLength,
+        0
+      );
+      const combined = new Uint8Array(totalSize);
+      let offset = 0;
+      for (const chunk of chunks) {
+        combined.set(new Uint8Array(chunk), offset);
+        offset += chunk.byteLength;
       }
 
       const queryString = window.location.search;
@@ -77,7 +65,7 @@
 
       // 编译 Wasm 模块
       const { instance } = await WebAssembly.instantiate(
-        chunksAll,
+        combined,
         go.importObject
       );
       window.exitMessage = "";

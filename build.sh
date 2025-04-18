@@ -12,6 +12,12 @@ COMMIT_HASH=$(git rev-parse --short HEAD)
 # Build ffreplay to wasm named public/ffreplay-$commithash.wasm
 # Build with credential that read from environment variable
 GOOS=js GOARCH=wasm go build -ldflags "-X main.credential=$CREDENTIAL" -o public/ffreplay-$COMMIT_HASH.wasm ./cmd/ffreplay/ffreplay.go
+
+# split the wasm file into 10 chunks
+split -n 10 -d public/ffreplay-$COMMIT_HASH.wasm public/ffreplay-$COMMIT_HASH.wasm.chunk
+# remove the original wasm file
+rm public/ffreplay-$COMMIT_HASH.wasm
+
 cp $(go env GOROOT)/lib/wasm/wasm_exec.js ./public
 
 cp index.html ./public/index.html
