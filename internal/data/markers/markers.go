@@ -56,7 +56,10 @@ func queryBossIDAndStart(code string, fight int) (int, int) {
 		log.Panic(err)
 	}
 
-	req.Header.Set("referer", "https://www.fflogs.com/")
+	req.Header.Set("referer", fmt.Sprintf("https://www.fflogs.com/reports/%s?fight=%d", code, fight))
+	req.Header.Set("user-agent",
+		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "+
+			"(KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -105,6 +108,9 @@ func QueryWorldMarkers(code string, fight int) []WorldMarker {
 	}
 
 	req.Header.Set("referer", "https://www.fflogs.com/")
+	req.Header.Set("user-agent",
+		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "+
+			"(KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36")
 
 	segResp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -117,6 +123,8 @@ func QueryWorldMarkers(code string, fight int) []WorldMarker {
 	var segResponse struct {
 		WorldMarkers []WorldMarker `json:"worldMarkers"`
 	}
+
+	log.Println(segResp.Body)
 
 	err = json.NewDecoder(segResp.Body).Decode(&segResponse)
 	if err != nil {
