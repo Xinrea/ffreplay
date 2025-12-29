@@ -2,13 +2,13 @@ package system
 
 import (
 	"github.com/Xinrea/ffreplay/internal/entry"
-	"github.com/Xinrea/ffreplay/util"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/yohamta/donburi/ecs"
 )
 
 const MaxVelocity = 4
+const ZoomStep = 4
 
 func (s *System) ControlUpdate(ecs *ecs.ECS) {
 	camera := entry.GetCamera(s.ecs)
@@ -29,10 +29,12 @@ func (s *System) ControlUpdate(ecs *ecs.ECS) {
 
 	_, dy := ebiten.Wheel()
 
-	if util.IsWasm() {
-		camera.ZoomFactor -= int(dy)
-	} else {
-		camera.ZoomFactor -= int(dy * 3)
+	if dy != 0 {
+		if dy > 0 {
+			camera.ZoomFactor += ZoomStep
+		} else {
+			camera.ZoomFactor -= ZoomStep
+		}
 	}
 
 	if global.ReplayMode || global.TargetPlayer == nil {
