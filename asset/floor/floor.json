@@ -408,6 +408,38 @@
           }
         }
       ]
+    },
+    {
+      "id": 1099,
+      "path": "asset/floor/m9s.jpg",
+      "offset": {
+        "x": 100,
+        "y": 100
+      }
+    },
+    {
+      "id": 1112,
+      "path": "asset/floor/m10s.jpg",
+      "offset": {
+        "x": 100,
+        "y": 100
+      }
+    },
+    {
+      "id": 1113,
+      "path": "asset/floor/m11s.jpg",
+      "offset": {
+        "x": 100,
+        "y": 100
+      }
+    },
+    {
+      "id": 1168,
+      "path": "asset/floor/m12s.jpg",
+      "offset": {
+        "x": 100,
+        "y": 100
+      }
     }
   ]
 }
