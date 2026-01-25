@@ -160,7 +160,7 @@ func (st SkillTimeline) Render(debug bool, canvas *ebiten.Image, x, y float64, t
 
 	for i := range st.Periods {
 		offset := tickToLength(tick - st.Periods[i].StartTick)
-		px := -offset*1.3*s + TIMELINE_WIDTH*s
+		px := -offset*s + TIMELINE_WIDTH*s
 		py := TIMELINE_HEIGHT*s/2.0 + 15*s
 		st.Periods[i].Render(debug, skillLayer, px, py, tick)
 	}

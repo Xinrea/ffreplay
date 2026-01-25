@@ -63,7 +63,7 @@ func FetchLogEvents(
 
 	// preprocess events, convert timestamp to tick
 	for i := range events {
-		events[i].LocalTick = int64(events[i].Timestamp-startTime) / 1000 * 60
+		events[i].LocalTick = int64(events[i].Timestamp-startTime) * 60 / 1000
 		processEvent(events[i], status)
 	}
 

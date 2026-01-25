@@ -64,7 +64,7 @@ func initActionPreset() {
 		actionEntries = append(actionEntries, ActionInfo{
 			ID:    int64(id),
 			Name:  record[1],
-			IsGCD: record[41] == "58",
+			IsGCD: record[4] == "2" || record[4] == "3",
 		})
 	}
 }
