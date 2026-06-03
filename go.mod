@@ -11,6 +11,7 @@ require (
 	github.com/hajimehoshi/ebiten/v2 v2.9.7
 	github.com/yohamta/donburi v1.15.5
 	github.com/yohamta/furex/v2 v2.4.6
+	github.com/yuin/gopher-lua v1.1.1
 	golang.org/x/image v0.31.0
 	golang.org/x/text v0.32.0
 )

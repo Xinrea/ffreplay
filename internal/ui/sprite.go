@@ -42,6 +42,10 @@ func (s *Sprite) draw(screen *ebiten.Image, frame image.Rectangle, view *furex.V
 		return
 	}
 
+	if s.NineSliceTexture == nil {
+		return
+	}
+
 	var scale *ebiten.ColorScale = nil
 	if s.BlendAlpha {
 		scale = &ebiten.ColorScale{}

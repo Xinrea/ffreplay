@@ -14,4 +14,5 @@ var (
 	Velocity    = donburi.NewComponentType[model.VelocityData]()
 	Global      = donburi.NewComponentType[model.GlobalData]()
 	Map         = donburi.NewComponentType[model.MapData]()
+	Telegraph   = donburi.NewComponentType[model.TelegraphData]()
 )

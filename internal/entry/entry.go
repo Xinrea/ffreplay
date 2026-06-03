@@ -54,6 +54,7 @@ var (
 	Timeline    = newArchetype(tag.Timeline, component.Timeline)
 	WorldMarker = newArchetype(tag.WorldMarker, component.WorldMarker)
 	Global      = newArchetype(tag.Global, component.Global)
+	Telegraph   = newArchetype(tag.Telegraph, component.Telegraph)
 )
 
 type archetype struct {
@@ -292,6 +293,13 @@ func NewWorldMarker(ecs *ecs.ECS, markerType model.WorldMarkerType, pos f64.Vec2
 	})
 
 	return marker
+}
+
+func NewTelegraph(ecs *ecs.ECS, td *model.TelegraphData) *donburi.Entry {
+	telegraph := Telegraph.Spawn(ecs)
+	component.Telegraph.Set(telegraph, td)
+
+	return telegraph
 }
 
 func GetGlobal(ecs *ecs.ECS) *model.GlobalData {

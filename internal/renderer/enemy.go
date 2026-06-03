@@ -79,6 +79,20 @@ func (r *Renderer) renderEnemy(ecs *ecs.ECS, screen *ebiten.Image, enemy *donbur
 
 			colorm.DrawImage(screen, tex, c, op)
 		}
+
+		if status.Role == role.Boss {
+			tex := texture.NewTextureFromFile("asset/role/NPC.png")
+			geoM := texture.CenterGeoM(tex)
+			geoM.Scale(0.75, 0.75)
+			geoM.Rotate(camera.Rotation)
+			geoM.Translate(pos[0], pos[1])
+			geoM.Concat(wordM)
+
+			op := &colorm.DrawImageOptions{}
+			op.GeoM = geoM
+
+			colorm.DrawImage(screen, tex, c, op)
+		}
 	}
 
 	for _, instance := range sprite.Instances {

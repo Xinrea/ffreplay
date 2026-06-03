@@ -18,6 +18,7 @@ import (
 	"github.com/Xinrea/ffreplay/internal/model/role"
 	"github.com/Xinrea/ffreplay/internal/renderer"
 	"github.com/Xinrea/ffreplay/internal/system"
+	"github.com/Xinrea/ffreplay/internal/system/script"
 	"github.com/Xinrea/ffreplay/internal/ui"
 	"github.com/Xinrea/ffreplay/pkg/texture"
 	"github.com/Xinrea/ffreplay/pkg/vector"
@@ -48,6 +49,7 @@ type FFLogsOpt struct {
 	ClientSecret string
 	Report       string
 	Fight        int
+	ScriptPath   string
 }
 
 func NewFFScene(opt *FFLogsOpt) *FFScene {
@@ -71,7 +73,7 @@ func NewFFScene(opt *FFLogsOpt) *FFScene {
 		renderer: renderer,
 	}
 
-	if opt != nil {
+	if opt != nil && opt.Report != "" {
 		ms.ui = ui.NewReplayUI(ecs)
 		ms.client = fflogs.NewFFLogsClient(opt.AuthCode, opt.ClientID, opt.ClientSecret)
 		ms.code = opt.Report
@@ -82,6 +84,16 @@ func NewFFScene(opt *FFLogsOpt) *FFScene {
 	} else {
 		ms.ui = ui.NewPlaygroundUI(ecs)
 		ms.global.Loaded.Store(true)
+		// Initialize the Lua script engine for the playground
+		runner := script.NewScriptRunner(ecs)
+		runner.OnPlayerCreated = ui.AddPlayerToPartyList
+
+		if opt != nil && opt.ScriptPath != "" {
+			log.Printf("Auto-running script: %s", opt.ScriptPath)
+			script.ActiveRunner.RunFile(opt.ScriptPath)
+		}
+
+		log.Println("Script engine initialized for playground mode")
 	}
 
 	log.Println("Scene created")

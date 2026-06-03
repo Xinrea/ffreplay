@@ -20,7 +20,7 @@ func (s *System) BuffUpdate(ecs *ecs.ECS, tick int64) {
 	}
 
 	for e := range tag.Buffable.Iter(ecs.World) {
-		component.Status.Get(e).BuffList.Update(tick)
+		component.Status.Get(e).EnsureBuffList().Update(tick)
 	}
 
 	if entry.GetGlobal(s.ecs).ReplayMode {
@@ -28,6 +28,6 @@ func (s *System) BuffUpdate(ecs *ecs.ECS, tick int64) {
 	}
 
 	for e := range tag.Buffable.Iter(ecs.World) {
-		component.Status.Get(e).BuffList.UpdateExpire(tick)
+		component.Status.Get(e).EnsureBuffList().UpdateExpire(tick)
 	}
 }

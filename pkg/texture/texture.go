@@ -1,6 +1,7 @@
 package texture
 
 import (
+	"image/color"
 	"io"
 	"log"
 	"net/http"
@@ -16,6 +17,22 @@ import (
 )
 
 var textureCache = sync.Map{}
+
+func missingAbilityTexture() *ebiten.Image {
+	const cacheKey = "__missing_ability_icon__"
+
+	if texture, ok := textureCache.Load(cacheKey); ok {
+		if value, ok := texture.(*ebiten.Image); ok {
+			return value
+		}
+	}
+
+	img := ebiten.NewImage(24, 24)
+	img.Fill(color.NRGBA{50, 50, 56, 220})
+	textureCache.Store(cacheKey, img)
+
+	return img
+}
 
 func loadFromFFreplay(iconName string) *ebiten.Image {
 	img, _, err := ebitenutil.NewImageFromFileSystem(asset.AssetFS, "asset/abilities/"+iconName)
@@ -123,6 +140,11 @@ func downloadAndLoadIcon(iconName string) *ebiten.Image {
 }
 
 func NewAbilityTexture(iconName string) *ebiten.Image {
+	iconName = strings.TrimSpace(iconName)
+	if iconName == "" {
+		return missingAbilityTexture()
+	}
+
 	if strings.Contains(iconName, "warcraft") {
 		return nil
 	}
@@ -153,7 +175,10 @@ func NewAbilityTexture(iconName string) *ebiten.Image {
 
 		log.Println("Load icon from ffreplay and fflogs failed", iconName)
 
-		return nil
+		img = missingAbilityTexture()
+		textureCache.Store(iconName, img)
+
+		return img
 	}
 
 	// try load from local
@@ -175,7 +200,10 @@ func NewAbilityTexture(iconName string) *ebiten.Image {
 
 	log.Println("Load icon from local file failed", iconName)
 
-	return nil
+	img = missingAbilityTexture()
+	textureCache.Store(iconName, img)
+
+	return img
 }
 
 func NewMapTexture(mapName string) *ebiten.Image {

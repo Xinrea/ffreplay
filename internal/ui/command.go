@@ -51,10 +51,16 @@ func (c *CommandHandler) Execute(cmd string) {
 		c.AddResult("移除玩家，例如 /player remove 1")
 		c.AddResult("- /clear")
 		c.AddResult("清空消息")
+		c.AddResult("- /script run <filename>")
+		c.AddResult("运行 Lua 脚本文件")
+		c.AddResult("- /script exec <code>")
+		c.AddResult("执行内联 Lua 代码")
 	case "/map":
 		c.mapHandler(commands[1:])
 	case "/player":
 		c.playerHandler(commands[1:])
+	case "/script":
+		c.scriptHandler(commands[1:])
 	case "/clear":
 		c.message.RemoveAll()
 		c.message.SetHeight(12)
