@@ -27,6 +27,11 @@ type System struct {
 	EntryMap          map[int64]*donburi.Entry
 	reset             bool
 	Pause             bool
+
+	// playground interaction state
+	dragMode   dragMode
+	lastMouseX int
+	lastMouseY int
 }
 
 type EventLine struct {

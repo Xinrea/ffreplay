@@ -86,6 +86,11 @@ func (p *PlaygroundUI) Update(w, h int) {
 			topRightView.AddChild(hotbar)
 			topRightView.AddChild(checkBox)
 
+			// Property panel for the selected object (hidden until selection).
+			propertyPanel := NewPropertyPanel()
+			propertyPanel.View().Attrs.MarginTop = 20
+			topRightView.AddChild(propertyPanel.View())
+
 			topView.AddChild(partyList)
 			topView.AddChild(topRightView)
 

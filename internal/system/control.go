@@ -42,4 +42,7 @@ func (s *System) ControlUpdate(ecs *ecs.ECS) {
 	} else {
 		s.playgroundControl(ecs)
 	}
+
+	// Mouse-driven selection / drag / grab-pan (playground only).
+	s.PlaygroundInteractionUpdate(ecs)
 }

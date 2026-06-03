@@ -82,6 +82,7 @@ func (r *Renderer) Init(ecs *ecs.ECS) {
 	ecs.AddRenderer(layer.Player, r.EnemyRender)
 	ecs.AddRenderer(layer.Player, r.PlayerRender)
 	ecs.AddRenderer(layer.Player, r.HeadMarkerRender)
+	ecs.AddRenderer(layer.Player, r.SelectionRender)
 	ecs.AddRenderer(layer.UI, r.UIRender)
 }
 
