@@ -96,7 +96,9 @@ func (r *Renderer) renderEnemy(ecs *ecs.ECS, screen *ebiten.Image, enemy *donbur
 	}
 
 	for _, instance := range sprite.Instances {
-		if !instance.IsActive(tick) && instance.GetCast() == nil {
+		// In playground mode every entity is always active, so the
+		// tick-based lifespan check only applies during replay.
+		if global.ReplayMode && !instance.IsActive(tick) && instance.GetCast() == nil {
 			continue
 		}
 

@@ -144,6 +144,16 @@ func (s *System) handleObjectDrag(global *model.GlobalData, camera *model.Camera
 		return
 	}
 
+	wx, wy := camera.ScreenToWorld(float64(mx), float64(my))
+
+	// WorldMarker: update Position directly.
+	if markerData := component.WorldMarker.Get(global.Selected); markerData != nil {
+		markerData.Position[0] = wx
+		markerData.Position[1] = wy
+
+		return
+	}
+
 	sprite := component.Sprite.Get(global.Selected)
 	if sprite == nil || global.SelectedInstance >= len(sprite.Instances) {
 		s.dragMode = dragNone
@@ -151,7 +161,6 @@ func (s *System) handleObjectDrag(global *model.GlobalData, camera *model.Camera
 		return
 	}
 
-	wx, wy := camera.ScreenToWorld(float64(mx), float64(my))
 	inst := sprite.Instances[global.SelectedInstance]
 	inst.Object.UpdatePosition(vector.NewVector(wx, wy))
 	// Cancel any in-flight walk animation so the manual drag wins.
@@ -179,8 +188,9 @@ func (s *System) pickEntity(
 	camera *model.CameraData,
 	screenX, screenY float64,
 ) (*donburi.Entry, int) {
-	tick := entry.GetTick(ecs)
-
+	// In playground mode all entities are always "active" — there is no
+	// event timeline to bound their lifespan. We only need to check that
+	// the sprite is initialized before hit-testing its instances.
 	var (
 		best     *donburi.Entry
 		bestInst int
@@ -194,10 +204,6 @@ func (s *System) pickEntity(
 		}
 
 		for i, inst := range sprite.Instances {
-			if !inst.IsActive(tick) && inst.GetCast() == nil {
-				continue
-			}
-
 			pos := inst.Object.Position()
 			sx, sy := camera.WorldToScreen(pos[0], pos[1])
 			d := math.Hypot(sx-screenX, sy-screenY)
@@ -216,6 +222,19 @@ func (s *System) pickEntity(
 
 	for e := range tag.Enemy.Iter(ecs.World) {
 		consider(e)
+	}
+
+	// Also hit-test WorldMarker entities.
+	for e := range tag.WorldMarker.Iter(ecs.World) {
+		marker := component.WorldMarker.Get(e)
+		sx, sy := camera.WorldToScreen(marker.Position[0], marker.Position[1])
+		d := math.Hypot(sx-screenX, sy-screenY)
+
+		if d <= bestDist {
+			best = e
+			bestInst = 0
+			bestDist = d
+		}
 	}
 
 	return best, bestInst

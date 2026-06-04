@@ -27,6 +27,18 @@ func (r *Renderer) SelectionRender(ecs *ecs.ECS, screen *ebiten.Image) {
 	}
 
 	camera := component.Camera.Get(tag.Camera.MustFirst(ecs.World))
+	zoom := math.Pow(1.01, float64(camera.ZoomFactor))
+	highlight := color.NRGBA{255, 215, 0, 255}
+
+	// WorldMarker: draw ring only, no facing pointer.
+	if global.Selected.HasComponent(component.WorldMarker) {
+		marker := component.WorldMarker.Get(global.Selected)
+		sx, sy := camera.WorldToScreen(marker.Position[0], marker.Position[1])
+		radius := float32(32 * zoom)
+		evector.StrokeCircle(screen, float32(sx), float32(sy), radius, 2.5, highlight, true)
+
+		return
+	}
 
 	sprite := component.Sprite.Get(global.Selected)
 	if sprite == nil || global.SelectedInstance >= len(sprite.Instances) {
@@ -38,10 +50,7 @@ func (r *Renderer) SelectionRender(ecs *ecs.ECS, screen *ebiten.Image) {
 	sx, sy := camera.WorldToScreen(pos[0], pos[1])
 
 	// Ring radius scales with zoom so it hugs the object consistently.
-	zoom := math.Pow(1.01, float64(camera.ZoomFactor))
 	radius := float32(28 * zoom)
-
-	highlight := color.NRGBA{255, 215, 0, 255}
 	evector.StrokeCircle(screen, float32(sx), float32(sy), radius, 2.5, highlight, true)
 
 	// A short pointer line indicating facing direction.

@@ -77,6 +77,15 @@ func (sr *ScriptRunner) ffCreatePlayer(L *lua.LState) int {
 
 	p := entry.NewPlayer(sr.ecs, rt, f64.Vec2{pos[0], pos[1]}, nil)
 
+	// Script-created players have no fflogs events to derive an active
+	// lifespan from, so mark them active for the whole timeline. Otherwise
+	// the default BTick/ETick (0) make IsActive(tick) true only at tick 0,
+	// which leaves them unselectable once the playground tick advances.
+	for _, inst := range component.Sprite.Get(p).Instances {
+		inst.BTick = 0
+		inst.ETick = 1<<62 - 1
+	}
+
 	// Notify callback for UI update (party list, etc.)
 	if sr.OnPlayerCreated != nil {
 		sr.OnPlayerCreated(p)

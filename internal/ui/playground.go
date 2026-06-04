@@ -18,8 +18,9 @@ import (
 var root = furex.NewView(furex.ID("Root"))
 
 type PlaygroundUI struct {
-	base *furex.View
-	once sync.Once
+	base         *furex.View
+	propertyEUI  *PropertyPanelEUI
+	once         sync.Once
 }
 
 var _ UI = (*PlaygroundUI)(nil)
@@ -47,7 +48,8 @@ func NewPlaygroundUI(ecs *ecs.ECS) *PlaygroundUI {
 	root.AddChild(baseWrap)
 
 	return &PlaygroundUI{
-		base: baseWrap,
+		base:        baseWrap,
+		propertyEUI: NewPropertyPanelEUI(),
 	}
 }
 
@@ -86,11 +88,6 @@ func (p *PlaygroundUI) Update(w, h int) {
 			topRightView.AddChild(hotbar)
 			topRightView.AddChild(checkBox)
 
-			// Property panel for the selected object (hidden until selection).
-			propertyPanel := NewPropertyPanel()
-			propertyPanel.View().Attrs.MarginTop = 20
-			topRightView.AddChild(propertyPanel.View())
-
 			topView.AddChild(partyList)
 			topView.AddChild(topRightView)
 
@@ -103,10 +100,12 @@ func (p *PlaygroundUI) Update(w, h int) {
 	furex.GlobalScale = s
 
 	root.UpdateWithSize(w, h)
+	p.propertyEUI.Update(w, h)
 }
 
 func (p *PlaygroundUI) Draw(screen *ebiten.Image) {
 	root.Draw(screen)
+	p.propertyEUI.Draw(screen)
 }
 
 func (p *PlaygroundUI) SetupHotBar(v *furex.View, w, h int) {

@@ -16,7 +16,12 @@ require (
 	golang.org/x/text v0.32.0
 )
 
-require github.com/rivo/uniseg v0.4.7 // indirect
+require (
+	github.com/ebitenui/ebitenui v0.7.3 // indirect
+	github.com/frustra/bbcode v0.0.0-20201127003707-6ef347fbe1c8 // indirect
+	github.com/rivo/uniseg v0.4.7 // indirect
+	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394 // indirect
+)
 
 require (
 	github.com/PuerkitoBio/goquery v1.10.1 // indirect
@@ -53,7 +58,7 @@ require (
 	golang.design/x/clipboard v0.7.0
 	golang.org/x/arch v0.12.0 // indirect
 	golang.org/x/crypto v0.46.0 // indirect
-	golang.org/x/exp/shiny v0.0.0-20250103183323-7d7fa50e5329 // indirect
+	golang.org/x/exp/shiny v0.0.0-20250305212735-054e65f0b394 // indirect
 	golang.org/x/mobile v0.0.0-20231127183840-76ac6878050a // indirect
 	golang.org/x/net v0.48.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
