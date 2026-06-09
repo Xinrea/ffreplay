@@ -15,7 +15,6 @@ import (
 	euiimage "github.com/ebitenui/ebitenui/image"
 	"github.com/ebitenui/ebitenui/input"
 	"github.com/ebitenui/ebitenui/widget"
-	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/yohamta/donburi"
 	"golang.org/x/text/language"
@@ -43,12 +42,13 @@ type propBinding struct {
 
 // PropertyPanelEUI manages an ebitenui floating window for editing
 // the selected playground object's properties.
+// It does NOT own the ebitenui.UI; it holds a shared reference so windows
+// are added to the same UI instance as all other ebitenui components.
 type PropertyPanelEUI struct {
-	ui            *ebitenui.UI
-	rootContainer *widget.Container
-	window        *widget.Window
-	removeWindow  widget.RemoveWindowFunc
-	bindings      []propBinding
+	ui           *ebitenui.UI // shared, not owned
+	window       *widget.Window
+	removeWindow widget.RemoveWindowFunc
+	bindings     []propBinding
 	// euiHovered replicates Furex enter/leave semantics so global.UIHovered
 	// is properly cleared when the cursor leaves the ebitenui window.
 	euiHovered bool
@@ -60,27 +60,24 @@ type PropertyPanelEUI struct {
 	scale      float64
 }
 
-// NewPropertyPanelEUI constructs the ebitenui overlay (initially no window).
-func NewPropertyPanelEUI() *PropertyPanelEUI {
-	rootContainer := widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-	)
+// NewPropertyPanelEUI constructs the property panel using the shared ebitenui UI.
+func NewPropertyPanelEUI(sharedUI *ebitenui.UI) *PropertyPanelEUI {
 	return &PropertyPanelEUI{
-		ui:            &ebitenui.UI{Container: rootContainer},
-		rootContainer: rootContainer,
-		scale:         1,
+		ui:    sharedUI,
+		scale: 1,
 	}
 }
 
-func (p *PropertyPanelEUI) Update(w, h int) {
+// UpdateECS syncs ECS state (show/hide window, input values, UIHovered/UIFocus).
+// The caller (PlaygroundUI) is responsible for calling ebitenui.UI.Update() and
+// ebitenui.UI.Draw() — this method must NOT call them.
+func (p *PropertyPanelEUI) UpdateECS(w, h int, scale float64) {
 	p.screenW = w
 	p.screenH = h
-	p.scale = ebiten.Monitor().DeviceScaleFactor()
+	p.scale = scale
 	if p.scale <= 0 {
 		p.scale = 1
 	}
-
-	p.ui.Update()
 
 	global := entry.GetGlobal(ecsInstance)
 	selected := global.Selected
@@ -136,10 +133,6 @@ func (p *PropertyPanelEUI) syncUIHovered(global *model.GlobalData) {
 		global.UIHovered = true
 	}
 	p.euiHovered = nowHovered
-}
-
-func (p *PropertyPanelEUI) Draw(screen *ebiten.Image) {
-	p.ui.Draw(screen)
 }
 
 // markerTypeName returns a short display name for a WorldMarkerType.

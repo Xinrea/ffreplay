@@ -7,6 +7,9 @@ import (
 	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/entry"
 	"github.com/Xinrea/ffreplay/internal/model"
+	"github.com/ebitenui/ebitenui"
+	euiimage "github.com/ebitenui/ebitenui/image"
+	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/yohamta/donburi/ecs"
 	"github.com/yohamta/furex/v2"
@@ -18,15 +21,18 @@ import (
 var root = furex.NewView(furex.ID("Root"))
 
 type PlaygroundUI struct {
-	base         *furex.View
-	propertyEUI  *PropertyPanelEUI
-	once         sync.Once
+	base        *furex.View
+	eui         *ebitenui.UI
+	euiRoot     *widget.Container
+	propPanel   *PropertyPanelEUI
+	once        sync.Once
 }
 
 var _ UI = (*PlaygroundUI)(nil)
 
 func NewPlaygroundUI(ecs *ecs.ECS) *PlaygroundUI {
 	ecsInstance = ecs
+
 	baseWrap := furex.NewView(
 		furex.ID("Playground"),
 		furex.Direction(furex.Column),
@@ -47,101 +53,190 @@ func NewPlaygroundUI(ecs *ecs.ECS) *PlaygroundUI {
 
 	root.AddChild(baseWrap)
 
+	// Shared ebitenui root: one UI instance for ALL ebitenui components in this scene.
+	euiRoot := widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
+	)
+	eui := &ebitenui.UI{Container: euiRoot}
+
 	return &PlaygroundUI{
-		base:        baseWrap,
-		propertyEUI: NewPropertyPanelEUI(),
+		base:      baseWrap,
+		eui:       eui,
+		euiRoot:   euiRoot,
+		propPanel: NewPropertyPanelEUI(eui),
 	}
 }
 
 func (p *PlaygroundUI) Update(w, h int) {
+	s := ebiten.Monitor().DeviceScaleFactor()
+	if s <= 0 {
+		s = 1
+	}
+	furex.GlobalScale = s
+
 	global := entry.GetGlobal(ecsInstance)
 	if global.Loaded.Load() {
 		p.once.Do(func() {
-			command := CommandView()
-			command.Attrs.MarginBottom = UIPadding
-			command.Attrs.MarginLeft = UIPadding
-
-			topView := furex.NewView(
-				furex.Grow(1),
-				furex.Direction(furex.Row),
-				furex.Justify(furex.JustifySpaceBetween),
-			)
-
-			partyList := NewPartyList(nil)
-			partyList.Attrs.MarginTop = 40
-			partyList.Attrs.MarginLeft = UIPadding
-
-			topRightView := furex.NewView(
-				furex.Direction(furex.Column),
-				furex.AlignItems(furex.AlignItemEnd),
-				furex.MarginRight(UIPadding),
-				furex.MarginTop(UIPadding),
-			)
-
-			hotbar := HotBarView(2, 8)
-
-			p.SetupHotBar(hotbar, 2, 8)
-
-			checkBox := CheckBoxView(14, true, &global.ShowTargetRing, "显示目标圈", nil)
-			checkBox.Attrs.MarginTop = 50
-
-			topRightView.AddChild(hotbar)
-			topRightView.AddChild(checkBox)
-
-			topView.AddChild(partyList)
-			topView.AddChild(topRightView)
-
-			p.base.AddChild(topView)
-			p.base.AddChild(command)
+			p.buildFurexUI(global)
+			p.buildEUITopRight(s, global)
 		})
 	}
 
-	s := ebiten.Monitor().DeviceScaleFactor()
-	furex.GlobalScale = s
-
 	root.UpdateWithSize(w, h)
-	p.propertyEUI.Update(w, h)
+
+	// Single ebitenui update covers property panel, hotbar, checkbox, etc.
+	p.eui.Update()
+	p.propPanel.UpdateECS(w, h, s)
 }
 
 func (p *PlaygroundUI) Draw(screen *ebiten.Image) {
 	root.Draw(screen)
-	p.propertyEUI.Draw(screen)
+	// Single ebitenui draw for all migrated components.
+	p.eui.Draw(screen)
 }
 
-func (p *PlaygroundUI) SetupHotBar(v *furex.View, w, h int) {
-	newWorldMarkerHotBarItem := func(marker model.WorldMarkerType) *furex.View {
-		return HotbarItemView(&HotBarItemConfig{
-			Name: "test",
-			Icon: model.WorldMarkerConfigs[marker].Texture,
-			ClickHandler: func() {
-				global := entry.GetGlobal(ecsInstance)
-				camera := entry.GetCamera(ecsInstance)
-				// if marker exists, remove it
-				for markerEntry := range component.WorldMarker.Iter(ecsInstance.World) {
-					markerData := component.WorldMarker.Get(markerEntry)
-					if markerData.Type == marker {
-						markerEntry.Remove()
+// buildFurexUI sets up the remaining Furex layout (party list, command view).
+func (p *PlaygroundUI) buildFurexUI(global *model.GlobalData) {
+	command := CommandView()
+	command.Attrs.MarginBottom = UIPadding
+	command.Attrs.MarginLeft = UIPadding
 
-						return
-					}
-				}
+	topView := furex.NewView(
+		furex.Grow(1),
+		furex.Direction(furex.Row),
+		furex.Justify(furex.JustifySpaceBetween),
+	)
 
-				x, y := ebiten.CursorPosition()
-				wx, wy := camera.ScreenToWorld(float64(x), float64(y))
-				entry.NewWorldMarker(ecsInstance, marker, f64.Vec2{wx, wy})
-				global.WorldMarkerSelected = int(marker)
-			},
-		})
-	}
+	partyList := NewPartyList(nil)
+	partyList.Attrs.MarginTop = 40
+	partyList.Attrs.MarginLeft = UIPadding
 
-	for i := range h {
-		for j := range w {
-			marker := model.WorldMarkerType(i*w + j)
+	topView.AddChild(partyList)
+
+	p.base.AddChild(topView)
+	p.base.AddChild(command)
+}
+
+// buildEUITopRight creates the ebitenui top-right column with HotBar and Checkbox.
+func (p *PlaygroundUI) buildEUITopRight(scale float64, global *model.GlobalData) {
+	pad := int(float64(UIPadding) * scale)
+
+	// Outer container anchored to top-right, with screen-edge padding.
+	col := widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+			widget.RowLayoutOpts.Padding(&widget.Insets{
+				Top:   pad,
+				Right: pad,
+			}),
+			widget.RowLayoutOpts.Spacing(int(50 * scale)),
+		)),
+		widget.ContainerOpts.WidgetOpts(
+			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+				HorizontalPosition: widget.AnchorLayoutPositionEnd,
+				VerticalPosition:   widget.AnchorLayoutPositionStart,
+			}),
+		),
+	)
+
+	hotbar := p.buildEUIHotBar(2, 8, scale)
+	col.AddChild(hotbar)
+
+	checkbox := NewEUICheckbox(14, true, &global.ShowTargetRing, "显示目标圈", nil, scale)
+	col.AddChild(checkbox)
+
+	p.euiRoot.AddChild(col)
+}
+
+// buildEUIHotBar creates a rows×cols grid of ebitenui Buttons using game hotbar textures.
+// All icons and click handlers are configured immediately (no two-step HotBarView/SetupHotBar).
+func (p *PlaygroundUI) buildEUIHotBar(rows, cols int, scale float64) *widget.Container {
+	slotPx := int(48 * scale)
+	gap := int(2 * scale)
+
+	hotbarContainer := widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+			widget.RowLayoutOpts.Spacing(gap),
+		)),
+	)
+
+	emptySlice := euiimage.NewNineSlice(
+		hotbarAtlasTexture.GetNineSlice("hotbar_empty.png").Texture,
+		[3]int{0, 48, 0}, [3]int{0, 48, 0},
+	)
+
+	for r := range rows {
+		rowContainer := widget.NewContainer(
+			widget.ContainerOpts.Layout(widget.NewRowLayout(
+				widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+				widget.RowLayoutOpts.Spacing(gap),
+			)),
+		)
+
+		for c := range cols {
+			marker := model.WorldMarkerType(r*cols + c)
 			if marker > model.WorldMarker4 {
-				return
+				break
 			}
 
-			v.NthChild(i).NthChild(j).ReplaceWith(newWorldMarkerHotBarItem(marker))
+			config := model.WorldMarkerConfigs[marker]
+			idleImg, pressedImg := buildHotbarButtonImages(config.Texture, slotPx)
+
+			m := marker // capture for closure
+
+			btn := widget.NewButton(
+				widget.ButtonOpts.Image(&widget.ButtonImage{
+					Idle:         euiimage.NewNineSlice(idleImg, [3]int{0, slotPx, 0}, [3]int{0, slotPx, 0}),
+					Hover:        euiimage.NewNineSlice(idleImg, [3]int{0, slotPx, 0}, [3]int{0, slotPx, 0}),
+					Pressed:      euiimage.NewNineSlice(pressedImg, [3]int{0, slotPx, 0}, [3]int{0, slotPx, 0}),
+					PressedHover: euiimage.NewNineSlice(pressedImg, [3]int{0, slotPx, 0}, [3]int{0, slotPx, 0}),
+					Disabled:     emptySlice,
+				}),
+				widget.ButtonOpts.WidgetOpts(
+					widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+						MaxWidth:  slotPx,
+						MaxHeight: slotPx,
+					}),
+				),
+				widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+					g := entry.GetGlobal(ecsInstance)
+					camera := entry.GetCamera(ecsInstance)
+					for markerEntry := range component.WorldMarker.Iter(ecsInstance.World) {
+						md := component.WorldMarker.Get(markerEntry)
+						if md.Type == m {
+							markerEntry.Remove()
+							return
+						}
+					}
+					x, y := ebiten.CursorPosition()
+					wx, wy := camera.ScreenToWorld(float64(x), float64(y))
+					entry.NewWorldMarker(ecsInstance, m, f64.Vec2{wx, wy})
+					g.WorldMarkerSelected = int(m)
+				}),
+			)
+			rowContainer.AddChild(btn)
 		}
+
+		hotbarContainer.AddChild(rowContainer)
 	}
+
+	return hotbarContainer
+}
+
+// buildHotbarButtonImages pre-composites the layered hotbar visuals into two
+// *ebiten.Image: idle (icon + fg overlay) and pressed (idle + clicked overlay).
+func buildHotbarButtonImages(icon *ebiten.Image, slotPx int) (*ebiten.Image, *ebiten.Image) {
+	fg := hotbarAtlasTexture.GetNineSlice("hotbar_fg.png").Texture
+	clicked := hotbarAtlasTexture.GetNineSlice("hotbar_clicked.png").Texture
+
+	idle := ebiten.NewImage(slotPx, slotPx)
+	overlayImage(idle, icon)
+	overlayImage(idle, fg)
+
+	pressed := ebiten.NewImage(slotPx, slotPx)
+	overlayImage(pressed, idle)
+	overlayImage(pressed, clicked)
+
+	return idle, pressed
 }
