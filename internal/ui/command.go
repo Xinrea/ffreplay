@@ -4,6 +4,11 @@ import (
 	"image/color"
 	"strings"
 
+	"github.com/Xinrea/ffreplay/internal/entry"
+	euiimage "github.com/ebitenui/ebitenui/image"
+	"github.com/ebitenui/ebitenui/widget"
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/yohamta/furex/v2"
 )
 
@@ -14,10 +19,17 @@ var (
 )
 
 type CommandHandler struct {
-	wrap    *furex.View
-	message *furex.View
-	input   *furex.View
-	player  PlayerCommand
+	wrap         *furex.View
+	message      *furex.View
+	input        *furex.View
+	euiWrap      *widget.Container
+	euiMessage   *widget.Container
+	euiInput     *widget.TextInput
+	euiScale     float64
+	euiHistory   []string
+	historyMode  bool
+	historyIndex int
+	player       PlayerCommand
 }
 
 type PlayerCommand struct {
@@ -62,14 +74,18 @@ func (c *CommandHandler) Execute(cmd string) {
 	case "/script":
 		c.scriptHandler(commands[1:])
 	case "/clear":
-		c.message.RemoveAll()
-		c.message.SetHeight(12)
+		c.clearMessages()
 	default:
 		c.AddError("Invalid command: " + commands[0])
 	}
 }
 
 func (c *CommandHandler) AddEcho(cmd string) {
+	if c.euiMessage != nil {
+		c.addEUIText("> "+cmd, color.White)
+		return
+	}
+
 	// add echo message
 	text := &Text{
 		Align:   furex.AlignItemStart,
@@ -81,6 +97,11 @@ func (c *CommandHandler) AddEcho(cmd string) {
 }
 
 func (c *CommandHandler) AddResult(result string) {
+	if c.euiMessage != nil {
+		c.addEUIText(result, color.White)
+		return
+	}
+
 	// add echo message
 	text := &Text{
 		Align:        furex.AlignItemStart,
@@ -95,6 +116,11 @@ func (c *CommandHandler) AddResult(result string) {
 }
 
 func (c *CommandHandler) AddPrompt(prompt string) {
+	if c.euiMessage != nil {
+		c.addEUIText(prompt, PromptColor)
+		return
+	}
+
 	// add echo message
 	text := &Text{
 		Align:   furex.AlignItemStart,
@@ -106,6 +132,11 @@ func (c *CommandHandler) AddPrompt(prompt string) {
 }
 
 func (c *CommandHandler) AddError(err string) {
+	if c.euiMessage != nil {
+		c.addEUIText(err, color.NRGBA{255, 120, 120, 255})
+		return
+	}
+
 	// add echo message
 	text := &Text{
 		Align:        furex.AlignItemStart,
@@ -117,6 +148,66 @@ func (c *CommandHandler) AddError(err string) {
 	}
 	c.message.AddChild(furex.NewView(furex.MarginLeft(10), furex.MarginTop(5), furex.Height(12), furex.Handler(text)))
 	c.message.SetHeight(c.message.Attrs.Height + 12 + 5)
+}
+
+func (c *CommandHandler) clearMessages() {
+	if c.euiMessage != nil {
+		c.euiMessage.RemoveChildren()
+		c.AddPrompt("输入 /help 查看可用命令")
+		return
+	}
+
+	c.message.RemoveAll()
+	c.message.SetHeight(12)
+}
+
+func (c *CommandHandler) addEUIText(content string, clr color.Color) {
+	scale := c.euiScale
+	if scale <= 0 {
+		scale = 1
+	}
+	face := newEUIFace(12 * scale)
+	text := widget.NewText(
+		widget.TextOpts.Text(content, &face, clr),
+		widget.TextOpts.Position(widget.TextPositionStart, widget.TextPositionCenter),
+		widget.TextOpts.WidgetOpts(
+			widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+				Stretch:  true,
+				MaxWidth: int(380 * scale),
+			}),
+		),
+	)
+	c.euiMessage.AddChild(text)
+}
+
+func (c *CommandHandler) handleEUIInputUpdate() {
+	if c.euiInput == nil || !c.euiInput.IsFocused() {
+		return
+	}
+
+	if inpututil.IsKeyJustPressed(ebiten.KeyArrowUp) {
+		if !c.historyMode {
+			c.historyMode = true
+			c.historyIndex = len(c.euiHistory)
+		}
+		c.historyIndex--
+		if c.historyIndex < 0 {
+			c.historyIndex = 0
+		}
+		if c.historyIndex < len(c.euiHistory) {
+			c.euiInput.SetText(c.euiHistory[c.historyIndex])
+		}
+	}
+
+	if inpututil.IsKeyJustPressed(ebiten.KeyArrowDown) && c.historyMode {
+		c.historyIndex++
+		if c.historyIndex >= len(c.euiHistory) {
+			c.historyIndex = len(c.euiHistory)
+			c.euiInput.SetText("")
+			return
+		}
+		c.euiInput.SetText(c.euiHistory[c.historyIndex])
+	}
 }
 
 func CommandView() *furex.View {
@@ -152,4 +243,126 @@ func CommandView() *furex.View {
 	handler.input = input
 
 	return view
+}
+
+func NewEUICommandView(scale float64) *widget.Container {
+	handler := &CommandHandler{}
+	width := int(400 * scale)
+	pad := int(float64(UIPadding) * scale)
+	messagePadX := int(10 * scale)
+	messagePadY := int(5 * scale)
+	fontSize := 12 * scale
+	face := newEUIFace(fontSize)
+
+	wrap := widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+			widget.RowLayoutOpts.Padding(&widget.Insets{
+				Left:   pad,
+				Bottom: pad,
+			}),
+		)),
+		widget.ContainerOpts.WidgetOpts(
+			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+				HorizontalPosition: widget.AnchorLayoutPositionStart,
+				VerticalPosition:   widget.AnchorLayoutPositionEnd,
+			}),
+		),
+	)
+
+	message := widget.NewContainer(
+		widget.ContainerOpts.BackgroundImage(nineSliceWithAlpha(messageTextureAtlas.GetNineSlice("message_bg.png"), 0.5)),
+		widget.ContainerOpts.Layout(widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+			widget.RowLayoutOpts.Padding(&widget.Insets{
+				Top:    messagePadY,
+				Bottom: messagePadY,
+				Left:   messagePadX,
+				Right:  messagePadX,
+			}),
+			widget.RowLayoutOpts.Spacing(int(5*scale)),
+		)),
+		widget.ContainerOpts.WidgetOpts(
+			widget.WidgetOpts.MinSize(width, int(34*scale)),
+			widget.WidgetOpts.LayoutData(widget.RowLayoutData{Stretch: true}),
+		),
+	)
+	wrap.AddChild(message)
+
+	inputBg := toEUINineSlice(messageTextureAtlas.GetNineSlice("input_bg.png"))
+	inputWrap := widget.NewContainer(
+		widget.ContainerOpts.BackgroundImage(inputBg),
+		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
+		widget.ContainerOpts.WidgetOpts(
+			widget.WidgetOpts.MinSize(width, int(InputHeight*scale)),
+			widget.WidgetOpts.LayoutData(widget.RowLayoutData{Stretch: true}),
+		),
+	)
+	promptFace := newEUIFace(fontSize)
+	inputWrap.AddChild(widget.NewText(
+		widget.TextOpts.Text("> ", &promptFace, color.White),
+		widget.TextOpts.Position(widget.TextPositionStart, widget.TextPositionCenter),
+		widget.TextOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+			HorizontalPosition: widget.AnchorLayoutPositionStart,
+			VerticalPosition:   widget.AnchorLayoutPositionCenter,
+			Padding: &widget.Insets{
+				Left: int(6 * scale),
+			},
+		})),
+	))
+	textInput := widget.NewTextInput(
+		widget.TextInputOpts.Image(&widget.TextInputImage{
+			Idle:      transparentNineSlice(),
+			Disabled:  transparentNineSlice(),
+			Highlight: euiimage.NewNineSliceColor(color.NRGBA{24, 169, 248, 96}),
+		}),
+		widget.TextInputOpts.Color(&widget.TextInputColor{
+			Idle:          color.White,
+			Disabled:      color.NRGBA{255, 255, 255, 120},
+			Caret:         color.White,
+			DisabledCaret: color.NRGBA{255, 255, 255, 120},
+		}),
+		widget.TextInputOpts.Face(&face),
+		widget.TextInputOpts.Padding(&widget.Insets{
+			Left:   int(18 * scale),
+			Right:  int(6 * scale),
+			Top:    int(8 * scale),
+			Bottom: int(8 * scale),
+		}),
+		widget.TextInputOpts.SubmitOnEnter(true),
+		widget.TextInputOpts.SubmitHandler(func(args *widget.TextInputChangedEventArgs) {
+			cmd := strings.TrimSpace(args.InputText)
+			if cmd == "" {
+				args.TextInput.SetText("")
+				return
+			}
+			handler.historyMode = false
+			handler.euiHistory = append(handler.euiHistory, cmd)
+			handler.CommitCommand(cmd)
+			args.TextInput.SetText("")
+		}),
+		widget.TextInputOpts.WidgetOpts(
+			widget.WidgetOpts.MinSize(width, int(InputHeight*scale)),
+			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+				StretchHorizontal: true,
+				StretchVertical:   true,
+			}),
+			widget.WidgetOpts.OnUpdate(func(w widget.HasWidget) {
+				handler.handleEUIInputUpdate()
+				if handler.euiInput != nil && handler.euiInput.IsFocused() {
+					entry.GetGlobal(ecsInstance).UIFocus = true
+				}
+			}),
+		),
+	)
+	inputWrap.AddChild(textInput)
+	wrap.AddChild(inputWrap)
+
+	handler.euiWrap = wrap
+	handler.euiMessage = message
+	handler.euiInput = textInput
+	handler.euiScale = scale
+	handler.AddPrompt("输入 /help 查看可用命令")
+
+	return wrap
 }

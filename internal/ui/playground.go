@@ -21,11 +21,11 @@ import (
 var root = furex.NewView(furex.ID("Root"))
 
 type PlaygroundUI struct {
-	base        *furex.View
-	eui         *ebitenui.UI
-	euiRoot     *widget.Container
-	propPanel   *PropertyPanelEUI
-	once        sync.Once
+	base      *furex.View
+	eui       *ebitenui.UI
+	euiRoot   *widget.Container
+	propPanel *PropertyPanelEUI
+	once      sync.Once
 }
 
 var _ UI = (*PlaygroundUI)(nil)
@@ -77,12 +77,17 @@ func (p *PlaygroundUI) Update(w, h int) {
 	global := entry.GetGlobal(ecsInstance)
 	if global.Loaded.Load() {
 		p.once.Do(func() {
-			p.buildFurexUI(global)
+			p.buildFurexUI()
+			p.euiRoot.AddChild(NewEUICommandView(s))
 			p.buildEUITopRight(s, global)
 		})
 	}
 
 	root.UpdateWithSize(w, h)
+
+	// Recompute focus from the current ebitenui state each frame. Focused
+	// widgets below will set this back to true during/after p.eui.Update().
+	global.UIFocus = false
 
 	// Single ebitenui update covers property panel, hotbar, checkbox, etc.
 	p.eui.Update()
@@ -95,12 +100,8 @@ func (p *PlaygroundUI) Draw(screen *ebiten.Image) {
 	p.eui.Draw(screen)
 }
 
-// buildFurexUI sets up the remaining Furex layout (party list, command view).
-func (p *PlaygroundUI) buildFurexUI(global *model.GlobalData) {
-	command := CommandView()
-	command.Attrs.MarginBottom = UIPadding
-	command.Attrs.MarginLeft = UIPadding
-
+// buildFurexUI sets up the remaining Furex layout (party list).
+func (p *PlaygroundUI) buildFurexUI() {
 	topView := furex.NewView(
 		furex.Grow(1),
 		furex.Direction(furex.Row),
@@ -114,7 +115,6 @@ func (p *PlaygroundUI) buildFurexUI(global *model.GlobalData) {
 	topView.AddChild(partyList)
 
 	p.base.AddChild(topView)
-	p.base.AddChild(command)
 }
 
 // buildEUITopRight creates the ebitenui top-right column with HotBar and Checkbox.
@@ -129,7 +129,7 @@ func (p *PlaygroundUI) buildEUITopRight(scale float64, global *model.GlobalData)
 				Top:   pad,
 				Right: pad,
 			}),
-			widget.RowLayoutOpts.Spacing(int(50 * scale)),
+			widget.RowLayoutOpts.Spacing(int(50*scale)),
 		)),
 		widget.ContainerOpts.WidgetOpts(
 			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
