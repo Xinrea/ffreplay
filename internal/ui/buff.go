@@ -2,10 +2,13 @@ package ui
 
 import (
 	"fmt"
+	"image"
 	"image/color"
 	"strconv"
 
 	"github.com/Xinrea/ffreplay/internal/model"
+	"github.com/ebitenui/ebitenui/widget"
+	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/yohamta/furex/v2"
 )
 
@@ -62,6 +65,157 @@ func BuffView(buff *model.Buff) *furex.View {
 	})))
 
 	return view
+}
+
+func EUIBuffView(buff *model.Buff, scale float64) *widget.Container {
+	if scale <= 0 {
+		scale = 1
+	}
+
+	w := int(BuffWidth * scale)
+	iconH := int(BuffHeight * scale)
+	totalH := int(float64(BuffHeight+BuffRemainFontSize+BuffRemainTop) * scale)
+	if totalH < iconH {
+		totalH = iconH
+	}
+
+	view := widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
+		widget.ContainerOpts.WidgetOpts(
+			widget.WidgetOpts.MinSize(w, totalH),
+			widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+				MaxWidth:  w,
+				MaxHeight: totalH,
+			}),
+		),
+	)
+
+	view.AddChild(widget.NewGraphic(
+		// Match the legacy Furex Sprite frame (24x32), otherwise icons look
+		// vertically compressed compared with the original game UI.
+		widget.GraphicOpts.Image(scaleImage(buff.Texture(), w, iconH)),
+		widget.GraphicOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+			HorizontalPosition: widget.AnchorLayoutPositionStart,
+			VerticalPosition:   widget.AnchorLayoutPositionStart,
+		})),
+	))
+
+	if buff.Stacks > 1 {
+		view.AddChild(newEUIShadowText(
+			strconv.Itoa(buff.Stacks),
+			BuffStackFontSize*scale,
+			int(BuffStackFontSize*scale),
+			int(BuffStackFontSize*scale),
+			furex.AlignItemEnd,
+			color.White,
+			BuffStackShadow*scale,
+			color.NRGBA{0, 0, 0, 200},
+			widget.AnchorLayoutData{
+				HorizontalPosition: widget.AnchorLayoutPositionStart,
+				VerticalPosition:   widget.AnchorLayoutPositionStart,
+				Padding: &widget.Insets{
+					Top:  int(BuffStackTop * scale),
+					Left: int(BuffStackLeft * scale),
+				},
+			},
+		))
+	}
+
+	view.AddChild(newEUIShadowText(
+		formatSeconds(buff.Remain),
+		BuffRemainFontSize*scale,
+		w,
+		int(BuffRemainFontSize*scale),
+		furex.AlignItemCenter,
+		color.White,
+		1*scale,
+		color.NRGBA{0, 0, 0, 128},
+		widget.AnchorLayoutData{
+			HorizontalPosition: widget.AnchorLayoutPositionCenter,
+			VerticalPosition:   widget.AnchorLayoutPositionEnd,
+		},
+	))
+
+	return view
+}
+
+type euiShadowText struct {
+	widget       *widget.Widget
+	content      string
+	fontSize     float64
+	width        int
+	height       int
+	align        furex.FlexAlignItem
+	color        color.Color
+	shadowColor  color.Color
+	shadowOffset float64
+}
+
+func newEUIShadowText(
+	content string,
+	fontSize float64,
+	width int,
+	height int,
+	align furex.FlexAlignItem,
+	clr color.Color,
+	shadowOffset float64,
+	shadowColor color.Color,
+	layoutData any,
+) *euiShadowText {
+	t := &euiShadowText{
+		content:      content,
+		fontSize:     fontSize,
+		width:        width,
+		height:       height,
+		align:        align,
+		color:        clr,
+		shadowColor:  shadowColor,
+		shadowOffset: shadowOffset,
+	}
+	t.widget = widget.NewWidget(widget.WidgetOpts.LayoutData(layoutData))
+	return t
+}
+
+func (t *euiShadowText) GetWidget() *widget.Widget {
+	return t.widget
+}
+
+func (t *euiShadowText) SetLocation(rect image.Rectangle) {
+	t.widget.Rect = rect
+}
+
+func (t *euiShadowText) PreferredSize() (int, int) {
+	return t.width, t.height
+}
+
+func (t *euiShadowText) Validate() {}
+
+func (t *euiShadowText) Update(updObj *widget.UpdateObject) {
+	t.widget.Update(updObj)
+}
+
+func (t *euiShadowText) Render(screen *ebiten.Image) {
+	t.widget.Render(screen)
+
+	frame := t.widget.Rect
+	x := float64(frame.Min.X)
+	switch t.align {
+	case furex.AlignItemCenter:
+		x += float64(frame.Dx()) / 2
+	case furex.AlignItemEnd:
+		x += float64(frame.Dx())
+	}
+
+	DrawText(
+		screen,
+		t.content,
+		t.fontSize,
+		x,
+		float64(frame.Min.Y)+float64(frame.Dy())/2,
+		t.color,
+		t.align,
+		&ShadowOpt{Color: t.shadowColor, Offset: t.shadowOffset},
+	)
 }
 
 const secondsInMinute = 60

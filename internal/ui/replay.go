@@ -110,9 +110,8 @@ func (f *FFUI) Update(w, h int) {
 			furex.Justify(furex.JustifySpaceBetween),
 			furex.AlignItems(furex.AlignItemEnd),
 		)
-		rview.AddChild(EnemyBarsView())
-
 		f.view.AddChild(rview)
+		f.euiRoot.AddChild(EUIEnemyBarsView(scale))
 		f.euiRoot.AddChild(NewEUILimitBreak(&global.LimitBreak, &global.Bar, scale))
 		f.euiRoot.AddChild(EUIProgressBarView(scale))
 	})
