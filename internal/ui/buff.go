@@ -19,6 +19,7 @@ const (
 	BuffStackTop       = 2
 	BuffStackLeft      = 9
 	BuffStackShadow    = 4
+	EUIBuffStackShadow = 1
 	BuffRemainTop      = -6
 	BuffRemainFontSize = 12
 )
@@ -108,7 +109,7 @@ func EUIBuffView(buff *model.Buff, scale float64) *widget.Container {
 			int(BuffStackFontSize*scale),
 			furex.AlignItemEnd,
 			color.White,
-			BuffStackShadow*scale,
+			EUIBuffStackShadow*scale,
 			color.NRGBA{0, 0, 0, 200},
 			widget.AnchorLayoutData{
 				HorizontalPosition: widget.AnchorLayoutPositionStart,
