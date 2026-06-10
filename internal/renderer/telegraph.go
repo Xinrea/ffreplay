@@ -12,7 +12,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/colorm"
 	"github.com/yohamta/donburi/ecs"
-	"github.com/yohamta/furex/v2"
 )
 
 // TelegraphRender renders temporary visual telegraphs (AoE indicators, text annotations).
@@ -52,7 +51,7 @@ func (r *Renderer) TelegraphRender(ecs *ecs.ECS, screen *ebiten.Image) {
 				sx,
 				sy,
 				c,
-				furex.AlignItemCenter,
+				ui.AlignCenter,
 				textShdowOpt,
 			)
 		}

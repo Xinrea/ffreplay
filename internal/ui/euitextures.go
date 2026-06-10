@@ -8,6 +8,9 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
+var messageTextureAtlas = texture.NewTextureAtlasFromFile("asset/ui/message.xml")
+var hotbarAtlasTexture = texture.NewTextureAtlasFromFile("asset/ui/hotbar.xml")
+
 // toEUINineSlice converts our custom texture.NineSlice to ebitenui's NineSlice,
 // preserving the nine-slice border dimensions so game textures stretch identically.
 func toEUINineSlice(ns *texture.NineSlice) *euiimage.NineSlice {

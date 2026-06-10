@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"image"
 	"sync"
 
 	"github.com/Xinrea/ffreplay/internal/component"
@@ -12,16 +11,10 @@ import (
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/yohamta/donburi/ecs"
-	"github.com/yohamta/furex/v2"
 	"golang.org/x/image/math/f64"
 )
 
-// Due to the design of furex.View, root view cannot handle any events,
-// so we need a global root as wrap.
-var root = furex.NewView(furex.ID("Root"))
-
 type PlaygroundUI struct {
-	base      *furex.View
 	eui       *ebitenui.UI
 	euiRoot   *widget.Container
 	propPanel *PropertyPanelEUI
@@ -33,26 +26,6 @@ var _ UI = (*PlaygroundUI)(nil)
 func NewPlaygroundUI(ecs *ecs.ECS) *PlaygroundUI {
 	ecsInstance = ecs
 
-	baseWrap := furex.NewView(
-		furex.ID("Playground"),
-		furex.Direction(furex.Column),
-		furex.Justify(furex.JustifySpaceBetween),
-		furex.Grow(1),
-	)
-	baseWrap.Handler.JustPressedMouseButtonLeft = func(frame image.Rectangle, x int, y int) bool {
-		for _, c := range baseWrap.FilterByTagName("input") {
-			if fh, ok := c.Handler.Extra.(Focusable); ok {
-				fh.SetFocus(false)
-			}
-		}
-
-		entry.GetGlobal(ecsInstance).UIFocus = false
-
-		return false
-	}
-
-	root.AddChild(baseWrap)
-
 	// Shared ebitenui root: one UI instance for ALL ebitenui components in this scene.
 	euiRoot := widget.NewContainer(
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
@@ -60,7 +33,6 @@ func NewPlaygroundUI(ecs *ecs.ECS) *PlaygroundUI {
 	eui := &ebitenui.UI{Container: euiRoot}
 
 	return &PlaygroundUI{
-		base:      baseWrap,
 		eui:       eui,
 		euiRoot:   euiRoot,
 		propPanel: NewPropertyPanelEUI(eui),
@@ -72,18 +44,15 @@ func (p *PlaygroundUI) Update(w, h int) {
 	if s <= 0 {
 		s = 1
 	}
-	furex.GlobalScale = s
 
 	global := entry.GetGlobal(ecsInstance)
 	if global.Loaded.Load() {
 		p.once.Do(func() {
-			p.buildFurexUI()
+			p.euiRoot.AddChild(NewEUIPlaygroundPartyList(s))
 			p.euiRoot.AddChild(NewEUICommandView(s))
 			p.buildEUITopRight(s, global)
 		})
 	}
-
-	root.UpdateWithSize(w, h)
 
 	// Recompute focus from the current ebitenui state each frame. Focused
 	// widgets below will set this back to true during/after p.eui.Update().
@@ -95,26 +64,8 @@ func (p *PlaygroundUI) Update(w, h int) {
 }
 
 func (p *PlaygroundUI) Draw(screen *ebiten.Image) {
-	root.Draw(screen)
 	// Single ebitenui draw for all migrated components.
 	p.eui.Draw(screen)
-}
-
-// buildFurexUI sets up the remaining Furex layout (party list).
-func (p *PlaygroundUI) buildFurexUI() {
-	topView := furex.NewView(
-		furex.Grow(1),
-		furex.Direction(furex.Row),
-		furex.Justify(furex.JustifySpaceBetween),
-	)
-
-	partyList := NewPartyList(nil)
-	partyList.Attrs.MarginTop = 40
-	partyList.Attrs.MarginLeft = UIPadding
-
-	topView.AddChild(partyList)
-
-	p.base.AddChild(topView)
 }
 
 // buildEUITopRight creates the ebitenui top-right column with HotBar and Checkbox.

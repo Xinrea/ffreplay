@@ -8,13 +8,13 @@ import (
 	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/entry"
 	"github.com/Xinrea/ffreplay/internal/model"
+	"github.com/Xinrea/ffreplay/internal/tag"
 	"github.com/Xinrea/ffreplay/pkg/texture"
 	"github.com/Xinrea/ffreplay/util"
 	euiinput "github.com/ebitenui/ebitenui/input"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/yohamta/donburi"
-	"github.com/yohamta/furex/v2"
 )
 
 const (
@@ -23,119 +23,6 @@ const (
 )
 
 var PartyListBGNineSliceConfig = [4]int{5, 14, 0, 0}
-
-func NewPartyList(players []*donburi.Entry) *furex.View {
-	view := furex.NewView(
-		furex.TagName("PartyList"),
-		furex.MarginTop(10),
-		furex.Direction(furex.Column),
-		furex.AlignItems(furex.AlignItemStart),
-		furex.Justify(furex.JustifyStart),
-		furex.Handler(furex.ViewHandler{
-			Update: func(v *furex.View) {
-				playerItemLen := v.Len() - 1
-				bg := v.First()
-				expectHeight := playerItemLen*PlayerItemHeight + PartyListBGExtra
-				// TODO view.SetHeight should be able to handle this
-				if bg.Attrs.Height != expectHeight {
-					bg.SetHeight(expectHeight)
-				}
-			},
-		}),
-	)
-
-	view.AddChild(
-		furex.NewView(
-			furex.TagName("PartyListBG"),
-			furex.Width(PartyListWidth),
-			furex.Position(furex.PositionAbsolute),
-			furex.Handler(&Sprite{
-				NineSliceTexture: texture.NewNineSlice(
-					texture.NewTextureFromFile("asset/partylist_bg.png"),
-					PartyListBGNineSliceConfig[0],
-					PartyListBGNineSliceConfig[1],
-					PartyListBGNineSliceConfig[2],
-					PartyListBGNineSliceConfig[3]),
-			}),
-		),
-	)
-
-	for _, p := range players {
-		view.AddChild(NewPlayerItem(p))
-	}
-
-	view.Layout()
-
-	return view
-}
-
-type PlayerItem struct {
-	Player   *donburi.Entry
-	Hovered  bool
-	Selected bool
-
-	handler furex.ViewHandler
-}
-
-var _ furex.HandlerProvider = (*PlayerItem)(nil)
-
-func (p *PlayerItem) Handler() furex.ViewHandler {
-	p.handler.Extra = p
-	p.handler.Update = p.Update
-	p.handler.MouseEnter = p.HandleMouseEnter
-	p.handler.MouseLeave = p.HandleMouseLeave
-	p.handler.JustPressedMouseButtonLeft = p.HandleJustPressedMouseButtonLeft
-	p.handler.JustReleasedMouseButtonLeft = p.HandleJustReleasedMouseButtonLeft
-
-	return p.handler
-}
-
-func (p *PlayerItem) Update(v *furex.View) {
-	// status := component.Status.Get(p.Player)
-	if p.Hovered {
-		v.MustGetByID("hover").Attrs.Display = furex.DisplayFlex
-		ebiten.SetCursorShape(ebiten.CursorShapePointer)
-	} else {
-		v.MustGetByID("hover").Attrs.Display = furex.DisplayNone
-	}
-
-	targetPlayer := entry.GetGlobal(ecsInstance).TargetPlayer
-	if targetPlayer == p.Player {
-		v.MustGetByID("selected").Attrs.Display = furex.DisplayFlex
-	} else {
-		v.MustGetByID("selected").Attrs.Display = furex.DisplayNone
-	}
-
-	// if player is casting, hide name
-	if component.Sprite.Get(p.Player).Instances[0].GetCast() != nil {
-		v.MustGetByID("name").Attrs.Hidden = true
-		v.MustGetByID("cast").Attrs.Hidden = false
-	} else {
-		v.MustGetByID("name").Attrs.Hidden = false
-		v.MustGetByID("cast").Attrs.Hidden = true
-	}
-}
-
-func (p *PlayerItem) HandleJustPressedMouseButtonLeft(_ image.Rectangle, x, y int) bool {
-	entry.GetGlobal(ecsInstance).TargetPlayer = p.Player
-
-	return false
-}
-
-func (p *PlayerItem) HandleJustReleasedMouseButtonLeft(_ image.Rectangle, x, y int) {
-}
-
-func (p *PlayerItem) HandleMouseEnter(x, y int) bool {
-	p.Hovered = true
-
-	return true
-}
-
-func (p *PlayerItem) HandleMouseLeave() {
-	p.Hovered = false
-
-	ebiten.SetCursorShape(ebiten.CursorShapeDefault)
-}
 
 const (
 	PlayerItemHeight = 48
@@ -161,211 +48,43 @@ const (
 	BuffListOffsetY = 20
 )
 
-func NewPlayerItem(playerEntry *donburi.Entry) *furex.View {
-	item := &PlayerItem{
-		Player: playerEntry,
-	}
-	player := component.Status.Get(playerEntry)
-	view := furex.NewView(
-		furex.ID(strconv.Itoa(int(player.ID))),
-		furex.Height(PlayerItemHeight), furex.Direction(furex.Row),
-		furex.AlignItems(furex.AlignItemCenter),
-		furex.Justify(furex.JustifyStart),
-		furex.Handler(item),
-	)
-
-	// add hover/select sprite
-	addHoverSprite(view)
-
-	// add job icon
-	view.AddChild(
-		furex.NewView(
-			furex.Width(JobIconSize),
-			furex.Height(JobIconSize),
-			furex.Handler(&Sprite{Texture: player.RoleTexture()})))
-
-	// statusView contains name, hp, mp, cast
-	statusView := furex.NewView(furex.MarginLeft(5), furex.MarginTop(10), furex.Direction(furex.Column))
-	// add casting view
-	statusView.AddChild(createCastingView(playerEntry))
-	// add name
-	statusView.AddChild(
-		furex.NewView(
-			furex.ID("name"),
-			furex.MarginTop(-12),
-			furex.Height(NameTextSize),
-			furex.Handler(&Text{
-				Align:        furex.AlignItemStart,
-				Content:      player.Name,
-				Color:        color.White,
-				Shadow:       true,
-				ShadowOffset: 2,
-				ShadowColor:  color.NRGBA{22, 45, 87, 128},
-			})))
-
-	// view for hp and mp
-	statusView.AddChild(createHPMPBar(player))
-
-	view.AddChild(statusView)
-
-	bufflist := BuffListView(player.BuffList)
-	bufflist.SetMarginTop(BuffListOffsetY)
-	bufflist.SetMarginLeft(5)
-
-	view.AddChild(bufflist)
-
-	return view
-}
-
-func addHoverSprite(view *furex.View) {
-	view.AddChild(
-		furex.NewView(
-			furex.ID("hover"),
-			furex.Position(furex.PositionAbsolute),
-			furex.Top(HoverSpriteTop),
-			furex.Left(HoverSpriteLeft),
-			furex.Width(HoverSpriteWidth),
-			furex.Height(HoverSpriteHeight),
-			furex.Handler(&Sprite{
-				Texture: texture.NewTextureFromFile("asset/partylist_hover.png"),
-			})))
-	view.AddChild(
-		furex.NewView(
-			furex.ID("selected"),
-			furex.Position(furex.PositionAbsolute),
-			furex.Top(HoverSpriteTop),
-			furex.Left(HoverSpriteLeft),
-			furex.Width(HoverSpriteWidth),
-			furex.Height(HoverSpriteHeight),
-			furex.Handler(&Sprite{Texture: texture.NewTextureFromFile("asset/partylist_selected.png")})))
-}
-
-func createCastingView(e *donburi.Entry) *furex.View {
-	castView := furex.NewView(
-		furex.ID("cast"),
-		furex.MarginTop(5),
-		furex.Direction(furex.Column),
-		furex.AlignItems(furex.AlignItemEnd))
-	castView.AddChild(
-		furex.NewView(
-			furex.Width(StatusPartWidth),
-			furex.Height(BarHeight),
-			furex.Handler(&Bar{
-				Progress: func() float64 {
-					cast := component.Sprite.Get(e).Instances[0].GetCast()
-					if cast == nil {
-						return 0
-					}
-
-					return float64(util.TickToMS(entry.GetTick(ecsInstance)-cast.StartTick)) / float64(cast.Cast)
-				},
-				BG: castAtlas.GetNineSlice("casting_frame.png"),
-				FG: castAtlas.GetNineSlice("casting_fg.png"),
-			})))
-	castView.AddChild(furex.NewView(furex.Height(CastNameTextSize), furex.Handler(&Text{
-		Align: furex.AlignItemStart,
-		Content: func() string {
-			cast := component.Sprite.Get(e).Instances[0].GetCast()
-			if cast == nil {
-				return ""
-			}
-
-			return cast.Name
-		},
-		Color:        color.White,
-		Shadow:       true,
-		ShadowOffset: 1,
-		ShadowColor:  color.NRGBA{240, 152, 0, 128},
-	})))
-
-	return castView
-}
-
-func createHPMPBar(player *model.StatusData) *furex.View {
-	hm := furex.NewView(
-		furex.Direction(furex.Row),
-		furex.Justify(furex.JustifySpaceBetween),
-		furex.Width(StatusPartWidth),
-	)
-
-	createBarView := func(bar *Bar, text *Text, w, h int) *furex.View {
-		const MarginTop = 3
-
-		return furex.NewView(
-			furex.Direction(furex.Column),
-			furex.AlignItems(furex.AlignItemEnd),
-		).AddChild(
-			furex.NewView(
-				furex.MarginTop(MarginTop),
-				furex.Width(w),
-				furex.Height(h),
-				furex.Handler(bar))).AddChild(
-			furex.NewView(
-				furex.Height(HMPTextSize),
-				furex.MarginTop(-3),
-				furex.Handler(text)))
-	}
-
-	createBarView(&Bar{
-		Progress: func() float64 {
-			return float64(player.HP) / float64(player.MaxHP)
-		},
-		FG: barAtlas.GetNineSlice("normal_bar_fg.png"),
-		BG: barAtlas.GetNineSlice("normal_bar_bg.png"),
-	}, &Text{
-		Align: furex.AlignItemEnd,
-		Content: func() string {
-			return strconv.Itoa(player.HP)
-		},
-		Color:        color.White,
-		Shadow:       true,
-		ShadowOffset: 2,
-		ShadowColor:  color.NRGBA{22, 45, 87, 128},
-	}, HPBarWidth, HMPBarHeight).AddTo(hm)
-
-	createBarView(&Bar{
-		Progress: func() float64 {
-			return float64(player.Mana) / float64(player.MaxMana)
-		},
-		FG: barAtlas.GetNineSlice("normal_bar_fg.png"),
-		BG: barAtlas.GetNineSlice("normal_bar_bg.png"),
-	}, &Text{
-		Align: furex.AlignItemEnd,
-		Content: func() string {
-			return strconv.Itoa(player.Mana)
-		},
-		Color:        color.White,
-		Shadow:       true,
-		ShadowOffset: 2,
-		ShadowColor:  color.NRGBA{22, 45, 87, 128},
-	}, MPBarWidth, HMPBarHeight).AddTo(hm)
-
-	return hm
-}
-
 type euiPartyList struct {
 	widget  *widget.Widget
 	players []*donburi.Entry
+	entries func() []*donburi.Entry
 	scale   float64
 	hovered int
+	top     int
+	left    int
 }
 
 func NewEUIReplayPartyList(players []*donburi.Entry, scale float64) *euiPartyList {
+	return newEUIPartyList(players, nil, UIPadding+SingleBarHeight+10, UIPadding, scale)
+}
+
+func NewEUIPlaygroundPartyList(scale float64) *euiPartyList {
+	return newEUIPartyList(nil, currentPlayerEntries, 40, UIPadding, scale)
+}
+
+func newEUIPartyList(players []*donburi.Entry, entries func() []*donburi.Entry, top, left int, scale float64) *euiPartyList {
 	if scale <= 0 {
 		scale = 1
 	}
 	pl := &euiPartyList{
 		players: players,
+		entries: entries,
 		scale:   scale,
 		hovered: -1,
+		top:     top,
+		left:    left,
 	}
 	pl.widget = widget.NewWidget(
 		widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
 			HorizontalPosition: widget.AnchorLayoutPositionStart,
 			VerticalPosition:   widget.AnchorLayoutPositionStart,
 			Padding: &widget.Insets{
-				Top:  int(float64(UIPadding+SingleBarHeight+10) * scale),
-				Left: int(float64(UIPadding) * scale),
+				Top:  int(float64(top) * scale),
+				Left: int(float64(left) * scale),
 			},
 		}),
 		widget.WidgetOpts.CursorHovered(euiinput.CURSOR_POINTER),
@@ -382,18 +101,37 @@ func NewEUIReplayPartyList(players []*donburi.Entry, scale float64) *euiPartyLis
 			if args.Button != ebiten.MouseButtonLeft {
 				return
 			}
+			players := pl.currentPlayers()
 			idx := pl.indexAt(args.OffsetY)
-			if idx >= 0 && idx < len(pl.players) {
-				entry.GetGlobal(ecsInstance).TargetPlayer = pl.players[idx]
+			if idx >= 0 && idx < len(players) {
+				entry.GetGlobal(ecsInstance).TargetPlayer = players[idx]
 			}
 		}),
 	)
 	return pl
 }
 
+func currentPlayerEntries() []*donburi.Entry {
+	players := []*donburi.Entry{}
+	for p := range tag.Player.Iter(ecsInstance.World) {
+		if !p.Valid() {
+			continue
+		}
+		players = append(players, p)
+	}
+	return players
+}
+
+func (p *euiPartyList) currentPlayers() []*donburi.Entry {
+	if p.entries != nil {
+		return p.entries()
+	}
+	return p.players
+}
+
 func (p *euiPartyList) indexAt(offsetY int) int {
 	idx := int(float64(offsetY) / (float64(PlayerItemHeight) * p.scale))
-	if idx < 0 || idx >= len(p.players) {
+	if idx < 0 || idx >= len(p.currentPlayers()) {
 		return -1
 	}
 	return idx
@@ -408,8 +146,9 @@ func (p *euiPartyList) SetLocation(rect image.Rectangle) {
 }
 
 func (p *euiPartyList) PreferredSize() (int, int) {
+	players := p.currentPlayers()
 	return int(float64(PartyListWidth) * p.scale),
-		int(float64(len(p.players)*PlayerItemHeight+PartyListBGExtra) * p.scale)
+		int(float64(len(players)*PlayerItemHeight+PartyListBGExtra) * p.scale)
 }
 
 func (p *euiPartyList) Validate() {}
@@ -422,6 +161,10 @@ func (p *euiPartyList) Render(screen *ebiten.Image) {
 	p.widget.Render(screen)
 
 	frame := p.widget.Rect
+	players := p.currentPlayers()
+	if p.hovered >= len(players) {
+		p.hovered = -1
+	}
 	bg := texture.NewNineSlice(
 		texture.NewTextureFromFile("asset/partylist_bg.png"),
 		PartyListBGNineSliceConfig[0],
@@ -431,7 +174,7 @@ func (p *euiPartyList) Render(screen *ebiten.Image) {
 	)
 	bg.Draw(screen, frame, nil)
 
-	for i, player := range p.players {
+	for i, player := range players {
 		p.renderPlayer(screen, player, i)
 	}
 }
@@ -462,10 +205,10 @@ func (p *euiPartyList) renderPlayer(screen *ebiten.Image, playerEntry *donburi.E
 			float64(util.TickToMS(entry.GetTick(ecsInstance)-cast.StartTick))/float64(cast.Cast),
 			nil,
 		)
-		DrawText(screen, cast.Name, CastNameTextSize*s, statusX, y+22*s, color.White, furex.AlignItemStart,
+		DrawText(screen, cast.Name, CastNameTextSize*s, statusX, y+22*s, color.White, AlignStart,
 			&ShadowOpt{Color: color.NRGBA{240, 152, 0, 128}, Offset: 1 * s})
 	} else {
-		DrawText(screen, status.Name, NameTextSize*s, statusX, y+14*s, color.White, furex.AlignItemStart,
+		DrawText(screen, status.Name, NameTextSize*s, statusX, y+14*s, color.White, AlignStart,
 			&ShadowOpt{Color: color.NRGBA{22, 45, 87, 128}, Offset: 2 * s})
 	}
 
@@ -482,7 +225,7 @@ func (p *euiPartyList) renderPlayer(screen *ebiten.Image, playerEntry *donburi.E
 		hpProgress,
 		nil,
 	)
-	DrawText(screen, strconv.Itoa(status.HP), HMPTextSize*s, statusX+HPBarWidth*s, hpY+15*s, color.White, furex.AlignItemEnd,
+	DrawText(screen, strconv.Itoa(status.HP), HMPTextSize*s, statusX+HPBarWidth*s, hpY+15*s, color.White, AlignEnd,
 		&ShadowOpt{Color: color.NRGBA{22, 45, 87, 128}, Offset: 2 * s})
 
 	mpX := statusX + (HPBarWidth+10)*s
@@ -498,7 +241,7 @@ func (p *euiPartyList) renderPlayer(screen *ebiten.Image, playerEntry *donburi.E
 		mpProgress,
 		nil,
 	)
-	DrawText(screen, strconv.Itoa(status.Mana), HMPTextSize*s, mpX+MPBarWidth*s, hpY+15*s, color.White, furex.AlignItemEnd,
+	DrawText(screen, strconv.Itoa(status.Mana), HMPTextSize*s, mpX+MPBarWidth*s, hpY+15*s, color.White, AlignEnd,
 		&ShadowOpt{Color: color.NRGBA{22, 45, 87, 128}, Offset: 2 * s})
 
 	buffX := statusX + StatusPartWidth*s + 5*s
@@ -512,10 +255,10 @@ func (p *euiPartyList) drawBuff(screen *ebiten.Image, buff *model.Buff, x, y flo
 	s := p.scale
 	p.drawScaled(screen, buff.Texture(), x, y, BuffWidth*s, BuffHeight*s)
 	if buff.Stacks > 1 {
-		DrawText(screen, strconv.Itoa(buff.Stacks), BuffStackFontSize*s, x+float64(BuffStackLeft+BuffStackFontSize)*s, y+float64(BuffStackTop)*s+BuffStackFontSize*s/2, color.White, furex.AlignItemEnd,
+		DrawText(screen, strconv.Itoa(buff.Stacks), BuffStackFontSize*s, x+float64(BuffStackLeft+BuffStackFontSize)*s, y+float64(BuffStackTop)*s+BuffStackFontSize*s/2, color.White, AlignEnd,
 			&ShadowOpt{Color: color.NRGBA{0, 0, 0, 200}, Offset: EUIBuffStackShadow * s})
 	}
-	DrawText(screen, formatSeconds(buff.Remain), BuffRemainFontSize*s, x+BuffWidth*s/2, y+float64(BuffHeight+BuffRemainTop)*s, color.White, furex.AlignItemCenter,
+	DrawText(screen, formatSeconds(buff.Remain), BuffRemainFontSize*s, x+BuffWidth*s/2, y+float64(BuffHeight+BuffRemainTop)*s, color.White, AlignCenter,
 		&ShadowOpt{Color: color.NRGBA{0, 0, 0, 128}, Offset: 1 * s})
 }
 

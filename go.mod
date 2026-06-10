@@ -2,30 +2,27 @@ module github.com/Xinrea/ffreplay
 
 go 1.24.1
 
-replace github.com/yohamta/furex/v2 => github.com/Xinrea/furex/v2 v2.5.1
-
 require (
+	github.com/ebitenui/ebitenui v0.7.3
 	github.com/fogleman/ease v0.0.0-20170301025033-8da417bf1776
 	github.com/fogleman/gg v1.3.0
 	github.com/gin-gonic/gin v1.10.0
 	github.com/hajimehoshi/ebiten/v2 v2.9.7
 	github.com/yohamta/donburi v1.15.5
-	github.com/yohamta/furex/v2 v2.4.6
 	github.com/yuin/gopher-lua v1.1.1
 	golang.org/x/image v0.31.0
 	golang.org/x/text v0.32.0
 )
 
 require (
-	github.com/ebitenui/ebitenui v0.7.3 // indirect
 	github.com/frustra/bbcode v0.0.0-20201127003707-6ef347fbe1c8 // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
+	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394 // indirect
 )
 
 require (
-	github.com/PuerkitoBio/goquery v1.10.1 // indirect
-	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/bytedance/sonic v1.12.6 // indirect
 	github.com/bytedance/sonic/loader v0.2.1 // indirect
 	github.com/cloudwego/base64x v0.1.4 // indirect
@@ -41,11 +38,9 @@ require (
 	github.com/go-text/typesetting v0.3.0 // indirect
 	github.com/goccy/go-json v0.10.4 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
-	github.com/gorilla/css v1.0.1 // indirect
 	github.com/jezek/xgb v1.1.1 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.9 // indirect
-	github.com/kr/pretty v0.3.1 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
@@ -53,8 +48,6 @@ require (
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
-	github.com/vanng822/css v1.0.1 // indirect
-	github.com/vanng822/go-premailer v1.22.0 // indirect
 	golang.design/x/clipboard v0.7.0
 	golang.org/x/arch v0.12.0 // indirect
 	golang.org/x/crypto v0.46.0 // indirect

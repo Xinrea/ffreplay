@@ -9,7 +9,6 @@ import (
 	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/yohamta/furex/v2"
 )
 
 const (
@@ -23,50 +22,6 @@ const (
 	BuffRemainTop      = -6
 	BuffRemainFontSize = 12
 )
-
-func BuffView(buff *model.Buff) *furex.View {
-	view := &furex.View{
-		Attrs: furex.ViewAttrs{
-			Direction: furex.Column,
-		},
-	}
-	view.AddChild(
-		furex.NewView(
-			furex.Width(BuffWidth),
-			furex.Height(BuffHeight),
-			furex.Handler(&Sprite{Texture: buff.Texture()}),
-		),
-	)
-
-	if buff.Stacks > 1 {
-		view.AddChild(
-			furex.NewView(
-				furex.Position(furex.PositionAbsolute),
-				furex.Width(BuffStackFontSize),
-				furex.Height(BuffStackFontSize),
-				furex.Top(BuffStackTop),
-				furex.Left(BuffStackLeft),
-				furex.Handler(&Text{
-					Align:        furex.AlignItemEnd,
-					Content:      strconv.Itoa(buff.Stacks),
-					Color:        color.White,
-					Shadow:       true,
-					ShadowOffset: BuffStackShadow,
-					ShadowColor:  color.NRGBA{0, 0, 0, 200},
-				})))
-	}
-
-	view.AddChild(furex.NewView(furex.MarginTop(BuffRemainTop), furex.Height(BuffRemainFontSize), furex.Handler(&Text{
-		Align:        furex.AlignItemCenter,
-		Content:      formatSeconds(buff.Remain),
-		Color:        color.White,
-		Shadow:       true,
-		ShadowOffset: 1,
-		ShadowColor:  color.NRGBA{0, 0, 0, 128},
-	})))
-
-	return view
-}
 
 func EUIBuffView(buff *model.Buff, scale float64) *widget.Container {
 	if scale <= 0 {
@@ -107,7 +62,7 @@ func EUIBuffView(buff *model.Buff, scale float64) *widget.Container {
 			BuffStackFontSize*scale,
 			int(BuffStackFontSize*scale),
 			int(BuffStackFontSize*scale),
-			furex.AlignItemEnd,
+			AlignEnd,
 			color.White,
 			EUIBuffStackShadow*scale,
 			color.NRGBA{0, 0, 0, 200},
@@ -127,7 +82,7 @@ func EUIBuffView(buff *model.Buff, scale float64) *widget.Container {
 		BuffRemainFontSize*scale,
 		w,
 		int(BuffRemainFontSize*scale),
-		furex.AlignItemCenter,
+		AlignCenter,
 		color.White,
 		1*scale,
 		color.NRGBA{0, 0, 0, 128},
@@ -146,7 +101,7 @@ type euiShadowText struct {
 	fontSize     float64
 	width        int
 	height       int
-	align        furex.FlexAlignItem
+	align        TextAlign
 	color        color.Color
 	shadowColor  color.Color
 	shadowOffset float64
@@ -157,7 +112,7 @@ func newEUIShadowText(
 	fontSize float64,
 	width int,
 	height int,
-	align furex.FlexAlignItem,
+	align TextAlign,
 	clr color.Color,
 	shadowOffset float64,
 	shadowColor color.Color,
@@ -201,9 +156,9 @@ func (t *euiShadowText) Render(screen *ebiten.Image) {
 	frame := t.widget.Rect
 	x := float64(frame.Min.X)
 	switch t.align {
-	case furex.AlignItemCenter:
+	case AlignCenter:
 		x += float64(frame.Dx()) / 2
-	case furex.AlignItemEnd:
+	case AlignEnd:
 		x += float64(frame.Dx())
 	}
 

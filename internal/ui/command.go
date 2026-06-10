@@ -9,7 +9,6 @@ import (
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-	"github.com/yohamta/furex/v2"
 )
 
 var (
@@ -18,10 +17,9 @@ var (
 	ErrorColor  = color.NRGBA{255, 0, 0, 128}
 )
 
+const InputHeight = 28
+
 type CommandHandler struct {
-	wrap         *furex.View
-	message      *furex.View
-	input        *furex.View
 	euiWrap      *widget.Container
 	euiMessage   *widget.Container
 	euiInput     *widget.TextInput
@@ -81,84 +79,24 @@ func (c *CommandHandler) Execute(cmd string) {
 }
 
 func (c *CommandHandler) AddEcho(cmd string) {
-	if c.euiMessage != nil {
-		c.addEUIText("> "+cmd, color.White)
-		return
-	}
-
-	// add echo message
-	text := &Text{
-		Align:   furex.AlignItemStart,
-		Content: "> " + cmd,
-		Color:   color.White,
-	}
-	c.message.AddChild(furex.NewView(furex.MarginLeft(10), furex.MarginTop(5), furex.Height(12), furex.Handler(text)))
-	c.message.SetHeight(c.message.Attrs.Height + 12 + 5)
+	c.addEUIText("> "+cmd, color.White)
 }
 
 func (c *CommandHandler) AddResult(result string) {
-	if c.euiMessage != nil {
-		c.addEUIText(result, color.White)
-		return
-	}
-
-	// add echo message
-	text := &Text{
-		Align:        furex.AlignItemStart,
-		Content:      result,
-		Color:        color.White,
-		Shadow:       true,
-		ShadowOffset: 1,
-		ShadowColor:  ResultColor,
-	}
-	c.message.AddChild(furex.NewView(furex.MarginLeft(10), furex.MarginTop(5), furex.Height(12), furex.Handler(text)))
-	c.message.SetHeight(c.message.Attrs.Height + 12 + 5)
+	c.addEUIText(result, color.White)
 }
 
 func (c *CommandHandler) AddPrompt(prompt string) {
-	if c.euiMessage != nil {
-		c.addEUIText(prompt, PromptColor)
-		return
-	}
-
-	// add echo message
-	text := &Text{
-		Align:   furex.AlignItemStart,
-		Content: prompt,
-		Color:   PromptColor,
-	}
-	c.message.AddChild(furex.NewView(furex.MarginLeft(10), furex.MarginTop(5), furex.Height(12), furex.Handler(text)))
-	c.message.SetHeight(c.message.Attrs.Height + 12 + 5)
+	c.addEUIText(prompt, PromptColor)
 }
 
 func (c *CommandHandler) AddError(err string) {
-	if c.euiMessage != nil {
-		c.addEUIText(err, color.NRGBA{255, 120, 120, 255})
-		return
-	}
-
-	// add echo message
-	text := &Text{
-		Align:        furex.AlignItemStart,
-		Content:      err,
-		Color:        color.White,
-		Shadow:       true,
-		ShadowOffset: 1,
-		ShadowColor:  ErrorColor,
-	}
-	c.message.AddChild(furex.NewView(furex.MarginLeft(10), furex.MarginTop(5), furex.Height(12), furex.Handler(text)))
-	c.message.SetHeight(c.message.Attrs.Height + 12 + 5)
+	c.addEUIText(err, color.NRGBA{255, 120, 120, 255})
 }
 
 func (c *CommandHandler) clearMessages() {
-	if c.euiMessage != nil {
-		c.euiMessage.RemoveChildren()
-		c.AddPrompt("输入 /help 查看可用命令")
-		return
-	}
-
-	c.message.RemoveAll()
-	c.message.SetHeight(12)
+	c.euiMessage.RemoveChildren()
+	c.AddPrompt("输入 /help 查看可用命令")
 }
 
 func (c *CommandHandler) addEUIText(content string, clr color.Color) {
@@ -208,41 +146,6 @@ func (c *CommandHandler) handleEUIInputUpdate() {
 		}
 		c.euiInput.SetText(c.euiHistory[c.historyIndex])
 	}
-}
-
-func CommandView() *furex.View {
-	handler := &CommandHandler{}
-	view := furex.NewView(
-		furex.TagName("command"),
-		furex.Direction(furex.Column),
-		furex.Justify(furex.JustifyEnd),
-	)
-
-	message := furex.NewView(
-		furex.TagName("message"),
-		furex.Direction(furex.Column),
-		furex.Width(400),
-		furex.Height(34),
-		furex.Handler(&Sprite{
-			NineSliceTexture: messageTextureAtlas.GetNineSlice("message_bg.png"),
-			BlendAlpha:       true,
-			Alpha:            0.5,
-		}))
-	text := &Text{
-		Align:   furex.AlignItemStart,
-		Content: "输入 /help 查看可用命令",
-		Color:   PromptColor,
-	}
-	message.AddChild(furex.NewView(furex.MarginLeft(10), furex.MarginTop(5), furex.Height(12), furex.Handler(text)))
-	view.AddChild(message)
-
-	input := InputView("> ", 400, handler.CommitCommand)
-	view.AddChild(input)
-	handler.wrap = view
-	handler.message = message
-	handler.input = input
-
-	return view
 }
 
 func NewEUICommandView(scale float64) *widget.Container {

@@ -2,12 +2,10 @@ package ui
 
 import (
 	"image"
-	"sync"
 
 	"github.com/Xinrea/ffreplay/pkg/texture"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/yohamta/furex/v2"
 )
 
 var (
@@ -21,54 +19,6 @@ const (
 	SingleBarHeight   = 13
 	SingleBarPadding  = 13
 )
-
-type LimitBreak struct {
-	Value     *int
-	BarNumber *int
-	once      sync.Once
-
-	handler furex.ViewHandler
-}
-
-var _ furex.HandlerProvider = (*LimitBreak)(nil)
-
-func (l *LimitBreak) Handler() furex.ViewHandler {
-	l.handler.Extra = l
-	l.handler.Update = l.update
-	l.handler.Draw = l.draw
-
-	return l.handler
-}
-
-func (l *LimitBreak) update(v *furex.View) {
-	l.once.Do(func() {
-		v.SetWidth(SingleBarWidth * *l.BarNumber)
-		v.SetHeight(SingleBarHeight)
-	})
-}
-
-func (l *LimitBreak) draw(screen *ebiten.Image, frame image.Rectangle, view *furex.View) {
-	s := ebiten.Monitor().DeviceScaleFactor()
-	x := float64(frame.Min.X)
-	y := float64(frame.Min.Y)
-	value := *l.Value
-
-	for i := 0; i < *l.BarNumber; i++ {
-		if value > SingleBarMaxValue {
-			l.RenderLimitbreakSingleBar(screen, x+float64(i)*150*s, y, SingleBarMaxValue)
-			value -= SingleBarMaxValue
-
-			continue
-		}
-
-		l.RenderLimitbreakSingleBar(screen, x+float64(i)*150*s, y, value)
-		value = 0
-	}
-}
-
-func (l *LimitBreak) RenderLimitbreakSingleBar(canvas *ebiten.Image, x, y float64, value int) {
-	drawLimitbreakSingleBar(canvas, x, y, value, ebiten.Monitor().DeviceScaleFactor())
-}
 
 func drawLimitbreakSingleBar(canvas *ebiten.Image, x, y float64, value int, s float64) {
 	if s <= 0 {

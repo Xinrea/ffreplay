@@ -15,7 +15,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/colorm"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"
-	"github.com/yohamta/furex/v2"
 )
 
 func (r *Renderer) EnemyRender(ecs *ecs.ECS, screen *ebiten.Image) {
@@ -116,7 +115,7 @@ func (r *Renderer) renderEnemy(ecs *ecs.ECS, screen *ebiten.Image, enemy *donbur
 					px,
 					py,
 					color.White,
-					furex.AlignItemCenter,
+					ui.AlignCenter,
 					nil,
 				)
 			}

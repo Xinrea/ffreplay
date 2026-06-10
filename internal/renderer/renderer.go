@@ -12,7 +12,6 @@ import (
 	"github.com/Xinrea/ffreplay/pkg/texture"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/yohamta/donburi/ecs"
-	"github.com/yohamta/furex/v2"
 )
 
 type TextAlign int
@@ -54,7 +53,7 @@ func RenderBuffList(canvas *ebiten.Image, tick int64, buffs []*model.Buff, x, y 
 				x+float64((i+1)*25)*s,
 				y+14*s,
 				color.White,
-				furex.AlignItemCenter,
+				ui.AlignCenter,
 				textShdowOpt,
 			)
 		}
@@ -67,7 +66,7 @@ func RenderBuffList(canvas *ebiten.Image, tick int64, buffs []*model.Buff, x, y 
 				x+float64((i+1)*25)*s+6*s,
 				y-7*s,
 				color.White,
-				furex.AlignItemCenter,
+				ui.AlignCenter,
 				stackTextShadowOpt,
 			)
 		}

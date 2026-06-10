@@ -4,13 +4,12 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
-	"image"
 	"image/color"
 	"log"
+	"reflect"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
-	"github.com/yohamta/furex/v2"
 	"golang.org/x/text/language"
 )
 
@@ -37,79 +36,13 @@ func InitializeFont() {
 	}
 }
 
-// Content must be string or func() string.
-type Text struct {
-	Align        furex.FlexAlignItem
-	Content      any
-	Color        color.Color
-	Shadow       bool
-	ShadowOffset float64
-	ShadowColor  color.Color
+type TextAlign int
 
-	handler furex.ViewHandler
-}
-
-func (t *Text) Handler() furex.ViewHandler {
-	t.handler.Extra = t
-	t.handler.Draw = t.draw
-	t.handler.Update = t.update
-
-	return t.handler
-}
-
-func (t *Text) Measure(fontSize float64) (float64, float64) {
-	fontFace.Size = fontSize
-	content := ""
-
-	if v, ok := t.Content.(string); ok {
-		content = v
-	}
-
-	if v, ok := t.Content.(func() string); ok {
-		content = v()
-	}
-
-	return text.Measure(content, fontFace, 0)
-}
-
-func (t *Text) update(v *furex.View) {
-	if v.Attrs.Width == 0 {
-		w, _ := t.Measure(float64(v.Attrs.Height))
-		v.SetWidth(int(w))
-	}
-}
-
-func (t *Text) draw(screen *ebiten.Image, frame image.Rectangle, view *furex.View) {
-	content := ""
-
-	if v, ok := t.Content.(string); ok {
-		content = v
-	}
-
-	if v, ok := t.Content.(func() string); ok {
-		content = v()
-	}
-
-	x := float64(frame.Min.X)
-	y := float64(frame.Min.Y) + float64(frame.Dy())/2
-
-	switch t.Align {
-	case furex.AlignItemEnd:
-		x += float64(frame.Dx())
-	case furex.AlignItemCenter:
-		x += float64(frame.Dx()) / 2
-	}
-
-	var opt *ShadowOpt = nil
-	if t.Shadow {
-		opt = &ShadowOpt{
-			Color:  t.ShadowColor,
-			Offset: t.ShadowOffset,
-		}
-	}
-
-	DrawText(screen, content, float64(frame.Dy()), x, y, t.Color, t.Align, opt)
-}
+const (
+	AlignStart TextAlign = iota
+	AlignEnd
+	AlignCenter
+)
 
 type ShadowOpt struct {
 	Color  color.Color
@@ -124,12 +57,13 @@ func DrawText(
 	fontSize float64,
 	x, y float64,
 	clr color.Color,
-	align furex.FlexAlignItem,
+	align any,
 	opt *ShadowOpt,
 ) {
 	if content == "" {
 		return
 	}
+	textAlign := normalizeTextAlign(align)
 
 	cacheKey := fmt.Sprintf("%s_%f_%v", content, fontSize, clr)
 
@@ -138,7 +72,7 @@ func DrawText(
 	}
 
 	// Try to draw from cache
-	if drawFromCache(cacheKey, align, x, y, screen) {
+	if drawFromCache(cacheKey, textAlign, x, y, screen) {
 		return
 	}
 
@@ -173,29 +107,29 @@ func DrawText(
 	// Draw the cached image
 	dop := &ebiten.DrawImageOptions{}
 
-	switch align {
-	case furex.AlignItemStart:
+	switch textAlign {
+	case AlignStart:
 		dop.GeoM.Translate(x, y-float64(totalHeight)/2)
-	case furex.AlignItemEnd:
+	case AlignEnd:
 		dop.GeoM.Translate(x-float64(totalWidth), y-float64(totalHeight)/2)
-	case furex.AlignItemCenter:
+	case AlignCenter:
 		dop.GeoM.Translate(x-float64(totalWidth)/2, y-float64(totalHeight)/2)
 	}
 
 	screen.DrawImage(img, dop)
 }
 
-func drawFromCache(key string, align furex.FlexAlignItem, x, y float64, screen *ebiten.Image) bool {
+func drawFromCache(key string, align TextAlign, x, y float64, screen *ebiten.Image) bool {
 	if img, ok := textCache[key]; ok {
 		op := &ebiten.DrawImageOptions{}
 		w, h := img.Bounds().Dx(), img.Bounds().Dy()
 
 		switch align {
-		case furex.AlignItemStart:
+		case AlignStart:
 			op.GeoM.Translate(x, y-float64(h)/2)
-		case furex.AlignItemEnd:
+		case AlignEnd:
 			op.GeoM.Translate(x-float64(w), y-float64(h)/2)
-		case furex.AlignItemCenter:
+		case AlignCenter:
 			op.GeoM.Translate(x-float64(w)/2, y-float64(h)/2)
 		}
 
@@ -205,6 +139,23 @@ func drawFromCache(key string, align furex.FlexAlignItem, x, y float64, screen *
 	}
 
 	return false
+}
+
+func normalizeTextAlign(align any) TextAlign {
+	switch v := align.(type) {
+	case TextAlign:
+		return v
+	}
+
+	rv := reflect.ValueOf(align)
+	switch rv.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return TextAlign(rv.Int())
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return TextAlign(rv.Uint())
+	default:
+		return AlignStart
+	}
 }
 
 func drawShadow(img *ebiten.Image, content string, op *text.DrawOptions, opt *ShadowOpt) {
