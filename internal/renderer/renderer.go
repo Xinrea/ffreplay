@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/Xinrea/ffreplay/internal/layer"
-	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/internal/ui"
 	"github.com/Xinrea/ffreplay/pkg/texture"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -35,7 +34,7 @@ var stackTextShadowOpt = &ui.ShadowOpt{
 	Color:  color.NRGBA{0, 0, 0, 200},
 }
 
-func RenderBuffList(canvas *ebiten.Image, tick int64, buffs []*model.Buff, x, y float64) {
+func RenderBuffList(canvas *ebiten.Image, buffs []*ui.UIBuff, x, y float64) {
 	s := ebiten.Monitor().DeviceScaleFactor()
 	// render buff icons
 	for i, buff := range buffs {

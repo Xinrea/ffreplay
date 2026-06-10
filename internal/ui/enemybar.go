@@ -132,7 +132,7 @@ func CreateEUIEnemyBarView(i int, enemy *donburi.Entry, scale float64) *widget.C
 
 	view.AddChild(createEUIEnemyHPTextView(status, scale))
 
-	buffs := EUIBuffListView(status.BuffList.Buffs(), scale)
+	buffs := EUIBuffListView(UIBuffsFor(status.BuffList), scale)
 	buffs.GetWidget().LayoutData = widget.RowLayoutData{Position: widget.RowLayoutPositionEnd}
 	view.AddChild(buffs)
 

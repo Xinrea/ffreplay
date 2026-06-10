@@ -58,6 +58,8 @@ func (p *PlaygroundUI) Update(w, h int) {
 	// widgets below will set this back to true during/after p.eui.Update().
 	global.UIFocus = false
 
+	SyncBuffLists(entry.GetTick(ecsInstance))
+
 	// Single ebitenui update covers property panel, hotbar, checkbox, etc.
 	p.eui.Update()
 	p.propPanel.UpdateECS(w, h, s)

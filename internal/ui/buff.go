@@ -6,7 +6,6 @@ import (
 	"image/color"
 	"strconv"
 
-	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -23,7 +22,7 @@ const (
 	BuffRemainFontSize = 12
 )
 
-func EUIBuffView(buff *model.Buff, scale float64) *widget.Container {
+func EUIBuffView(buff *UIBuff, scale float64) *widget.Container {
 	if scale <= 0 {
 		scale = 1
 	}
@@ -77,7 +76,7 @@ func EUIBuffView(buff *model.Buff, scale float64) *widget.Container {
 		))
 	}
 
-	view.AddChild(newEUIShadowText(
+	remainText := newEUIShadowText(
 		formatSeconds(buff.Remain),
 		BuffRemainFontSize*scale,
 		w,
@@ -90,14 +89,15 @@ func EUIBuffView(buff *model.Buff, scale float64) *widget.Container {
 			HorizontalPosition: widget.AnchorLayoutPositionCenter,
 			VerticalPosition:   widget.AnchorLayoutPositionEnd,
 		},
-	))
+	)
+	view.AddChild(remainText)
 
 	return view
 }
 
 type euiShadowText struct {
 	widget       *widget.Widget
-	content      string
+	content      any
 	fontSize     float64
 	width        int
 	height       int
@@ -108,7 +108,7 @@ type euiShadowText struct {
 }
 
 func newEUIShadowText(
-	content string,
+	content any,
 	fontSize float64,
 	width int,
 	height int,
@@ -150,6 +150,17 @@ func (t *euiShadowText) Update(updObj *widget.UpdateObject) {
 	t.widget.Update(updObj)
 }
 
+func (t *euiShadowText) resolveContent() string {
+	switch v := t.content.(type) {
+	case func() string:
+		return v()
+	case string:
+		return v
+	default:
+		return ""
+	}
+}
+
 func (t *euiShadowText) Render(screen *ebiten.Image) {
 	t.widget.Render(screen)
 
@@ -164,7 +175,7 @@ func (t *euiShadowText) Render(screen *ebiten.Image) {
 
 	DrawText(
 		screen,
-		t.content,
+		t.resolveContent(),
 		t.fontSize,
 		x,
 		float64(frame.Min.Y)+float64(frame.Dy())/2,

@@ -240,7 +240,7 @@ func handleTether(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event ffl
 
 func handleCombatantinfo(s *System, ecs *ecs.ECS, eventSource *donburi.Entry, event fflogs.FFLogsEvent) {
 	status := component.Status.Get(eventSource)
-	status.BuffList.SetBuffs(aurasToBuffs(event.Auras))
+	status.BuffList.SetBuffs(aurasToBuffs(event.Auras, event.LocalTick))
 
 	return
 }
@@ -479,15 +479,16 @@ func (s *System) updateEventSourceStatus(event fflogs.FFLogsEvent) {
 	}
 }
 
-func aurasToBuffs(auras []fflogs.Aura) []*model.Buff {
+func aurasToBuffs(auras []fflogs.Aura, applyTick int64) []*model.Buff {
 	buffs := make([]*model.Buff, len(auras))
 	for i, aura := range auras {
 		buffs[i] = &model.Buff{
-			ID:       aura.Ability,
-			Name:     aura.Name,
-			Icon:     aura.Icon,
-			Stacks:   int(aura.Stacks),
-			Duration: 0,
+			ID:        aura.Ability,
+			Name:      aura.Name,
+			Icon:      aura.Icon,
+			Stacks:    int(aura.Stacks),
+			Duration:  0,
+			ApplyTick: applyTick,
 		}
 	}
 

@@ -62,6 +62,8 @@ func (f *FFUI) Update(w, h int) {
 		scale = 1
 	}
 
+	SyncBuffLists(entry.GetTick(ecsInstance))
+
 	f.once.Do(func() {
 		memberList := []*donburi.Entry{}
 		tag.PartyMember.Each(ecsInstance.World, func(e *donburi.Entry) {

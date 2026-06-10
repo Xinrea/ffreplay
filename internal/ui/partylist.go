@@ -38,8 +38,10 @@ const (
 	NameTextSize     = 13
 	HMPTextSize      = 14
 
-	CastBarWidth = 100
-	BarHeight    = 12
+	CastBarTop    = 5
+	CastBarHeight = 12
+	NameTop       = 14
+	HPBarTop      = 26
 
 	HPBarWidth   = 125
 	MPBarWidth   = 75
@@ -196,23 +198,16 @@ func (p *euiPartyList) renderPlayer(screen *ebiten.Image, playerEntry *donburi.E
 	p.drawScaled(screen, status.RoleTexture(), x, y+5*s, JobIconSize*s, JobIconSize*s)
 
 	statusX := x + float64(JobIconSize+5)*s
-	if cast := sprite.Instances[0].GetCast(); cast != nil {
-		drawNineSliceBar(
-			screen,
-			image.Rect(int(statusX), int(y+5*s), int(statusX+StatusPartWidth*s), int(y+float64(5+BarHeight)*s)),
-			castAtlas.GetNineSlice("casting_frame.png"),
-			castAtlas.GetNineSlice("casting_fg.png"),
-			float64(util.TickToMS(entry.GetTick(ecsInstance)-cast.StartTick))/float64(cast.Cast),
-			nil,
-		)
-		DrawText(screen, cast.Name, CastNameTextSize*s, statusX, y+22*s, color.White, AlignStart,
-			&ShadowOpt{Color: color.NRGBA{240, 152, 0, 128}, Offset: 1 * s})
+	cast := sprite.Instances[0].GetCast()
+	hpY := y + HPBarTop*s
+
+	if cast != nil {
+		p.drawCastBar(screen, cast, statusX, y+float64(CastBarTop)*s)
 	} else {
-		DrawText(screen, status.Name, NameTextSize*s, statusX, y+14*s, color.White, AlignStart,
+		DrawText(screen, status.Name, NameTextSize*s, statusX, y+float64(NameTop)*s, color.White, AlignStart,
 			&ShadowOpt{Color: color.NRGBA{22, 45, 87, 128}, Offset: 2 * s})
 	}
 
-	hpY := y + 26*s
 	hpProgress := 0.0
 	if status.MaxHP > 0 {
 		hpProgress = float64(status.HP) / float64(status.MaxHP)
@@ -246,12 +241,36 @@ func (p *euiPartyList) renderPlayer(screen *ebiten.Image, playerEntry *donburi.E
 
 	buffX := statusX + StatusPartWidth*s + 5*s
 	buffY := y + BuffListOffsetY*s
-	for i, buff := range status.BuffList.Buffs() {
+	for i, buff := range UIBuffsFor(status.BuffList) {
 		p.drawBuff(screen, buff, buffX+float64(i*BuffWidth)*s, buffY)
 	}
 }
 
-func (p *euiPartyList) drawBuff(screen *ebiten.Image, buff *model.Buff, x, y float64) {
+func (p *euiPartyList) drawCastBar(screen *ebiten.Image, cast *model.Skill, statusX, castBarY float64) {
+	s := p.scale
+	barH := float64(CastBarHeight) * s
+	barW := float64(StatusPartWidth) * s
+	castProgress := 0.0
+	if cast.Cast > 0 {
+		castProgress = float64(util.TickToMS(entry.GetTick(ecsInstance)-cast.StartTick)) / float64(cast.Cast)
+	}
+
+	drawNineSliceBar(
+		screen,
+		image.Rect(int(statusX), int(castBarY), int(statusX+barW), int(castBarY+barH)),
+		castAtlas.GetNineSlice("casting_frame.png"),
+		castAtlas.GetNineSlice("casting_fg.png"),
+		castProgress,
+		nil,
+	)
+
+	textX := statusX + barW
+	textY := castBarY + barH/2
+	DrawText(screen, cast.Name, CastNameTextSize*s, textX, textY, color.White, AlignEnd,
+		&ShadowOpt{Color: color.NRGBA{240, 152, 0, 128}, Offset: 1 * s})
+}
+
+func (p *euiPartyList) drawBuff(screen *ebiten.Image, buff *UIBuff, x, y float64) {
 	s := p.scale
 	p.drawScaled(screen, buff.Texture(), x, y, BuffWidth*s, BuffHeight*s)
 	if buff.Stacks > 1 {
