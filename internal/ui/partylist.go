@@ -272,6 +272,7 @@ func (p *euiPartyList) drawCastBar(screen *ebiten.Image, cast *model.Skill, stat
 
 func (p *euiPartyList) drawBuff(screen *ebiten.Image, buff *UIBuff, x, y float64) {
 	s := p.scale
+	TrackBuffTooltip(buff, BuffHitRect(x, y, s))
 	p.drawScaled(screen, buff.Texture(), x, y, BuffWidth*s, BuffHeight*s)
 	if buff.Stacks > 1 {
 		DrawText(screen, strconv.Itoa(buff.Stacks), BuffStackFontSize*s, x+float64(BuffStackLeft+BuffStackFontSize)*s, y+float64(BuffStackTop)*s+BuffStackFontSize*s/2, color.White, AlignEnd,

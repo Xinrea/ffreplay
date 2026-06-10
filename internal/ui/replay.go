@@ -63,6 +63,7 @@ func (f *FFUI) Update(w, h int) {
 	}
 
 	SyncBuffLists(entry.GetTick(ecsInstance))
+	BeginBuffTooltipFrame()
 
 	f.once.Do(func() {
 		memberList := []*donburi.Entry{}
@@ -89,4 +90,5 @@ func (f *FFUI) Draw(screen *ebiten.Image) {
 	if f.eui != nil {
 		f.eui.Draw(screen)
 	}
+	DrawBuffTooltip(screen, ebiten.Monitor().DeviceScaleFactor())
 }

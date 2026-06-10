@@ -34,15 +34,20 @@ func EUIBuffView(buff *UIBuff, scale float64) *widget.Container {
 		totalH = iconH
 	}
 
+	widgetOpts := []widget.WidgetOpt{
+		widget.WidgetOpts.MinSize(w, totalH),
+		widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+			MaxWidth:  w,
+			MaxHeight: totalH,
+		}),
+	}
+	if tip := newBuffToolTip(buff, scale); tip != nil {
+		widgetOpts = append(widgetOpts, widget.WidgetOpts.ToolTip(tip))
+	}
+
 	view := widget.NewContainer(
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-		widget.ContainerOpts.WidgetOpts(
-			widget.WidgetOpts.MinSize(w, totalH),
-			widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-				MaxWidth:  w,
-				MaxHeight: totalH,
-			}),
-		),
+		widget.ContainerOpts.WidgetOpts(widgetOpts...),
 	)
 
 	view.AddChild(widget.NewGraphic(

@@ -13,6 +13,7 @@ import (
 type UIBuff struct {
 	Type   model.BuffType
 	ID     int64
+	Name   string
 	Icon   string
 	Stacks int
 	Remain int64
@@ -130,6 +131,7 @@ func cloneUIBuff(b *model.Buff, displayNow int64) *UIBuff {
 	return &UIBuff{
 		Type:   b.Type,
 		ID:     b.ID,
+		Name:   b.Name,
 		Icon:   b.Icon,
 		Stacks: b.Stacks,
 		Remain: remain,

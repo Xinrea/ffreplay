@@ -3,6 +3,7 @@ package renderer
 import (
 	_ "embed"
 	"fmt"
+	"image"
 	"image/color"
 	"strconv"
 
@@ -38,6 +39,16 @@ func RenderBuffList(canvas *ebiten.Image, buffs []*ui.UIBuff, x, y float64) {
 	s := ebiten.Monitor().DeviceScaleFactor()
 	// render buff icons
 	for i, buff := range buffs {
+		iconX := x + float64((i+1)*25)*s
+		iconW := float64(ui.BuffWidth) * s
+		iconH := float64(ui.BuffHeight) * s
+		ui.TrackBuffTooltip(buff, image.Rect(
+			int(iconX-iconW/2),
+			int(y),
+			int(iconX+iconW/2),
+			int(y+iconH),
+		))
+
 		iconTexture := buff.Texture()
 		geoM := texture.CenterGeoM(iconTexture)
 		geoM.Scale(s, s)

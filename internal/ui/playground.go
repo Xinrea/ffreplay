@@ -59,6 +59,7 @@ func (p *PlaygroundUI) Update(w, h int) {
 	global.UIFocus = false
 
 	SyncBuffLists(entry.GetTick(ecsInstance))
+	BeginBuffTooltipFrame()
 
 	// Single ebitenui update covers property panel, hotbar, checkbox, etc.
 	p.eui.Update()
@@ -68,6 +69,7 @@ func (p *PlaygroundUI) Update(w, h int) {
 func (p *PlaygroundUI) Draw(screen *ebiten.Image) {
 	// Single ebitenui draw for all migrated components.
 	p.eui.Draw(screen)
+	DrawBuffTooltip(screen, ebiten.Monitor().DeviceScaleFactor())
 }
 
 // buildEUITopRight creates the ebitenui top-right column with HotBar and Checkbox.
