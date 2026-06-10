@@ -8,6 +8,8 @@ import (
 	"github.com/Xinrea/ffreplay/internal/model/role"
 	"github.com/Xinrea/ffreplay/internal/tag"
 	"github.com/Xinrea/ffreplay/pkg/texture"
+	"github.com/ebitenui/ebitenui"
+	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"
@@ -26,8 +28,10 @@ const (
 )
 
 type FFUI struct {
-	view *furex.View
-	once sync.Once
+	view    *furex.View
+	eui     *ebitenui.UI
+	euiRoot *widget.Container
+	once    sync.Once
 }
 
 type UI interface {
@@ -43,9 +47,14 @@ func NewReplayUI(ecs *ecs.ECS) *FFUI {
 		furex.Direction(furex.Row),
 		furex.Justify(furex.JustifySpaceBetween),
 	)
+	euiRoot := widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
+	)
 
 	return &FFUI{
-		view: view,
+		view:    view,
+		euiRoot: euiRoot,
+		eui:     &ebitenui.UI{Container: euiRoot},
 	}
 }
 
@@ -53,6 +62,11 @@ func (f *FFUI) Update(w, h int) {
 	global := entry.GetGlobal(ecsInstance)
 	if !global.Loaded.Load() {
 		return
+	}
+
+	scale := ebiten.Monitor().DeviceScaleFactor()
+	if scale <= 0 {
+		scale = 1
 	}
 
 	f.once.Do(func() {
@@ -95,18 +109,22 @@ func (f *FFUI) Update(w, h int) {
 			furex.AlignItems(furex.AlignItemEnd),
 		)
 		rview.AddChild(EnemyBarsView())
-		rview.AddChild(ProgressBarView())
 
 		f.view.AddChild(rview)
+		f.euiRoot.AddChild(EUIProgressBarView(scale))
 	})
 
-	furex.GlobalScale = ebiten.Monitor().DeviceScaleFactor()
+	furex.GlobalScale = scale
 
 	f.view.UpdateWithSize(w, h)
+	f.eui.Update()
 }
 
 func (f *FFUI) Draw(screen *ebiten.Image) {
 	if f.view != nil {
 		f.view.Draw(screen)
+	}
+	if f.eui != nil {
+		f.eui.Draw(screen)
 	}
 }
