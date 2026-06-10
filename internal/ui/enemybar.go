@@ -2,9 +2,9 @@ package ui
 
 import (
 	"fmt"
+	"image"
 	"image/color"
 	"strconv"
-	"strings"
 
 	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/entry"
@@ -13,33 +13,21 @@ import (
 	"github.com/Xinrea/ffreplay/internal/tag"
 	"github.com/Xinrea/ffreplay/util"
 	"github.com/ebitenui/ebitenui/widget"
+	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/yohamta/donburi"
 )
 
-func formatInt(n int) string {
-	// 将 int64 转换为字符串
-	str := strconv.FormatInt(int64(n), 10)
+const (
+	EnemyBarWidth        = 500
+	EnemyHeaderHeight    = 18
+	EnemyHPBarHeight     = 10
+	EnemyRowSpacing      = 5
+	EnemyNameTextSize    = 13
+	EnemyPercentTextSize = 13
+	EnemyCastBarHeight   = 12
+)
 
-	// 计算整数的长度
-	length := len(str)
-	if length <= 3 {
-		return str // 如果长度小于等于3，直接返回
-	}
-
-	// 使用 strings.Builder 来构建结果字符串
-	var builder strings.Builder
-
-	for i, digit := range str {
-		// 每三位添加一个逗号
-		if i != 0 && (length-i)%3 == 0 {
-			builder.WriteRune(',')
-		}
-
-		builder.WriteRune(digit)
-	}
-
-	return builder.String()
-}
+var enemyNameColor = color.NRGBA{252, 183, 190, 255}
 
 func EUIEnemyBarsView(scale float64) *widget.Container {
 	if scale <= 0 {
@@ -65,7 +53,6 @@ func EUIEnemyBarsView(scale float64) *widget.Container {
 
 	view.GetWidget().OnUpdate = func(w widget.HasWidget) {
 		view.RemoveChildren()
-		cnt := 0
 		for e := range tag.Enemy.Iter(ecsInstance.World) {
 			sprite := component.Sprite.Get(e)
 			if !sprite.Initialized {
@@ -76,129 +63,202 @@ func EUIEnemyBarsView(scale float64) *widget.Container {
 				!sprite.Instances[0].IsActive(entry.GetTick(ecsInstance)) {
 				continue
 			}
-			view.AddChild(CreateEUIEnemyBarView(cnt, e, scale))
-			cnt++
+			view.AddChild(newEUIEnemyBar(e, scale))
 		}
 	}
 
 	return view
 }
 
-func CreateEUIEnemyBarView(i int, enemy *donburi.Entry, scale float64) *widget.Container {
-	sprite := component.Sprite.Get(enemy)
-	status := component.Status.Get(enemy)
-	face := newEUIFace(13 * scale)
-	nameColor := color.NRGBA{252, 183, 190, 255}
+type euiEnemyBar struct {
+	widget *widget.Widget
+	enemy  *donburi.Entry
+	scale  float64
+}
 
-	view := widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-			widget.RowLayoutOpts.Spacing(int(5*scale)),
-		)),
-		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+func newEUIEnemyBar(enemy *donburi.Entry, scale float64) *euiEnemyBar {
+	if scale <= 0 {
+		scale = 1
+	}
+
+	b := &euiEnemyBar{
+		enemy: enemy,
+		scale: scale,
+	}
+	b.widget = widget.NewWidget(
+		widget.WidgetOpts.LayoutData(widget.RowLayoutData{
 			Position: widget.RowLayoutPositionEnd,
-		})),
+		}),
 	)
+	return b
+}
 
-	nameCast := widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
-		)),
-		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.MinSize(int(500*scale), int(24*scale))),
-	)
-	nameCast.AddChild(widget.NewText(
-		widget.TextOpts.Text(status.Name, &face, nameColor),
-		widget.TextOpts.Position(widget.TextPositionStart, widget.TextPositionCenter),
-		widget.TextOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-			Stretch: true,
-		})),
-	))
-	nameCast.AddChild(createEUIEnemyCastingView(sprite, scale))
-	view.AddChild(nameCast)
+func (b *euiEnemyBar) GetWidget() *widget.Widget {
+	return b.widget
+}
 
+func (b *euiEnemyBar) PreferredSize() (int, int) {
+	s := b.scale
+	header := float64(EnemyHeaderHeight) * s
+	hp := float64(EnemyHPBarHeight) * s
+	spacing := float64(EnemyRowSpacing) * s
+	buffH := float64(BuffHeight+BuffRemainFontSize+BuffRemainTop) * s
+	if buffH < float64(BuffHeight)*s {
+		buffH = float64(BuffHeight) * s
+	}
+
+	return int(float64(EnemyBarWidth) * s),
+		int(header + spacing + hp + spacing + buffH)
+}
+
+func (b *euiEnemyBar) SetLocation(rect image.Rectangle) {
+	b.widget.Rect = rect
+}
+
+func (b *euiEnemyBar) Validate() {}
+
+func (b *euiEnemyBar) Update(updObj *widget.UpdateObject) {
+	b.widget.Update(updObj)
+}
+
+func (b *euiEnemyBar) Render(screen *ebiten.Image) {
+	b.widget.Render(screen)
+
+	status := component.Status.Get(b.enemy)
+	sprite := component.Sprite.Get(b.enemy)
+	frame := b.widget.Rect
+	x := float64(frame.Min.X)
+	y := float64(frame.Min.Y)
+	s := b.scale
+	barW := float64(EnemyBarWidth) * s
+
+	cast := sprite.Instances[0].GetCast()
+	b.drawHeader(screen, status, cast, x, y, barW)
+
+	hpY := y + float64(EnemyHeaderHeight+EnemyRowSpacing)*s
 	hpProgress := 0.0
 	if status.MaxHP > 0 {
 		hpProgress = float64(status.HP) / float64(status.MaxHP)
 	}
-	view.AddChild(NewEUIBar(
-		int(500*scale),
-		int(10*scale),
+	drawNineSliceBar(
+		screen,
+		image.Rect(int(x), int(hpY), int(x+barW), int(hpY+float64(EnemyHPBarHeight)*s)),
 		barAtlas.GetNineSlice("red_bar_bg.png"),
 		barAtlas.GetNineSlice("red_bar_fg.png"),
 		hpProgress,
 		nil,
-		widget.RowLayoutData{Position: widget.RowLayoutPositionEnd},
-	))
-
-	view.AddChild(createEUIEnemyHPTextView(status, scale))
-
-	buffs := EUIBuffListView(UIBuffsFor(status.BuffList), scale)
-	buffs.GetWidget().LayoutData = widget.RowLayoutData{Position: widget.RowLayoutPositionEnd}
-	view.AddChild(buffs)
-
-	return view
-}
-
-func createEUIEnemyCastingView(sprite *model.SpriteData, scale float64) *widget.Container {
-	face := newEUIFace(12 * scale)
-	view := widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-		)),
-		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.MinSize(int(210*scale), int(24*scale))),
 	)
 
-	cast := sprite.Instances[0].GetCast()
-	if cast == nil {
-		return view
+	buffX := x
+	buffY := hpY + float64(EnemyHPBarHeight+EnemyRowSpacing)*s
+	for i, buff := range UIBuffsFor(status.BuffList) {
+		b.drawBuff(screen, buff, buffX+float64(i*BuffWidth)*s, buffY)
 	}
-
-	view.AddChild(NewEUIBar(
-		int(210*scale),
-		int(12*scale),
-		castAtlas.GetNineSlice("casting_frame.png"),
-		castAtlas.GetNineSlice("casting_fg.png"),
-		float64(util.TickToMS(entry.GetTick(ecsInstance)-cast.StartTick))/float64(cast.Cast),
-		nil,
-		widget.RowLayoutData{Position: widget.RowLayoutPositionEnd},
-	))
-	view.AddChild(widget.NewText(
-		widget.TextOpts.Text(cast.Name, &face, color.White),
-		widget.TextOpts.Position(widget.TextPositionEnd, widget.TextPositionCenter),
-		widget.TextOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-			Position: widget.RowLayoutPositionEnd,
-		})),
-	))
-
-	return view
 }
 
-func createEUIEnemyHPTextView(status *model.StatusData, scale float64) *widget.Container {
-	face := newEUIFace(13 * scale)
-	nameColor := color.NRGBA{252, 183, 190, 255}
-	view := widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
-		)),
-		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.MinSize(int(500*scale), int(13*scale))),
-	)
-
-	view.AddChild(widget.NewText(
-		widget.TextOpts.Text(formatInt(status.HP)+" / "+formatInt(status.MaxHP), &face, nameColor),
-		widget.TextOpts.Position(widget.TextPositionStart, widget.TextPositionCenter),
-		widget.TextOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-			Stretch: true,
-		})),
-	))
-
+func (b *euiEnemyBar) drawHeader(screen *ebiten.Image, status *model.StatusData, cast *model.Skill, x, y, barW float64) {
+	s := b.scale
+	headerH := float64(EnemyHeaderHeight) * s
 	percent := 0.0
 	if status.MaxHP > 0 {
 		percent = float64(status.HP) / float64(status.MaxHP) * 100
 	}
-	view.AddChild(widget.NewText(
-		widget.TextOpts.Text(fmt.Sprintf("%.2f%%", percent), &face, nameColor),
-		widget.TextOpts.Position(widget.TextPositionEnd, widget.TextPositionCenter),
-	))
+	percentText := fmt.Sprintf("%.1f%%", percent)
+	percentW, _ := measureText(percentText, EnemyPercentTextSize*s)
+	percentPad := 4 * s
 
-	return view
+	if cast != nil {
+		b.drawCastBar(screen, cast, x, y, barW, headerH)
+		return
+	}
+
+	DrawText(
+		screen,
+		percentText,
+		EnemyPercentTextSize*s,
+		x,
+		y+headerH/2,
+		enemyNameColor,
+		AlignStart,
+		&ShadowOpt{Color: color.NRGBA{0, 0, 0, 128}, Offset: 1 * s},
+	)
+	DrawText(
+		screen,
+		status.Name,
+		EnemyNameTextSize*s,
+		x+percentW+percentPad,
+		y+headerH/2,
+		enemyNameColor,
+		AlignStart,
+		&ShadowOpt{Color: color.NRGBA{0, 0, 0, 128}, Offset: 1 * s},
+	)
+}
+
+func (b *euiEnemyBar) drawCastBar(screen *ebiten.Image, cast *model.Skill, x, y, barW, headerH float64) {
+	s := b.scale
+	barH := float64(EnemyCastBarHeight) * s
+	if barH > headerH {
+		barH = headerH
+	}
+	castY := y + (headerH-barH)/2
+	castProgress := 0.0
+	if cast.Cast > 0 {
+		castProgress = float64(util.TickToMS(entry.GetTick(ecsInstance)-cast.StartTick)) / float64(cast.Cast)
+	}
+
+	drawNineSliceBar(
+		screen,
+		image.Rect(int(x), int(castY), int(x+barW), int(castY+barH)),
+		castAtlas.GetNineSlice("casting_frame.png"),
+		castAtlas.GetNineSlice("casting_fg.png"),
+		castProgress,
+		nil,
+	)
+
+	DrawText(
+		screen,
+		cast.Name,
+		CastNameTextSize*s,
+		x+barW,
+		castY+barH/2,
+		color.White,
+		AlignEnd,
+		&ShadowOpt{Color: color.NRGBA{240, 152, 0, 128}, Offset: 1 * s},
+	)
+}
+
+func (b *euiEnemyBar) drawBuff(screen *ebiten.Image, buff *UIBuff, x, y float64) {
+	s := b.scale
+	TrackBuffTooltip(buff, BuffHitRect(x, y, s))
+	b.drawScaled(screen, buff.Texture(), x, y, BuffWidth*s, BuffHeight*s)
+	if buff.Stacks > 1 {
+		DrawText(
+			screen,
+			strconv.Itoa(buff.Stacks),
+			BuffStackFontSize*s,
+			x+float64(BuffStackLeft+BuffStackFontSize)*s,
+			y+float64(BuffStackTop)*s+BuffStackFontSize*s/2,
+			color.White,
+			AlignEnd,
+			&ShadowOpt{Color: color.NRGBA{0, 0, 0, 200}, Offset: EUIBuffStackShadow * s},
+		)
+	}
+	DrawText(
+		screen,
+		formatSeconds(buff.Remain),
+		BuffRemainFontSize*s,
+		x+BuffWidth*s/2,
+		y+float64(BuffHeight+BuffRemainTop)*s,
+		color.White,
+		AlignCenter,
+		&ShadowOpt{Color: color.NRGBA{0, 0, 0, 128}, Offset: 1 * s},
+	)
+}
+
+func (b *euiEnemyBar) drawScaled(screen *ebiten.Image, img *ebiten.Image, x, y, w, h float64) {
+	bounds := img.Bounds()
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Scale(w/float64(bounds.Dx()), h/float64(bounds.Dy()))
+	op.GeoM.Translate(x, y)
+	screen.DrawImage(img, op)
 }
