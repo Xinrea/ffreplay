@@ -77,10 +77,12 @@ func (f *FFUI) Update(w, h int) {
 			furex.Direction(furex.Column),
 		)
 
-		lview.AddChild(furex.NewView(furex.Handler(&LimitBreak{
-			Value:     &global.LimitBreak,
-			BarNumber: &global.Bar,
-		})))
+		// LimitBreak has moved to the ebitenui overlay; keep a spacer so the
+		// remaining Furex party list stays in the same position.
+		lview.AddChild(furex.NewView(
+			furex.Width(SingleBarWidth*global.Bar),
+			furex.Height(SingleBarHeight),
+		))
 
 		memberList := []*donburi.Entry{}
 
@@ -111,6 +113,7 @@ func (f *FFUI) Update(w, h int) {
 		rview.AddChild(EnemyBarsView())
 
 		f.view.AddChild(rview)
+		f.euiRoot.AddChild(NewEUILimitBreak(&global.LimitBreak, &global.Bar, scale))
 		f.euiRoot.AddChild(EUIProgressBarView(scale))
 	})
 
