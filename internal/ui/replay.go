@@ -95,14 +95,12 @@ func (f *FFUI) Update(w, h int) {
 			memberList = append(memberList, e)
 		})
 
-		// PartyList has moved to the ebitenui overlay. Keep a spacer so the
-		// remaining Furex damage history stays in the same vertical position.
+		// PartyList and DamageHistory have moved to the ebitenui overlay.
 		lview.AddChild(furex.NewView(
 			furex.MarginTop(10),
 			furex.Width(PartyListWidth),
 			furex.Height(len(memberList)*PlayerItemHeight+PartyListBGExtra),
 		))
-		lview.AddChild(DamageHistoryView())
 
 		f.view.AddChild(lview)
 
@@ -118,6 +116,7 @@ func (f *FFUI) Update(w, h int) {
 		)
 		f.view.AddChild(rview)
 		f.euiRoot.AddChild(NewEUIReplayPartyList(memberList, scale))
+		f.euiRoot.AddChild(NewEUIDamageHistoryView(len(memberList), scale))
 		f.euiRoot.AddChild(EUIEnemyBarsView(scale))
 		f.euiRoot.AddChild(NewEUILimitBreak(&global.LimitBreak, &global.Bar, scale))
 		f.euiRoot.AddChild(EUIProgressBarView(scale))
