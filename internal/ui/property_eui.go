@@ -17,6 +17,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/yohamta/donburi"
+	"golang.org/x/image/math/f64"
 	"golang.org/x/text/language"
 )
 
@@ -93,26 +94,13 @@ func (p *PropertyPanelEUI) UpdateECS(w, h int, scale float64) {
 		global.Selected = nil
 	}
 
-	if selected == nil {
-		if p.wrapper != nil {
-			p.wrapper.RemoveChildren()
-		}
-		p.bindings = nil
-		p.stringBindings = nil
-		p.buffManager = nil
-		p.jobPicker = nil
-		p.boundEntry = nil
-		p.scrub = nil
-		return
-	}
-
 	p.updateScrub()
 
-	if p.boundEntry != selected || p.boundInst != global.SelectedInstance {
+	if !p.wrapperInRoot || p.boundEntry != selected || p.boundInst != global.SelectedInstance {
 		p.rebuild(selected, global.SelectedInstance)
 		p.boundEntry = selected
 		p.boundInst = global.SelectedInstance
-	} else {
+	} else if selected != nil {
 		p.syncInputs()
 	}
 
@@ -222,119 +210,122 @@ func (p *PropertyPanelEUI) rebuild(e *donburi.Entry, instIndex int) {
 	p.jobPicker = nil
 	p.scrub = nil
 
+	st := newPropInspectorStyle(p.scale)
+	titleBarH := int(float64(propEUITitleH) * p.scale)
+
 	var transformFields []propFieldSpec
 	var statusFields []propFieldSpec
 	var isPlayer bool
 	titleStr := "属性"
+	hasSelection := e != nil
 
-	if e.HasComponent(component.WorldMarker) {
-		markerData := component.WorldMarker.Get(e)
-		titleStr = markerTypeName(markerData.Type)
-		transformFields = []propFieldSpec{
-			{
-				Label: "X", Get: func() float64 { return markerData.Position[0] },
-				Set: func(v float64) { markerData.Position[0] = v },
-				Step: 1, ScrubSense: propEUIScrubSensePos,
-			},
-			{
-				Label: "Y", Get: func() float64 { return markerData.Position[1] },
-				Set: func(v float64) { markerData.Position[1] = v },
-				Step: 1, ScrubSense: propEUIScrubSensePos,
-			},
-		}
-	} else if e.HasComponent(component.Sprite) {
-		status := component.Status.Get(e)
-		sprite := component.Sprite.Get(e)
-		if sprite == nil || instIndex >= len(sprite.Instances) {
+	if hasSelection {
+		if e.HasComponent(component.WorldMarker) {
+			markerData := component.WorldMarker.Get(e)
+			titleStr = markerTypeName(markerData.Type)
+			transformFields = []propFieldSpec{
+				{
+					Label: "X", Get: func() float64 { return markerData.Position[0] },
+					Set: func(v float64) { markerData.Position[0] = v },
+					Step: 1, ScrubSense: propEUIScrubSensePos,
+				},
+				{
+					Label: "Y", Get: func() float64 { return markerData.Position[1] },
+					Set: func(v float64) { markerData.Position[1] = v },
+					Step: 1, ScrubSense: propEUIScrubSensePos,
+				},
+			}
+		} else if e.HasComponent(component.Sprite) {
+			status := component.Status.Get(e)
+			sprite := component.Sprite.Get(e)
+			if sprite == nil || instIndex >= len(sprite.Instances) {
+				return
+			}
+
+			inst := sprite.Instances[instIndex]
+			transformFields = []propFieldSpec{
+				{
+					Label: "X", Get: func() float64 { return inst.Object.Position()[0] },
+					Set: func(v float64) {
+						pos := inst.Object.Position()
+						inst.Object.UpdatePosition(vector.NewVector(v, pos[1]))
+					},
+					Step: 1, ScrubSense: propEUIScrubSensePos,
+				},
+				{
+					Label: "Y", Get: func() float64 { return inst.Object.Position()[1] },
+					Set: func(v float64) {
+						pos := inst.Object.Position()
+						inst.Object.UpdatePosition(vector.NewVector(pos[0], v))
+					},
+					Step: 1, ScrubSense: propEUIScrubSensePos,
+				},
+				{
+					Label: "朝向", Get: func() float64 { return inst.Face * 180 / math.Pi },
+					Set: func(v float64) {
+						rad := v * math.Pi / 180
+						for rad > math.Pi {
+							rad -= 2 * math.Pi
+						}
+						for rad < -math.Pi {
+							rad += 2 * math.Pi
+						}
+						inst.Face = rad
+					},
+					Step: 5, ScrubSense: propEUIScrubSenseRot,
+					SliderMin: -180, SliderMax: 180, HasSlider: true,
+				},
+			}
+
+			if status != nil {
+				titleStr = status.Name
+				if isPlayerEntry(e) {
+					isPlayer = true
+					p.buffManager = NewEUIBuffListManager(newPropInspectorStyle(p.scale), p.ui, status.EnsureBuffList())
+				}
+				statusFields = []propFieldSpec{
+					{
+						Label: "HP", Get: func() float64 { return float64(status.HP) },
+						Set: func(v float64) {
+							status.HP = int(v)
+							if status.HP < 0 {
+								status.HP = 0
+							}
+							if status.HP > status.MaxHP {
+								status.HP = status.MaxHP
+							}
+						},
+						Step: 100, Format: "%.0f", ScrubSense: propEUIScrubSenseHP,
+						SliderMin: 0,
+						SliderMaxFunc: func() float64 {
+							max := float64(status.MaxHP)
+							if max < 1 {
+								return 1
+							}
+							return max
+						},
+						HasSlider: true,
+					},
+					{
+						Label: "HP 上限", Get: func() float64 { return float64(status.MaxHP) },
+						Set: func(v float64) {
+							status.MaxHP = int(v)
+							if status.MaxHP < 1 {
+								status.MaxHP = 1
+							}
+							if status.HP > status.MaxHP {
+								status.HP = status.MaxHP
+							}
+						},
+						Step: 1000, Format: "%.0f", ScrubSense: propEUIScrubSenseHP * 10,
+						SliderMin: 1, SliderMax: propMaxHPSliderMax, HasSlider: true,
+					},
+				}
+			}
+		} else {
 			return
 		}
-
-		inst := sprite.Instances[instIndex]
-		transformFields = []propFieldSpec{
-			{
-				Label: "X", Get: func() float64 { return inst.Object.Position()[0] },
-				Set: func(v float64) {
-					pos := inst.Object.Position()
-					inst.Object.UpdatePosition(vector.NewVector(v, pos[1]))
-				},
-				Step: 1, ScrubSense: propEUIScrubSensePos,
-			},
-			{
-				Label: "Y", Get: func() float64 { return inst.Object.Position()[1] },
-				Set: func(v float64) {
-					pos := inst.Object.Position()
-					inst.Object.UpdatePosition(vector.NewVector(pos[0], v))
-				},
-				Step: 1, ScrubSense: propEUIScrubSensePos,
-			},
-			{
-				Label: "朝向", Get: func() float64 { return inst.Face * 180 / math.Pi },
-				Set: func(v float64) {
-					rad := v * math.Pi / 180
-					for rad > math.Pi {
-						rad -= 2 * math.Pi
-					}
-					for rad < -math.Pi {
-						rad += 2 * math.Pi
-					}
-					inst.Face = rad
-				},
-				Step: 5, ScrubSense: propEUIScrubSenseRot,
-				SliderMin: -180, SliderMax: 180, HasSlider: true,
-			},
-		}
-
-		if status != nil {
-			titleStr = status.Name
-			if isPlayerEntry(e) {
-				isPlayer = true
-				p.buffManager = NewEUIBuffListManager(newPropInspectorStyle(p.scale), p.ui, status.EnsureBuffList())
-			}
-			statusFields = []propFieldSpec{
-				{
-					Label: "HP", Get: func() float64 { return float64(status.HP) },
-					Set: func(v float64) {
-						status.HP = int(v)
-						if status.HP < 0 {
-							status.HP = 0
-						}
-						if status.HP > status.MaxHP {
-							status.HP = status.MaxHP
-						}
-					},
-					Step: 100, Format: "%.0f", ScrubSense: propEUIScrubSenseHP,
-					SliderMin: 0,
-					SliderMaxFunc: func() float64 {
-						max := float64(status.MaxHP)
-						if max < 1 {
-							return 1
-						}
-						return max
-					},
-					HasSlider: true,
-				},
-				{
-					Label: "HP 上限", Get: func() float64 { return float64(status.MaxHP) },
-					Set: func(v float64) {
-						status.MaxHP = int(v)
-						if status.MaxHP < 1 {
-							status.MaxHP = 1
-						}
-						if status.HP > status.MaxHP {
-							status.HP = status.MaxHP
-						}
-					},
-					Step: 1000, Format: "%.0f", ScrubSense: propEUIScrubSenseHP * 10,
-					SliderMin: 1, SliderMax: propMaxHPSliderMax, HasSlider: true,
-				},
-			}
-		}
-	} else {
-		return
 	}
-
-	st := newPropInspectorStyle(p.scale)
-	titleBarH := int(float64(propEUITitleH) * p.scale)
 
 	panel := widget.NewContainer(
 		widget.ContainerOpts.BackgroundImage(euiimage.NewNineSliceColor(color.NRGBA{24, 26, 38, 235})),
@@ -365,33 +356,60 @@ func (p *PropertyPanelEUI) rebuild(e *donburi.Entry, instIndex int) {
 		panel.AddChild(section)
 	}
 
-	addSection("变换", transformFields)
+	// --- Always-visible sections ---
 
-	if isPlayer {
-		section, body := newPropSection("玩家", st)
-		if status := component.Status.Get(e); status != nil {
-			nameRow, nameBinding := buildPropStringFieldRow(st, "名字", func() string {
-				return status.Name
-			}, func(name string) {
-				status.Name = name
-			})
-			body.AddChild(nameRow)
-			p.stringBindings = append(p.stringBindings, nameBinding)
+	// Waymarker grid: 2×4 marker buttons inside the sidebar.
+	waymarkerSection, waymarkerBody := newPropSection("标点", st)
+	waymarkerBody.AddChild(buildWaymarkerGrid(st))
+	panel.AddChild(waymarkerSection)
 
-			p.jobPicker = NewEUIJobPicker(st, p.ui, status.Role, func(r role.RoleType) {
-				status.Role = r
-			})
-			body.AddChild(p.jobPicker.Container())
+	// Display toggle: show target ring checkbox.
+	globalData := entry.GetGlobal(ecsInstance)
+	displaySection, displayBody := newPropSection("显示", st)
+	checkboxRow := widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+			widget.RowLayoutOpts.Spacing(int(6 * st.scale)),
+		)),
+		widget.ContainerOpts.WidgetOpts(
+			widget.WidgetOpts.LayoutData(widget.RowLayoutData{Stretch: true}),
+		),
+	)
+	checkboxRow.AddChild(NewEUICheckbox(14, true, &globalData.ShowTargetRing, "显示目标圈", nil, st.scale))
+	displayBody.AddChild(checkboxRow)
+	panel.AddChild(displaySection)
+
+	// --- Selection-only sections ---
+
+	if hasSelection {
+		addSection("变换", transformFields)
+
+		if isPlayer {
+			section, body := newPropSection("玩家", st)
+			if status := component.Status.Get(e); status != nil {
+				nameRow, nameBinding := buildPropStringFieldRow(st, "名字", func() string {
+					return status.Name
+				}, func(name string) {
+					status.Name = name
+				})
+				body.AddChild(nameRow)
+				p.stringBindings = append(p.stringBindings, nameBinding)
+
+				p.jobPicker = NewEUIJobPicker(st, p.ui, status.Role, func(r role.RoleType) {
+					status.Role = r
+				})
+				body.AddChild(p.jobPicker.Container())
+			}
+			panel.AddChild(section)
 		}
-		panel.AddChild(section)
-	}
 
-	addSection("状态", statusFields)
+		addSection("状态", statusFields)
 
-	if p.buffManager != nil {
-		section, body := newPropSection("Buff", st)
-		body.AddChild(p.buffManager.Container())
-		panel.AddChild(section)
+		if p.buffManager != nil {
+			section, body := newPropSection("Buff", st)
+			body.AddChild(p.buffManager.Container())
+			panel.AddChild(section)
+		}
 	}
 
 	titleFace := newEUIFace(st.fontSize)
@@ -464,6 +482,99 @@ func (p *PropertyPanelEUI) rebuild(e *donburi.Entry, instIndex int) {
 	// Populate the wrapper with the new sidebar content.
 	p.wrapper.RemoveChildren()
 	p.wrapper.AddChild(contentOuter)
+}
+
+// buildWaymarkerGrid creates a 2-row × 4-column grid of world-marker buttons
+// that toggle markers at the current cursor world position.
+func buildWaymarkerGrid(st propInspectorStyle) *widget.Container {
+	slotPx := int(48 * st.scale)
+	gap := int(2 * st.scale)
+
+	grid := widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+			widget.RowLayoutOpts.Spacing(gap),
+		)),
+	)
+
+	emptySlice := euiimage.NewNineSlice(
+		hotbarAtlasTexture.GetNineSlice("hotbar_empty.png").Texture,
+		[3]int{0, 48, 0}, [3]int{0, 48, 0},
+	)
+
+	for r := range 2 {
+		rowContainer := widget.NewContainer(
+			widget.ContainerOpts.Layout(widget.NewRowLayout(
+				widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+				widget.RowLayoutOpts.Spacing(gap),
+			)),
+		)
+
+		for c := range 4 {
+			marker := model.WorldMarkerType(r*4 + c)
+			if marker > model.WorldMarker4 {
+				break
+			}
+
+			config := model.WorldMarkerConfigs[marker]
+			idleImg, pressedImg := buildWaymarkerButtonImages(config.Texture, slotPx)
+
+			m := marker // capture for closure
+
+			btn := widget.NewButton(
+				widget.ButtonOpts.Image(&widget.ButtonImage{
+					Idle:         euiimage.NewNineSlice(idleImg, [3]int{0, slotPx, 0}, [3]int{0, slotPx, 0}),
+					Hover:        euiimage.NewNineSlice(idleImg, [3]int{0, slotPx, 0}, [3]int{0, slotPx, 0}),
+					Pressed:      euiimage.NewNineSlice(pressedImg, [3]int{0, slotPx, 0}, [3]int{0, slotPx, 0}),
+					PressedHover: euiimage.NewNineSlice(pressedImg, [3]int{0, slotPx, 0}, [3]int{0, slotPx, 0}),
+					Disabled:     emptySlice,
+				}),
+				widget.ButtonOpts.WidgetOpts(
+					widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+						MaxWidth:  slotPx,
+						MaxHeight: slotPx,
+					}),
+				),
+				widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+					g := entry.GetGlobal(ecsInstance)
+					camera := entry.GetCamera(ecsInstance)
+					for markerEntry := range component.WorldMarker.Iter(ecsInstance.World) {
+						md := component.WorldMarker.Get(markerEntry)
+						if md.Type == m {
+							markerEntry.Remove()
+							return
+						}
+					}
+					x, y := ebiten.CursorPosition()
+					wx, wy := camera.ScreenToWorld(float64(x), float64(y))
+					entry.NewWorldMarker(ecsInstance, m, f64.Vec2{wx, wy})
+					g.WorldMarkerSelected = int(m)
+				}),
+			)
+			rowContainer.AddChild(btn)
+		}
+
+		grid.AddChild(rowContainer)
+	}
+
+	return grid
+}
+
+// buildWaymarkerButtonImages pre-composites layered hotbar visuals into
+// idle (icon + fg overlay) and pressed (idle + clicked overlay) images.
+func buildWaymarkerButtonImages(icon *ebiten.Image, slotPx int) (*ebiten.Image, *ebiten.Image) {
+	fg := hotbarAtlasTexture.GetNineSlice("hotbar_fg.png").Texture
+	clicked := hotbarAtlasTexture.GetNineSlice("hotbar_clicked.png").Texture
+
+	idle := ebiten.NewImage(slotPx, slotPx)
+	overlayImage(idle, icon)
+	overlayImage(idle, fg)
+
+	pressed := ebiten.NewImage(slotPx, slotPx)
+	overlayImage(pressed, idle)
+	overlayImage(pressed, clicked)
+
+	return idle, pressed
 }
 
 // syncInputs refreshes all field widgets from ECS when not being edited.

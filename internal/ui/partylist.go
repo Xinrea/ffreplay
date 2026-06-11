@@ -51,17 +51,20 @@ const (
 )
 
 type euiPartyList struct {
-	widget  *widget.Widget
-	players []*donburi.Entry
-	entries func() []*donburi.Entry
-	scale   float64
-	hovered int
-	top     int
-	left    int
+	widget     *widget.Widget
+	players    []*donburi.Entry
+	entries    func() []*donburi.Entry
+	scale      float64
+	hovered    int
+	top        int
+	left       int
+	selectable bool
 }
 
 func NewEUIReplayPartyList(players []*donburi.Entry, scale float64) *euiPartyList {
-	return newEUIPartyList(players, nil, UIPadding+SingleBarHeight+10, UIPadding, scale)
+	pl := newEUIPartyList(players, nil, UIPadding+SingleBarHeight+10, UIPadding, scale)
+	pl.selectable = true
+	return pl
 }
 
 func NewEUIPlaygroundPartyList(scale float64) *euiPartyList {
@@ -100,7 +103,7 @@ func newEUIPartyList(players []*donburi.Entry, entries func() []*donburi.Entry, 
 			pl.hovered = -1
 		}),
 		widget.WidgetOpts.MouseButtonPressedHandler(func(args *widget.WidgetMouseButtonPressedEventArgs) {
-			if args.Button != ebiten.MouseButtonLeft {
+			if args.Button != ebiten.MouseButtonLeft || !pl.selectable {
 				return
 			}
 			players := pl.currentPlayers()
