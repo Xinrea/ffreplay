@@ -23,14 +23,14 @@ import (
 // Base sizes in logical pixels at scale=1; all are multiplied by
 // DeviceScaleFactor at runtime so the panel looks the same on all displays.
 const (
-	propEUIPanelWidth = 240
+	propEUIPanelWidth = 300
 	propEUIRowHeight  = 32
 	propEUIPadding    = 10
 	propEUITitleH     = 26
 	propEUIMargin     = 20
 	propEUIFontSize   = 13.0
 	propEUIRowSpacing = 6
-	propEUILabelW     = 40
+	propEUILabelW     = 48
 )
 
 // propBinding ties an ebitenui TextInput to ECS get/set functions.
@@ -86,6 +86,10 @@ func (p *PropertyPanelEUI) UpdateECS(w, h int, scale float64) {
 		selected = nil
 		global.Selected = nil
 	}
+	if selected != nil && !isEditableSelection(selected) {
+		selected = nil
+		global.Selected = nil
+	}
 
 	if selected == nil {
 		if p.removeWindow != nil {
@@ -135,6 +139,10 @@ func (p *PropertyPanelEUI) syncUIHovered(global *model.GlobalData) {
 	p.euiHovered = nowHovered
 }
 
+func isEditableSelection(e *donburi.Entry) bool {
+	return e.HasComponent(component.WorldMarker) || e.HasComponent(component.Sprite)
+}
+
 // markerTypeName returns a short display name for a WorldMarkerType.
 func markerTypeName(t model.WorldMarkerType) string {
 	names := map[model.WorldMarkerType]string{
@@ -171,7 +179,8 @@ func (p *PropertyPanelEUI) rebuild(e *donburi.Entry, instIndex int) {
 	var titleStr string
 
 	// WorldMarker: position-only, no rotation.
-	if markerData := component.WorldMarker.Get(e); markerData != nil {
+	if e.HasComponent(component.WorldMarker) {
+		markerData := component.WorldMarker.Get(e)
 		titleStr = markerTypeName(markerData.Type)
 		specs = []spec{
 			{
@@ -185,7 +194,7 @@ func (p *PropertyPanelEUI) rebuild(e *donburi.Entry, instIndex int) {
 				set:   func(v float64) { markerData.Position[1] = v },
 			},
 		}
-	} else {
+	} else if e.HasComponent(component.Sprite) {
 		// Sprite-based entity (player / enemy).
 		status := component.Status.Get(e)
 		sprite := component.Sprite.Get(e)
@@ -245,6 +254,8 @@ func (p *PropertyPanelEUI) rebuild(e *donburi.Entry, instIndex int) {
 				},
 			})
 		}
+	} else {
+		return
 	}
 
 	s := p.scale
@@ -254,6 +265,11 @@ func (p *PropertyPanelEUI) rebuild(e *donburi.Entry, instIndex int) {
 	titleBarH := int(float64(propEUITitleH) * s)
 	rowSpacing := int(float64(propEUIRowSpacing) * s)
 	labelMaxW := int(float64(propEUILabelW) * s)
+	rowSpacingPx := int(8 * s)
+	inputMinW := panelW - padding*2 - labelMaxW - rowSpacingPx
+	if inputMinW < int(80*s) {
+		inputMinW = int(80 * s)
+	}
 	margin := int(float64(propEUIMargin) * s)
 	fontSize := propEUIFontSize * s
 	tiPad := &widget.Insets{
@@ -304,6 +320,7 @@ func (p *PropertyPanelEUI) rebuild(e *donburi.Entry, instIndex int) {
 				args.TextInput.SetText(fmt.Sprintf("%.2f", sp.get()))
 			}),
 			widget.TextInputOpts.WidgetOpts(
+				widget.WidgetOpts.MinSize(inputMinW, rowH),
 				widget.WidgetOpts.LayoutData(widget.RowLayoutData{Stretch: true, MaxHeight: rowH}),
 			),
 		)
@@ -321,7 +338,7 @@ func (p *PropertyPanelEUI) rebuild(e *donburi.Entry, instIndex int) {
 		row := widget.NewContainer(
 			widget.ContainerOpts.Layout(widget.NewRowLayout(
 				widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
-				widget.RowLayoutOpts.Spacing(int(8*s)),
+				widget.RowLayoutOpts.Spacing(rowSpacingPx),
 			)),
 			widget.ContainerOpts.WidgetOpts(
 				widget.WidgetOpts.LayoutData(widget.RowLayoutData{Stretch: true}),

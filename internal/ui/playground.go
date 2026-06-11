@@ -70,6 +70,11 @@ func (p *PlaygroundUI) Draw(screen *ebiten.Image) {
 	// Single ebitenui draw for all migrated components.
 	p.eui.Draw(screen)
 	DrawBuffTooltip(screen, ebiten.Monitor().DeviceScaleFactor())
+
+	// Apply playground grab/move cursor after ebitenui, which resets the shape each frame.
+	if entry.GetGlobal(ecsInstance).PlaygroundMoveCursor {
+		ebiten.SetCursorShape(ebiten.CursorShapeMove)
+	}
 }
 
 // buildEUITopRight creates the ebitenui top-right column with HotBar and Checkbox.

@@ -38,10 +38,20 @@ func (s *System) PlaygroundInteractionUpdate(ecs *ecs.ECS) {
 		return
 	}
 
-	// Never interact through focused inputs or hovered UI panels.
-	if global.UIFocus || global.UIHovered {
+	global.PlaygroundMoveCursor = false
+
+	// Block new interaction through focused inputs; active drags keep going.
+	if global.UIFocus {
 		s.endDrag()
 
+		return
+	}
+
+	// Suppress click-to-select while over UI, but do not interrupt an active drag.
+	if global.UIHovered && s.dragMode == dragNone {
+		if spaceHeld := ebiten.IsKeyPressed(ebiten.KeySpace); spaceHeld {
+			global.PlaygroundMoveCursor = true
+		}
 		return
 	}
 
@@ -49,7 +59,6 @@ func (s *System) PlaygroundInteractionUpdate(ecs *ecs.ECS) {
 	mx, my := ebiten.CursorPosition()
 
 	spaceHeld := ebiten.IsKeyPressed(ebiten.KeySpace)
-	s.updateCursorShape(spaceHeld)
 
 	switch s.dragMode {
 	case dragNone:
@@ -64,22 +73,8 @@ func (s *System) PlaygroundInteractionUpdate(ecs *ecs.ECS) {
 	if !ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 		s.endDrag()
 	}
-}
 
-// updateCursorShape reflects the grab affordance while Space is held or a drag
-// is in progress.
-func (s *System) updateCursorShape(spaceHeld bool) {
-	if spaceHeld || s.dragMode != dragNone {
-		ebiten.SetCursorShape(ebiten.CursorShapeMove)
-
-		return
-	}
-
-	// Only reset when we previously owned the grab/move shape, so UI handlers
-	// (e.g. the input box's text cursor) keep control of their own shape.
-	if ebiten.CursorShape() == ebiten.CursorShapeMove {
-		ebiten.SetCursorShape(ebiten.CursorShapeDefault)
-	}
+	global.PlaygroundMoveCursor = spaceHeld || s.dragMode != dragNone
 }
 
 // handleDragStart decides what a fresh left-press begins: panning the camera
@@ -138,8 +133,9 @@ func (s *System) handlePanDrag(camera *model.CameraData, mx, my int) {
 
 // handleObjectDrag moves the selected instance to follow the cursor.
 func (s *System) handleObjectDrag(global *model.GlobalData, camera *model.CameraData, mx, my int) {
-	if global.Selected == nil {
+	if global.Selected == nil || !global.Selected.Valid() {
 		s.dragMode = dragNone
+		global.Selected = nil
 
 		return
 	}
@@ -147,7 +143,8 @@ func (s *System) handleObjectDrag(global *model.GlobalData, camera *model.Camera
 	wx, wy := camera.ScreenToWorld(float64(mx), float64(my))
 
 	// WorldMarker: update Position directly.
-	if markerData := component.WorldMarker.Get(global.Selected); markerData != nil {
+	if global.Selected.HasComponent(component.WorldMarker) {
+		markerData := component.WorldMarker.Get(global.Selected)
 		markerData.Position[0] = wx
 		markerData.Position[1] = wy
 
@@ -169,13 +166,10 @@ func (s *System) handleObjectDrag(global *model.GlobalData, camera *model.Camera
 	inst.WalkDuration = 0
 }
 
-// endDrag clears the active drag and resets the grab cursor.
+// endDrag clears the active drag.
 func (s *System) endDrag() {
 	if s.dragMode != dragNone {
 		s.dragMode = dragNone
-		if ebiten.CursorShape() == ebiten.CursorShapeMove {
-			ebiten.SetCursorShape(ebiten.CursorShapeDefault)
-		}
 	}
 }
 

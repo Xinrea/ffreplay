@@ -22,6 +22,8 @@ type GlobalData struct {
 	// UIHovered is true when the cursor is over an interactive UI panel
 	// (e.g. the property panel). World interaction is suppressed while true.
 	UIHovered bool
+	// PlaygroundMoveCursor requests the grab/move cursor after ebitenui draw.
+	PlaygroundMoveCursor bool
 	// Selected is the currently selected game object entry in playground mode.
 	Selected *donburi.Entry
 	// SelectedInstance is the instance index within the selected entry's sprite.

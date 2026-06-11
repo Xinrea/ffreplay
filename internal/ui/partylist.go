@@ -113,13 +113,20 @@ func newEUIPartyList(players []*donburi.Entry, entries func() []*donburi.Entry, 
 	return pl
 }
 
+func playerPartyListReady(e *donburi.Entry) bool {
+	if !e.Valid() {
+		return false
+	}
+	sprite := component.Sprite.Get(e)
+	return sprite != nil && len(sprite.Instances) > 0
+}
+
 func currentPlayerEntries() []*donburi.Entry {
 	players := []*donburi.Entry{}
 	for p := range tag.Player.Iter(ecsInstance.World) {
-		if !p.Valid() {
-			continue
+		if playerPartyListReady(p) {
+			players = append(players, p)
 		}
-		players = append(players, p)
 	}
 	return players
 }
@@ -182,8 +189,11 @@ func (p *euiPartyList) Render(screen *ebiten.Image) {
 }
 
 func (p *euiPartyList) renderPlayer(screen *ebiten.Image, playerEntry *donburi.Entry, index int) {
-	status := component.Status.Get(playerEntry)
 	sprite := component.Sprite.Get(playerEntry)
+	if sprite == nil || len(sprite.Instances) == 0 {
+		return
+	}
+	status := component.Status.Get(playerEntry)
 	s := p.scale
 	x := float64(p.widget.Rect.Min.X)
 	y := float64(p.widget.Rect.Min.Y) + float64(index*PlayerItemHeight)*s
