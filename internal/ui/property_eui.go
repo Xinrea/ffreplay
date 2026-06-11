@@ -1,11 +1,9 @@
 package ui
 
 import (
-	"fmt"
 	"image"
 	"image/color"
 	"math"
-	"strconv"
 
 	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/entry"
@@ -15,6 +13,7 @@ import (
 	euiimage "github.com/ebitenui/ebitenui/image"
 	"github.com/ebitenui/ebitenui/input"
 	"github.com/ebitenui/ebitenui/widget"
+	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/yohamta/donburi"
 	"golang.org/x/text/language"
@@ -23,21 +22,22 @@ import (
 // Base sizes in logical pixels at scale=1; all are multiplied by
 // DeviceScaleFactor at runtime so the panel looks the same on all displays.
 const (
-	propEUIPanelWidth = 300
-	propEUIRowHeight  = 32
+	propEUIPanelWidth = 320
+	propEUIRowHeight  = 28
 	propEUIPadding    = 10
-	propEUITitleH     = 26
+	propEUITitleH     = 28
 	propEUIMargin     = 20
 	propEUIFontSize   = 13.0
-	propEUIRowSpacing = 6
-	propEUILabelW     = 48
+	propEUIRowSpacing = 4
+	propEUILabelW     = 56
 )
 
-// propBinding ties an ebitenui TextInput to ECS get/set functions.
-type propBinding struct {
-	input *widget.TextInput
-	get   func() float64
-	set   func(float64)
+type propScrubState struct {
+	active bool
+	lastX  int
+	get    func() float64
+	set    func(float64)
+	sense  float64
 }
 
 // PropertyPanelEUI manages an ebitenui floating window for editing
@@ -48,10 +48,9 @@ type PropertyPanelEUI struct {
 	ui           *ebitenui.UI // shared, not owned
 	window       *widget.Window
 	removeWindow widget.RemoveWindowFunc
-	bindings     []propBinding
-	// euiHovered replicates Furex enter/leave semantics so global.UIHovered
-	// is properly cleared when the cursor leaves the ebitenui window.
-	euiHovered bool
+	bindings     []propFieldBinding
+	euiHovered   bool
+	scrub        *propScrubState
 
 	boundEntry *donburi.Entry
 	boundInst  int
@@ -97,10 +96,13 @@ func (p *PropertyPanelEUI) UpdateECS(w, h int, scale float64) {
 			p.removeWindow = nil
 			p.bindings = nil
 			p.boundEntry = nil
+			p.scrub = nil
 		}
 		p.syncUIHovered(global)
 		return
 	}
+
+	p.updateScrub()
 
 	if p.boundEntry != selected || p.boundInst != global.SelectedInstance {
 		p.rebuild(selected, global.SelectedInstance)
@@ -113,10 +115,42 @@ func (p *PropertyPanelEUI) UpdateECS(w, h int, scale float64) {
 	p.syncUIHovered(global)
 
 	for _, b := range p.bindings {
-		if b.input.IsFocused() {
+		if b.input != nil && b.input.IsFocused() {
 			global.UIFocus = true
 			break
 		}
+	}
+	if p.scrub != nil && p.scrub.active {
+		global.UIFocus = true
+	}
+}
+
+func (p *PropertyPanelEUI) updateScrub() {
+	if p.scrub == nil || !p.scrub.active {
+		return
+	}
+	if !ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+		p.scrub.active = false
+		return
+	}
+
+	mx, _ := ebiten.CursorPosition()
+	dx := mx - p.scrub.lastX
+	p.scrub.lastX = mx
+	if dx != 0 {
+		p.scrub.set(p.scrub.get()+float64(dx)*p.scrub.sense)
+		p.syncInputs()
+	}
+}
+
+func (p *PropertyPanelEUI) beginScrub(spec propFieldSpec) {
+	mx, _ := ebiten.CursorPosition()
+	p.scrub = &propScrubState{
+		active: true,
+		lastX:  mx,
+		get:    spec.Get,
+		set:    spec.Set,
+		sense:  spec.ScrubSense,
 	}
 }
 
@@ -127,13 +161,10 @@ func (p *PropertyPanelEUI) syncUIHovered(global *model.GlobalData) {
 	nowHovered := input.UIHovered
 	switch {
 	case nowHovered && !p.euiHovered:
-		// Mouse entered an ebitenui widget.
 		global.UIHovered = true
 	case !nowHovered && p.euiHovered:
-		// Mouse left all ebitenui widgets — replicate MouseLeave.
 		global.UIHovered = false
 	case nowHovered:
-		// Still inside; keep it set.
 		global.UIHovered = true
 	}
 	p.euiHovered = nowHovered
@@ -161,41 +192,34 @@ func markerTypeName(t model.WorldMarkerType) string {
 	return "标点"
 }
 
-// rebuild closes any existing window and opens a new one for the given entry.
 func (p *PropertyPanelEUI) rebuild(e *donburi.Entry, instIndex int) {
 	if p.removeWindow != nil {
 		p.removeWindow()
 		p.removeWindow = nil
 	}
 	p.bindings = nil
+	p.scrub = nil
 
-	type spec struct {
-		label string
-		get   func() float64
-		set   func(float64)
-	}
+	var transformFields []propFieldSpec
+	var statusFields []propFieldSpec
+	titleStr := "属性"
 
-	var specs []spec
-	var titleStr string
-
-	// WorldMarker: position-only, no rotation.
 	if e.HasComponent(component.WorldMarker) {
 		markerData := component.WorldMarker.Get(e)
 		titleStr = markerTypeName(markerData.Type)
-		specs = []spec{
+		transformFields = []propFieldSpec{
 			{
-				label: "X",
-				get:   func() float64 { return markerData.Position[0] },
-				set:   func(v float64) { markerData.Position[0] = v },
+				Label: "X", Get: func() float64 { return markerData.Position[0] },
+				Set: func(v float64) { markerData.Position[0] = v },
+				Step: 1, ScrubSense: propEUIScrubSensePos,
 			},
 			{
-				label: "Y",
-				get:   func() float64 { return markerData.Position[1] },
-				set:   func(v float64) { markerData.Position[1] = v },
+				Label: "Y", Get: func() float64 { return markerData.Position[1] },
+				Set: func(v float64) { markerData.Position[1] = v },
+				Step: 1, ScrubSense: propEUIScrubSensePos,
 			},
 		}
 	} else if e.HasComponent(component.Sprite) {
-		// Sprite-based entity (player / enemy).
 		status := component.Status.Get(e)
 		sprite := component.Sprite.Get(e)
 		if sprite == nil || instIndex >= len(sprite.Instances) {
@@ -203,28 +227,26 @@ func (p *PropertyPanelEUI) rebuild(e *donburi.Entry, instIndex int) {
 		}
 
 		inst := sprite.Instances[instIndex]
-
-		specs = []spec{
+		transformFields = []propFieldSpec{
 			{
-				label: "X",
-				get:   func() float64 { return inst.Object.Position()[0] },
-				set: func(v float64) {
+				Label: "X", Get: func() float64 { return inst.Object.Position()[0] },
+				Set: func(v float64) {
 					pos := inst.Object.Position()
 					inst.Object.UpdatePosition(vector.NewVector(v, pos[1]))
 				},
+				Step: 1, ScrubSense: propEUIScrubSensePos,
 			},
 			{
-				label: "Y",
-				get:   func() float64 { return inst.Object.Position()[1] },
-				set: func(v float64) {
+				Label: "Y", Get: func() float64 { return inst.Object.Position()[1] },
+				Set: func(v float64) {
 					pos := inst.Object.Position()
 					inst.Object.UpdatePosition(vector.NewVector(pos[0], v))
 				},
+				Step: 1, ScrubSense: propEUIScrubSensePos,
 			},
 			{
-				label: "朝向",
-				get:   func() float64 { return inst.Face * 180 / math.Pi },
-				set: func(v float64) {
+				Label: "朝向", Get: func() float64 { return inst.Face * 180 / math.Pi },
+				Set: func(v float64) {
 					rad := v * math.Pi / 180
 					for rad > math.Pi {
 						rad -= 2 * math.Pi
@@ -234,125 +256,96 @@ func (p *PropertyPanelEUI) rebuild(e *donburi.Entry, instIndex int) {
 					}
 					inst.Face = rad
 				},
+				Step: 5, ScrubSense: propEUIScrubSenseRot,
+				SliderMin: -180, SliderMax: 180, HasSlider: true,
 			},
 		}
 
-		titleStr = "属性"
 		if status != nil {
 			titleStr = status.Name
-			specs = append(specs, spec{
-				label: "HP",
-				get:   func() float64 { return float64(status.HP) },
-				set: func(v float64) {
-					status.HP = int(v)
-					if status.HP < 0 {
-						status.HP = 0
-					}
-					if status.HP > status.MaxHP {
-						status.MaxHP = status.HP
-					}
+			statusFields = []propFieldSpec{
+				{
+					Label: "HP", Get: func() float64 { return float64(status.HP) },
+					Set: func(v float64) {
+						status.HP = int(v)
+						if status.HP < 0 {
+							status.HP = 0
+						}
+						if status.HP > status.MaxHP {
+							status.HP = status.MaxHP
+						}
+					},
+					Step: 100, Format: "%.0f", ScrubSense: propEUIScrubSenseHP,
+					SliderMin: 0,
+					SliderMaxFunc: func() float64 {
+						max := float64(status.MaxHP)
+						if max < 1 {
+							return 1
+						}
+						return max
+					},
+					HasSlider: true,
 				},
-			})
+				{
+					Label: "HP 上限", Get: func() float64 { return float64(status.MaxHP) },
+					Set: func(v float64) {
+						status.MaxHP = int(v)
+						if status.MaxHP < 1 {
+							status.MaxHP = 1
+						}
+						if status.HP > status.MaxHP {
+							status.HP = status.MaxHP
+						}
+					},
+					Step: 1000, Format: "%.0f", ScrubSense: propEUIScrubSenseHP * 10,
+					SliderMin: 1, SliderMax: propMaxHPSliderMax, HasSlider: true,
+				},
+			}
 		}
 	} else {
 		return
 	}
 
-	s := p.scale
-	panelW := int(float64(propEUIPanelWidth) * s)
-	padding := int(float64(propEUIPadding) * s)
-	rowH := int(float64(propEUIRowHeight) * s)
-	titleBarH := int(float64(propEUITitleH) * s)
-	rowSpacing := int(float64(propEUIRowSpacing) * s)
-	labelMaxW := int(float64(propEUILabelW) * s)
-	rowSpacingPx := int(8 * s)
-	inputMinW := panelW - padding*2 - labelMaxW - rowSpacingPx
-	if inputMinW < int(80*s) {
-		inputMinW = int(80 * s)
-	}
-	margin := int(float64(propEUIMargin) * s)
-	fontSize := propEUIFontSize * s
-	tiPad := &widget.Insets{
-		Left:   int(6 * s),
-		Right:  int(6 * s),
-		Top:    int(4 * s),
-		Bottom: int(4 * s),
-	}
+	st := newPropInspectorStyle(p.scale)
+	margin := int(float64(propEUIMargin) * p.scale)
+	titleBarH := int(float64(propEUITitleH) * p.scale)
 
-	face := newEUIFace(fontSize)
-
-	// Build each property row and collect bindings.
-	rowContainer := widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(euiimage.NewNineSliceColor(color.NRGBA{20, 22, 35, 220})),
+	panel := widget.NewContainer(
+		widget.ContainerOpts.BackgroundImage(euiimage.NewNineSliceColor(color.NRGBA{24, 26, 38, 235})),
 		widget.ContainerOpts.Layout(widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Padding(&widget.Insets{
-				Top:    padding,
-				Bottom: padding,
-				Left:   padding,
-				Right:  padding,
+				Top:    st.padding,
+				Bottom: st.padding,
+				Left:   st.padding,
+				Right:  st.padding,
 			}),
-			widget.RowLayoutOpts.Spacing(rowSpacing),
+			widget.RowLayoutOpts.Spacing(st.rowSpacing),
 		)),
 	)
 
-	for i := range specs {
-		sp := specs[i]
-		ti := widget.NewTextInput(
-			widget.TextInputOpts.Face(&face),
-			widget.TextInputOpts.Image(&widget.TextInputImage{
-				Idle:     euiimage.NewBorderedNineSliceColor(color.NRGBA{38, 40, 58, 235}, color.NRGBA{70, 72, 100, 180}, 1),
-				Disabled: euiimage.NewNineSliceColor(color.NRGBA{28, 30, 42, 200}),
-			}),
-			widget.TextInputOpts.Color(&widget.TextInputColor{
-				Idle:          color.NRGBA{220, 222, 235, 255},
-				Disabled:      color.NRGBA{120, 122, 140, 255},
-				Caret:         color.NRGBA{180, 200, 255, 255},
-				DisabledCaret: color.NRGBA{80, 80, 100, 255},
-			}),
-			widget.TextInputOpts.Padding(tiPad),
-			widget.TextInputOpts.SubmitOnEnter(true),
-			widget.TextInputOpts.SubmitHandler(func(args *widget.TextInputChangedEventArgs) {
-				v, err := strconv.ParseFloat(args.InputText, 64)
-				if err == nil {
-					sp.set(v)
-				}
-				args.TextInput.SetText(fmt.Sprintf("%.2f", sp.get()))
-			}),
-			widget.TextInputOpts.WidgetOpts(
-				widget.WidgetOpts.MinSize(inputMinW, rowH),
-				widget.WidgetOpts.LayoutData(widget.RowLayoutData{Stretch: true, MaxHeight: rowH}),
-			),
-		)
-		ti.SetText(fmt.Sprintf("%.2f", sp.get()))
+	contentH := st.padding * 2
+	onScrub := func(spec propFieldSpec) { p.beginScrub(spec) }
 
-		labelFace := newEUIFace(fontSize)
-		label := widget.NewText(
-			widget.TextOpts.Text(sp.label, &labelFace, color.NRGBA{180, 185, 210, 255}),
-			widget.TextOpts.Position(widget.TextPositionStart, widget.TextPositionCenter),
-			widget.TextOpts.WidgetOpts(
-				widget.WidgetOpts.LayoutData(widget.RowLayoutData{MaxWidth: labelMaxW}),
-			),
-		)
-
-		row := widget.NewContainer(
-			widget.ContainerOpts.Layout(widget.NewRowLayout(
-				widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
-				widget.RowLayoutOpts.Spacing(rowSpacingPx),
-			)),
-			widget.ContainerOpts.WidgetOpts(
-				widget.WidgetOpts.LayoutData(widget.RowLayoutData{Stretch: true}),
-			),
-		)
-		row.AddChild(label)
-		row.AddChild(ti)
-		rowContainer.AddChild(row)
-
-		p.bindings = append(p.bindings, propBinding{input: ti, get: sp.get, set: sp.set})
+	addSection := func(title string, fields []propFieldSpec) {
+		if len(fields) == 0 {
+			return
+		}
+		section, body := newPropSection(title, st)
+		for _, field := range fields {
+			row, binding := buildPropFieldRow(st, field, onScrub)
+			body.AddChild(row)
+			p.bindings = append(p.bindings, binding)
+			contentH += fieldBlockHeight(st, field)
+		}
+		contentH += int(float64(propEUISectionHeader)*st.scale) + st.rowSpacing
+		panel.AddChild(section)
 	}
 
-	// Title bar (drag handle).
-	titleFace := newEUIFace(fontSize)
+	addSection("变换", transformFields)
+	addSection("状态", statusFields)
+
+	titleFace := newEUIFace(st.fontSize)
 	titleBar := widget.NewContainer(
 		widget.ContainerOpts.BackgroundImage(
 			euiimage.NewBorderedNineSliceColor(
@@ -365,37 +358,50 @@ func (p *PropertyPanelEUI) rebuild(e *donburi.Entry, instIndex int) {
 	)
 	titleBar.AddChild(widget.NewText(
 		widget.TextOpts.Text(titleStr, &titleFace, color.NRGBA{220, 225, 255, 255}),
-		widget.TextOpts.Position(widget.TextPositionCenter, widget.TextPositionCenter),
+		widget.TextOpts.Position(widget.TextPositionStart, widget.TextPositionCenter),
 		widget.TextOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-			HorizontalPosition: widget.AnchorLayoutPositionCenter,
+			HorizontalPosition: widget.AnchorLayoutPositionStart,
 			VerticalPosition:   widget.AnchorLayoutPositionCenter,
+			Padding: &widget.Insets{
+				Left: int(10 * st.scale),
+			},
 		})),
 	))
 
 	win := widget.NewWindow(
-		widget.WindowOpts.Contents(rowContainer),
+		widget.WindowOpts.Contents(panel),
 		widget.WindowOpts.TitleBar(titleBar, titleBarH),
 		widget.WindowOpts.Draggable(),
 	)
 
-	winH := titleBarH + padding*2 + len(specs)*(rowH+rowSpacing) - rowSpacing + padding
-	x := p.screenW - panelW - margin
+	winH := titleBarH + contentH
+	x := p.screenW - st.panelW - margin
 	y := margin
 	if x < 0 {
 		x = 0
 	}
-	win.SetLocation(image.Rect(x, y, x+panelW, y+winH))
+	win.SetLocation(image.Rect(x, y, x+st.panelW, y+winH))
 
 	p.window = win
 	p.removeWindow = p.ui.AddWindow(win)
 }
 
-// syncInputs refreshes all TextInput values from ECS when not focused.
+func fieldBlockHeight(st propInspectorStyle, field propFieldSpec) int {
+	h := st.rowH + st.rowSpacing
+	if field.HasSlider {
+		h += st.sliderH + int(4*st.scale)
+	}
+	return h
+}
+
+// syncInputs refreshes all field widgets from ECS when not being edited.
 func (p *PropertyPanelEUI) syncInputs() {
-	for _, b := range p.bindings {
-		if !b.input.IsFocused() {
-			b.input.SetText(fmt.Sprintf("%.2f", b.get()))
+	for i := range p.bindings {
+		b := &p.bindings[i]
+		if b.input != nil && !b.input.IsFocused() {
+			b.syncText()
 		}
+		b.syncSlider()
 	}
 }
 
