@@ -8,10 +8,11 @@ import (
 	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/entry"
 	"github.com/Xinrea/ffreplay/internal/model"
+	"github.com/Xinrea/ffreplay/internal/model/role"
+	"github.com/Xinrea/ffreplay/internal/tag"
 	"github.com/Xinrea/ffreplay/pkg/vector"
 	"github.com/ebitenui/ebitenui"
 	euiimage "github.com/ebitenui/ebitenui/image"
-	"github.com/ebitenui/ebitenui/input"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
@@ -26,7 +27,6 @@ const (
 	propEUIRowHeight  = 28
 	propEUIPadding    = 10
 	propEUITitleH     = 28
-	propEUIMargin     = 20
 	propEUIFontSize   = 13.0
 	propEUIRowSpacing = 4
 	propEUILabelW     = 56
@@ -40,23 +40,26 @@ type propScrubState struct {
 	sense  float64
 }
 
-// PropertyPanelEUI manages an ebitenui floating window for editing
+// PropertyPanelEUI manages a right-sidebar panel for editing
 // the selected playground object's properties.
-// It does NOT own the ebitenui.UI; it holds a shared reference so windows
-// are added to the same UI instance as all other ebitenui components.
+// It does NOT own the ebitenui.UI; it holds a shared reference so the
+// sidebar is added to the same UI root as all other ebitenui components.
 type PropertyPanelEUI struct {
-	ui           *ebitenui.UI // shared, not owned
-	window       *widget.Window
-	removeWindow widget.RemoveWindowFunc
-	bindings     []propFieldBinding
-	euiHovered   bool
-	scrub        *propScrubState
+	ui             *ebitenui.UI // shared, not owned
+	wrapper        *widget.Container
+	wrapperInRoot  bool
+	bindings       []propFieldBinding
+	stringBindings []propStringFieldBinding
+	buffManager    *EUIBuffListManager
+	jobPicker      *EUIJobPicker
+	scrub          *propScrubState
 
 	boundEntry *donburi.Entry
 	boundInst  int
 	screenW    int
 	screenH    int
 	scale      float64
+
 }
 
 // NewPropertyPanelEUI constructs the property panel using the shared ebitenui UI.
@@ -91,14 +94,15 @@ func (p *PropertyPanelEUI) UpdateECS(w, h int, scale float64) {
 	}
 
 	if selected == nil {
-		if p.removeWindow != nil {
-			p.removeWindow()
-			p.removeWindow = nil
-			p.bindings = nil
-			p.boundEntry = nil
-			p.scrub = nil
+		if p.wrapper != nil {
+			p.wrapper.RemoveChildren()
 		}
-		p.syncUIHovered(global)
+		p.bindings = nil
+		p.stringBindings = nil
+		p.buffManager = nil
+		p.jobPicker = nil
+		p.boundEntry = nil
+		p.scrub = nil
 		return
 	}
 
@@ -112,17 +116,42 @@ func (p *PropertyPanelEUI) UpdateECS(w, h int, scale float64) {
 		p.syncInputs()
 	}
 
-	p.syncUIHovered(global)
-
 	for _, b := range p.bindings {
 		if b.input != nil && b.input.IsFocused() {
 			global.UIFocus = true
 			break
 		}
 	}
+	for _, b := range p.stringBindings {
+		if b.input != nil && b.input.IsFocused() {
+			global.UIFocus = true
+			break
+		}
+	}
+	if p.buffManager != nil && (p.buffManager.Focused() || p.buffManager.ComboOpen()) {
+		global.UIFocus = true
+	}
+	if p.jobPicker != nil && (p.jobPicker.Focused() || p.jobPicker.ComboOpen()) {
+		global.UIFocus = true
+	}
 	if p.scrub != nil && p.scrub.active {
 		global.UIFocus = true
 	}
+	if p.cursorOverPanel() {
+		global.UIHovered = true
+	}
+}
+
+func (p *PropertyPanelEUI) cursorOverPanel() bool {
+	if p.wrapper == nil {
+		return false
+	}
+	rect := p.wrapper.GetWidget().Rect
+	if rect.Dx() <= 0 || rect.Dy() <= 0 {
+		return false
+	}
+	mx, my := ebiten.CursorPosition()
+	return image.Pt(mx, my).In(rect)
 }
 
 func (p *PropertyPanelEUI) updateScrub() {
@@ -154,24 +183,12 @@ func (p *PropertyPanelEUI) beginScrub(spec propFieldSpec) {
 	}
 }
 
-// syncUIHovered replicates Furex enter/leave semantics:
-// when ebitenui hover transitions from true→false we explicitly clear
-// global.UIHovered so it does not stay stuck after the window is dragged away.
-func (p *PropertyPanelEUI) syncUIHovered(global *model.GlobalData) {
-	nowHovered := input.UIHovered
-	switch {
-	case nowHovered && !p.euiHovered:
-		global.UIHovered = true
-	case !nowHovered && p.euiHovered:
-		global.UIHovered = false
-	case nowHovered:
-		global.UIHovered = true
-	}
-	p.euiHovered = nowHovered
-}
-
 func isEditableSelection(e *donburi.Entry) bool {
 	return e.HasComponent(component.WorldMarker) || e.HasComponent(component.Sprite)
+}
+
+func isPlayerEntry(e *donburi.Entry) bool {
+	return e.HasComponent(tag.Player)
 }
 
 // markerTypeName returns a short display name for a WorldMarkerType.
@@ -193,15 +210,21 @@ func markerTypeName(t model.WorldMarkerType) string {
 }
 
 func (p *PropertyPanelEUI) rebuild(e *donburi.Entry, instIndex int) {
-	if p.removeWindow != nil {
-		p.removeWindow()
-		p.removeWindow = nil
+	if p.jobPicker != nil {
+		p.jobPicker.Close()
+	}
+	if p.buffManager != nil {
+		p.buffManager.Close()
 	}
 	p.bindings = nil
+	p.stringBindings = nil
+	p.buffManager = nil
+	p.jobPicker = nil
 	p.scrub = nil
 
 	var transformFields []propFieldSpec
 	var statusFields []propFieldSpec
+	var isPlayer bool
 	titleStr := "属性"
 
 	if e.HasComponent(component.WorldMarker) {
@@ -263,6 +286,10 @@ func (p *PropertyPanelEUI) rebuild(e *donburi.Entry, instIndex int) {
 
 		if status != nil {
 			titleStr = status.Name
+			if isPlayerEntry(e) {
+				isPlayer = true
+				p.buffManager = NewEUIBuffListManager(newPropInspectorStyle(p.scale), p.ui, status.EnsureBuffList())
+			}
 			statusFields = []propFieldSpec{
 				{
 					Label: "HP", Get: func() float64 { return float64(status.HP) },
@@ -307,7 +334,6 @@ func (p *PropertyPanelEUI) rebuild(e *donburi.Entry, instIndex int) {
 	}
 
 	st := newPropInspectorStyle(p.scale)
-	margin := int(float64(propEUIMargin) * p.scale)
 	titleBarH := int(float64(propEUITitleH) * p.scale)
 
 	panel := widget.NewContainer(
@@ -324,7 +350,6 @@ func (p *PropertyPanelEUI) rebuild(e *donburi.Entry, instIndex int) {
 		)),
 	)
 
-	contentH := st.padding * 2
 	onScrub := func(spec propFieldSpec) { p.beginScrub(spec) }
 
 	addSection := func(title string, fields []propFieldSpec) {
@@ -336,14 +361,38 @@ func (p *PropertyPanelEUI) rebuild(e *donburi.Entry, instIndex int) {
 			row, binding := buildPropFieldRow(st, field, onScrub)
 			body.AddChild(row)
 			p.bindings = append(p.bindings, binding)
-			contentH += fieldBlockHeight(st, field)
 		}
-		contentH += int(float64(propEUISectionHeader)*st.scale) + st.rowSpacing
 		panel.AddChild(section)
 	}
 
 	addSection("变换", transformFields)
+
+	if isPlayer {
+		section, body := newPropSection("玩家", st)
+		if status := component.Status.Get(e); status != nil {
+			nameRow, nameBinding := buildPropStringFieldRow(st, "名字", func() string {
+				return status.Name
+			}, func(name string) {
+				status.Name = name
+			})
+			body.AddChild(nameRow)
+			p.stringBindings = append(p.stringBindings, nameBinding)
+
+			p.jobPicker = NewEUIJobPicker(st, p.ui, status.Role, func(r role.RoleType) {
+				status.Role = r
+			})
+			body.AddChild(p.jobPicker.Container())
+		}
+		panel.AddChild(section)
+	}
+
 	addSection("状态", statusFields)
+
+	if p.buffManager != nil {
+		section, body := newPropSection("Buff", st)
+		body.AddChild(p.buffManager.Container())
+		panel.AddChild(section)
+	}
 
 	titleFace := newEUIFace(st.fontSize)
 	titleBar := widget.NewContainer(
@@ -355,6 +404,9 @@ func (p *PropertyPanelEUI) rebuild(e *donburi.Entry, instIndex int) {
 			),
 		),
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
+		widget.ContainerOpts.WidgetOpts(
+			widget.WidgetOpts.MinSize(st.panelW, titleBarH),
+		),
 	)
 	titleBar.AddChild(widget.NewText(
 		widget.TextOpts.Text(titleStr, &titleFace, color.NRGBA{220, 225, 255, 255}),
@@ -368,30 +420,50 @@ func (p *PropertyPanelEUI) rebuild(e *donburi.Entry, instIndex int) {
 		})),
 	))
 
-	win := widget.NewWindow(
-		widget.WindowOpts.Contents(panel),
-		widget.WindowOpts.TitleBar(titleBar, titleBarH),
-		widget.WindowOpts.Draggable(),
+	// Scrollable content area: panel sections scroll if taller than window.
+	scrollContainer := widget.NewScrollContainer(
+		widget.ScrollContainerOpts.Content(panel),
+		widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
+			Idle: euiimage.NewNineSliceColor(color.NRGBA{24, 26, 38, 235}),
+			Mask: euiimage.NewNineSliceColor(color.NRGBA{0, 0, 0, 255}),
+		}),
+		widget.ScrollContainerOpts.WidgetOpts(
+			widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+				Stretch: true,
+			}),
+		),
 	)
 
-	winH := titleBarH + contentH
-	x := p.screenW - st.panelW - margin
-	y := margin
-	if x < 0 {
-		x = 0
-	}
-	win.SetLocation(image.Rect(x, y, x+st.panelW, y+winH))
+	// Outer content: title bar (fixed) + scrollable panel.
+	contentOuter := widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+		)),
+	)
+	contentOuter.AddChild(titleBar)
+	contentOuter.AddChild(scrollContainer)
 
-	p.window = win
-	p.removeWindow = p.ui.AddWindow(win)
-}
-
-func fieldBlockHeight(st propInspectorStyle, field propFieldSpec) int {
-	h := st.rowH + st.rowSpacing
-	if field.HasSlider {
-		h += st.sliderH + int(4*st.scale)
+	// Ensure the right-sidebar wrapper is in the root container.
+	if !p.wrapperInRoot {
+		p.wrapper = widget.NewContainer(
+			widget.ContainerOpts.Layout(widget.NewRowLayout(
+				widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+			)),
+			widget.ContainerOpts.WidgetOpts(
+				widget.WidgetOpts.MinSize(st.panelW, p.screenH),
+				widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+					HorizontalPosition: widget.AnchorLayoutPositionEnd,
+					VerticalPosition:   widget.AnchorLayoutPositionStart,
+				}),
+			),
+		)
+		p.ui.Container.AddChild(p.wrapper)
+		p.wrapperInRoot = true
 	}
-	return h
+
+	// Populate the wrapper with the new sidebar content.
+	p.wrapper.RemoveChildren()
+	p.wrapper.AddChild(contentOuter)
 }
 
 // syncInputs refreshes all field widgets from ECS when not being edited.
@@ -402,6 +474,15 @@ func (p *PropertyPanelEUI) syncInputs() {
 			b.syncText()
 		}
 		b.syncSlider()
+	}
+	for i := range p.stringBindings {
+		b := &p.stringBindings[i]
+		if b.input != nil && !b.input.IsFocused() {
+			b.syncText()
+		}
+	}
+	if p.buffManager != nil {
+		p.buffManager.RefreshIfChanged()
 	}
 }
 

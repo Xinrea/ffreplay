@@ -18,6 +18,34 @@ import (
 
 var textureCache = sync.Map{}
 
+// abilityIconFileName normalizes RPG Logs ability icon names to a local filename.
+func abilityIconFileName(iconName string) string {
+	iconName = strings.TrimSpace(iconName)
+	if iconName == "" {
+		return ""
+	}
+	if strings.HasSuffix(strings.ToLower(iconName), ".png") {
+		return iconName
+	}
+	return iconName + ".png"
+}
+
+func abilityIconCandidates(iconName string) []string {
+	iconName = strings.TrimSpace(iconName)
+	if iconName == "" {
+		return nil
+	}
+	fileName := abilityIconFileName(iconName)
+	if fileName == iconName {
+		return []string{fileName}
+	}
+	return []string{fileName, iconName}
+}
+
+func abilityIconURL(iconName string) string {
+	return "https://assets.rpglogs.com/img/ff/abilities/" + abilityIconFileName(iconName)
+}
+
 func missingAbilityTexture() *ebiten.Image {
 	const cacheKey = "__missing_ability_icon__"
 
@@ -35,24 +63,19 @@ func missingAbilityTexture() *ebiten.Image {
 }
 
 func loadFromFFreplay(iconName string) *ebiten.Image {
-	img, _, err := ebitenutil.NewImageFromFileSystem(asset.AssetFS, "asset/abilities/"+iconName)
-	if err != nil {
-		log.Println("Load icon from ffreplay failed", err)
-
-		return nil
+	for _, candidate := range abilityIconCandidates(iconName) {
+		img, _, err := ebitenutil.NewImageFromFileSystem(asset.AssetFS, "asset/abilities/"+candidate)
+		if err == nil && img != nil {
+			return img
+		}
 	}
+	log.Println("Load icon from ffreplay failed", iconName)
 
-	if img == nil {
-		log.Println("Load icon from ffreplay failed", iconName)
-
-		return nil
-	}
-
-	return img
+	return nil
 }
 
 func loadFromRPGLogs(iconName string) *ebiten.Image {
-	u, err := url.Parse("https://assets.rpglogs.com/img/ff/abilities/" + iconName)
+	u, err := url.Parse(abilityIconURL(iconName))
 	if err != nil {
 		log.Println(err)
 
@@ -72,24 +95,26 @@ func loadFromRPGLogs(iconName string) *ebiten.Image {
 }
 
 func loadFromLocal(iconName string) *ebiten.Image {
-	if _, err := os.Stat("asset/abilities/" + iconName); err == nil {
-		img, _, err := ebitenutil.NewImageFromFile("asset/abilities/" + iconName)
-		if err != nil {
-			log.Println("Load icon from local file failed", err)
-
-			return nil
+	for _, candidate := range abilityIconCandidates(iconName) {
+		path := "asset/abilities/" + candidate
+		if _, err := os.Stat(path); err != nil {
+			continue
 		}
-
+		img, _, err := ebitenutil.NewImageFromFile(path)
+		if err != nil {
+			log.Println("Load icon from local file failed", path, err)
+			continue
+		}
 		return img
 	}
 
-	log.Println("Missing icon file", "asset/abilities/"+iconName)
+	log.Println("Missing icon file", "asset/abilities/"+abilityIconFileName(iconName))
 
 	return nil
 }
 
 func downloadAndLoadIcon(iconName string) *ebiten.Image {
-	u, err := url.Parse("https://assets.rpglogs.com/img/ff/abilities/" + iconName)
+	u, err := url.Parse(abilityIconURL(iconName))
 	if err != nil {
 		log.Panic(err)
 	}
@@ -122,14 +147,15 @@ func downloadAndLoadIcon(iconName string) *ebiten.Image {
 
 	os.MkdirAll("asset/abilities/", os.ModePerm)
 
-	err = os.WriteFile("asset/abilities/"+iconName, imgData, 0644)
+	localPath := "asset/abilities/" + abilityIconFileName(iconName)
+	err = os.WriteFile(localPath, imgData, 0644)
 	if err != nil {
 		log.Println("Write icon to local file failed", finalUrl)
 
 		return nil
 	}
 
-	img, _, err := ebitenutil.NewImageFromFile("asset/abilities/" + iconName)
+	img, _, err := ebitenutil.NewImageFromFile(localPath)
 	if err != nil {
 		log.Println("Load icon from local file failed", finalUrl, err)
 
@@ -149,7 +175,8 @@ func NewAbilityTexture(iconName string) *ebiten.Image {
 		return nil
 	}
 
-	if texture, ok := textureCache.Load(iconName); ok {
+	cacheKey := abilityIconFileName(iconName)
+	if texture, ok := textureCache.Load(cacheKey); ok {
 		if value, ok := texture.(*ebiten.Image); ok {
 			return value
 		}
@@ -157,51 +184,44 @@ func NewAbilityTexture(iconName string) *ebiten.Image {
 		return nil
 	}
 
+	store := func(img *ebiten.Image) *ebiten.Image {
+		if img != nil {
+			textureCache.Store(cacheKey, img)
+		}
+		return img
+	}
+
 	// not using local buff icon files
 	if util.IsWasm() {
-		img := loadFromFFreplay(iconName)
-		if img != nil {
-			textureCache.Store(iconName, img)
-
+		if img := store(loadFromFFreplay(iconName)); img != nil {
+			return img
+		}
+		if img := store(loadFromRPGLogs(iconName)); img != nil {
 			return img
 		}
 
-		img = loadFromRPGLogs(iconName)
-		if img != nil {
-			textureCache.Store(iconName, img)
+		log.Println("Load icon from ffreplay and fflogs failed", cacheKey)
 
-			return img
-		}
-
-		log.Println("Load icon from ffreplay and fflogs failed", iconName)
-
-		img = missingAbilityTexture()
-		textureCache.Store(iconName, img)
+		img := missingAbilityTexture()
+		textureCache.Store(cacheKey, img)
 
 		return img
 	}
 
-	// try load from local
-
-	img := loadFromLocal(iconName)
-	if img != nil {
-		textureCache.Store(iconName, img)
-
+	if img := store(loadFromLocal(iconName)); img != nil {
+		return img
+	}
+	if img := store(loadFromFFreplay(iconName)); img != nil {
+		return img
+	}
+	if img := store(downloadAndLoadIcon(iconName)); img != nil {
 		return img
 	}
 
-	// try download from fflogs
-	img = downloadAndLoadIcon(iconName)
-	if img != nil {
-		textureCache.Store(iconName, img)
+	log.Println("Load icon from local file failed", cacheKey)
 
-		return img
-	}
-
-	log.Println("Load icon from local file failed", iconName)
-
-	img = missingAbilityTexture()
-	textureCache.Store(iconName, img)
+	img := missingAbilityTexture()
+	textureCache.Store(cacheKey, img)
 
 	return img
 }

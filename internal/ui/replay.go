@@ -83,7 +83,11 @@ func (f *FFUI) Update(w, h int) {
 		f.euiRoot.AddChild(EUIProgressBarView(scale))
 	})
 
+	global.UIFocus = false
+	global.UIHovered = false
+
 	f.eui.Update()
+	SyncEUIInputState(global, f.eui)
 }
 
 func (f *FFUI) Draw(screen *ebiten.Image) {

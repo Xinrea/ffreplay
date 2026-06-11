@@ -485,8 +485,8 @@ func (ms *FFScene) Reset() {
 }
 
 func (ms *FFScene) Update() {
-	ms.ecs.Update()
 	ms.ui.Update(ms.screenW, ms.screenH)
+	ms.ecs.Update()
 }
 
 func (ms *FFScene) Layout(w, h int) {

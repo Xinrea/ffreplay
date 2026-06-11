@@ -19,22 +19,21 @@ func (s *System) ControlUpdate(ecs *ecs.ECS) {
 		return
 	}
 
-	if global.UIFocus {
-		return
-	}
-
-	if inpututil.IsKeyJustPressed(ebiten.KeyBackquote) {
+	if inpututil.IsKeyJustPressed(ebiten.KeyBackquote) && !global.UIFocus {
 		global.Debug = !global.Debug
 	}
 
 	_, dy := ebiten.Wheel()
-
-	if dy != 0 {
+	if dy != 0 && !global.UIFocus && !global.UIHovered {
 		if dy > 0 {
 			camera.ZoomFactor += ZoomStep
 		} else {
 			camera.ZoomFactor -= ZoomStep
 		}
+	}
+
+	if global.UIFocus {
+		return
 	}
 
 	if global.ReplayMode || global.TargetPlayer == nil {

@@ -51,6 +51,12 @@ type propFieldBinding struct {
 	sliderDragging bool
 }
 
+type propStringFieldBinding struct {
+	input *widget.TextInput
+	get   func() string
+	set   func(string)
+}
+
 type propInspectorStyle struct {
 	scale      float64
 	panelW     int
@@ -363,6 +369,55 @@ func buildPropFieldRow(
 	}
 
 	return block, binding
+}
+
+func buildPropStringFieldRow(
+	st propInspectorStyle,
+	label string,
+	get func() string,
+	set func(string),
+) (*widget.Container, propStringFieldBinding) {
+	binding := propStringFieldBinding{get: get, set: set}
+
+	applyText := func(text string) {
+		set(strings.TrimSpace(text))
+	}
+
+	inputMinW := st.panelW - st.padding*2 - st.labelW - int(6*st.scale)
+	if inputMinW < int(72*st.scale) {
+		inputMinW = int(72 * st.scale)
+	}
+
+	ti := widget.NewTextInput(
+		widget.TextInputOpts.Face(&st.face),
+		widget.TextInputOpts.Image(propTextInputImage()),
+		widget.TextInputOpts.Color(propTextInputColor()),
+		widget.TextInputOpts.Padding(st.tiPad),
+		widget.TextInputOpts.SubmitOnEnter(true),
+		widget.TextInputOpts.SubmitHandler(func(args *widget.TextInputChangedEventArgs) {
+			applyText(args.InputText)
+		}),
+		widget.TextInputOpts.ChangedHandler(func(args *widget.TextInputChangedEventArgs) {
+			if args.InputText != binding.get() {
+				applyText(args.InputText)
+			}
+		}),
+		widget.TextInputOpts.WidgetOpts(
+			widget.WidgetOpts.MinSize(inputMinW, st.rowH),
+			widget.WidgetOpts.LayoutData(widget.RowLayoutData{Stretch: true, MaxHeight: st.rowH}),
+		),
+	)
+	binding.input = ti
+	binding.syncText()
+
+	return propLabeledControlRow(st, label, ti), binding
+}
+
+func (b *propStringFieldBinding) syncText() {
+	if b.input == nil {
+		return
+	}
+	b.input.SetText(b.get())
 }
 
 func (b *propFieldBinding) syncText() {

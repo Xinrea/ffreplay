@@ -41,6 +41,11 @@ var buffListUI = &buffListUISync{
 
 // SyncBuffLists copies every buffable entity's model.BuffList into its UI
 // snapshot once per global display second.
+// InvalidateBuffListSync forces UIBuff snapshots to refresh on the next SyncBuffLists call.
+func InvalidateBuffListSync() {
+	buffListUI.lastDisplaySecond = -1
+}
+
 func SyncBuffLists(now int64) {
 	if ecsInstance == nil {
 		return

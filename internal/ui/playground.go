@@ -50,13 +50,14 @@ func (p *PlaygroundUI) Update(w, h int) {
 		p.once.Do(func() {
 			p.euiRoot.AddChild(NewEUIPlaygroundPartyList(s))
 			p.euiRoot.AddChild(NewEUICommandView(s))
-			p.buildEUITopRight(s, global)
+			p.buildEUIBottomRight(s, global)
 		})
 	}
 
 	// Recompute focus from the current ebitenui state each frame. Focused
 	// widgets below will set this back to true during/after p.eui.Update().
 	global.UIFocus = false
+	global.UIHovered = false
 
 	SyncBuffLists(entry.GetTick(ecsInstance))
 	BeginBuffTooltipFrame()
@@ -64,6 +65,7 @@ func (p *PlaygroundUI) Update(w, h int) {
 	// Single ebitenui update covers property panel, hotbar, checkbox, etc.
 	p.eui.Update()
 	p.propPanel.UpdateECS(w, h, s)
+	SyncEUIInputState(global, p.eui)
 }
 
 func (p *PlaygroundUI) Draw(screen *ebiten.Image) {
@@ -77,16 +79,16 @@ func (p *PlaygroundUI) Draw(screen *ebiten.Image) {
 	}
 }
 
-// buildEUITopRight creates the ebitenui top-right column with HotBar and Checkbox.
-func (p *PlaygroundUI) buildEUITopRight(scale float64, global *model.GlobalData) {
+// buildEUIBottomRight creates the ebitenui bottom-right column with HotBar and Checkbox.
+func (p *PlaygroundUI) buildEUIBottomRight(scale float64, global *model.GlobalData) {
 	pad := int(float64(UIPadding) * scale)
 
-	// Outer container anchored to top-right, with screen-edge padding.
+	// Outer container anchored to bottom-right, with screen-edge padding.
 	col := widget.NewContainer(
 		widget.ContainerOpts.Layout(widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 			widget.RowLayoutOpts.Padding(&widget.Insets{
-				Top:   pad,
+				Bottom: pad,
 				Right: pad,
 			}),
 			widget.RowLayoutOpts.Spacing(int(50*scale)),
@@ -94,7 +96,7 @@ func (p *PlaygroundUI) buildEUITopRight(scale float64, global *model.GlobalData)
 		widget.ContainerOpts.WidgetOpts(
 			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
 				HorizontalPosition: widget.AnchorLayoutPositionEnd,
-				VerticalPosition:   widget.AnchorLayoutPositionStart,
+				VerticalPosition:   widget.AnchorLayoutPositionEnd,
 			}),
 		),
 	)
