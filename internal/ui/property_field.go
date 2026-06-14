@@ -141,7 +141,7 @@ func propSliderImages() (*widget.SliderTrackImage, *widget.ButtonImage) {
 	return track, handle
 }
 
-func newPropSection(title string, st propInspectorStyle) (*widget.Container, *widget.Container) {
+func newPropSection(title string, st propInspectorStyle, collapseState map[string]bool) (*widget.Container, *widget.Container) {
 	headerH := int(float64(propEUISectionHeader) * st.scale)
 	section := widget.NewContainer(
 		widget.ContainerOpts.Layout(widget.NewRowLayout(
@@ -151,28 +151,6 @@ func newPropSection(title string, st propInspectorStyle) (*widget.Container, *wi
 			widget.WidgetOpts.LayoutData(widget.RowLayoutData{Stretch: true}),
 		),
 	)
-
-	header := widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(euiimage.NewNineSliceColor(color.NRGBA{34, 36, 52, 255})),
-		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-		widget.ContainerOpts.WidgetOpts(
-			widget.WidgetOpts.MinSize(st.panelW-st.padding*2, headerH),
-			widget.WidgetOpts.LayoutData(widget.RowLayoutData{Stretch: true}),
-		),
-	)
-	headerFace := newEUIFace(st.fontSize)
-	header.AddChild(widget.NewText(
-		widget.TextOpts.Text(title, &headerFace, color.NRGBA{170, 175, 200, 255}),
-		widget.TextOpts.Position(widget.TextPositionStart, widget.TextPositionCenter),
-		widget.TextOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-			HorizontalPosition: widget.AnchorLayoutPositionStart,
-			VerticalPosition:   widget.AnchorLayoutPositionCenter,
-			Padding: &widget.Insets{
-				Left: int(8 * st.scale),
-			},
-		})),
-	))
-	section.AddChild(header)
 
 	body := widget.NewContainer(
 		widget.ContainerOpts.Layout(widget.NewRowLayout(
@@ -187,7 +165,66 @@ func newPropSection(title string, st propInspectorStyle) (*widget.Container, *wi
 			widget.WidgetOpts.LayoutData(widget.RowLayoutData{Stretch: true}),
 		),
 	)
-	section.AddChild(body)
+
+	// Read persisted collapse state; default is expanded.
+	collapsed := collapseState[title]
+
+	headerFace := newEUIFace(st.fontSize)
+
+	getHeaderText := func() string {
+		if collapsed {
+			return "[+] " + title
+		}
+		return "[-] " + title
+	}
+
+	headerText := widget.NewText(
+		widget.TextOpts.Text(getHeaderText(), &headerFace, color.NRGBA{170, 175, 200, 255}),
+		widget.TextOpts.Position(widget.TextPositionStart, widget.TextPositionCenter),
+		widget.TextOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+			HorizontalPosition: widget.AnchorLayoutPositionStart,
+			VerticalPosition:   widget.AnchorLayoutPositionCenter,
+			Padding: &widget.Insets{
+				Left: int(8 * st.scale),
+			},
+		})),
+	)
+
+	// Build the header as a clickable container that toggles the body.
+	header := widget.NewContainer(
+		widget.ContainerOpts.BackgroundImage(
+			euiimage.NewNineSliceColor(color.NRGBA{34, 36, 52, 255}),
+		),
+		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
+		widget.ContainerOpts.WidgetOpts(
+			widget.WidgetOpts.MinSize(st.panelW-st.padding*2, headerH),
+			widget.WidgetOpts.LayoutData(widget.RowLayoutData{Stretch: true}),
+			widget.WidgetOpts.CursorHovered(euiinput.CURSOR_POINTER),
+			widget.WidgetOpts.MouseButtonPressedHandler(func(args *widget.WidgetMouseButtonPressedEventArgs) {
+				if args.Button != ebiten.MouseButtonLeft {
+					return
+				}
+				collapsed = !collapsed
+				if collapseState != nil {
+					collapseState[title] = collapsed
+				}
+				headerText.Label = getHeaderText()
+				if collapsed {
+					section.RemoveChild(body)
+				} else {
+					section.AddChild(body)
+				}
+			}),
+		),
+	)
+	header.AddChild(headerText)
+
+	section.AddChild(header)
+
+	// Apply initial collapse state: do not add body if collapsed.
+	if !collapsed {
+		section.AddChild(body)
+	}
 
 	return section, body
 }

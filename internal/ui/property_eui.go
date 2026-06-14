@@ -54,6 +54,9 @@ type PropertyPanelEUI struct {
 	buffManager    *EUIBuffListManager
 	jobPicker      *EUIJobPicker
 	scrub          *propScrubState
+	scriptEditor    *ScriptEditorWindow
+	lastObjectCount  int
+	sectionCollapsed map[string]bool
 
 	boundEntry *donburi.Entry
 	boundInst  int
@@ -65,10 +68,14 @@ type PropertyPanelEUI struct {
 
 // NewPropertyPanelEUI constructs the property panel using the shared ebitenui UI.
 func NewPropertyPanelEUI(sharedUI *ebitenui.UI) *PropertyPanelEUI {
-	return &PropertyPanelEUI{
-		ui:    sharedUI,
-		scale: 1,
+	p := &PropertyPanelEUI{
+		ui:               sharedUI,
+		scale:            1,
+		sectionCollapsed: make(map[string]bool),
 	}
+	p.scriptEditor = NewScriptEditorWindow(p.scale)
+	p.scriptEditor.SetRoot(sharedUI.Container)
+	return p
 }
 
 // UpdateECS syncs ECS state (show/hide window, input values, UIHovered/UIFocus).
@@ -96,10 +103,12 @@ func (p *PropertyPanelEUI) UpdateECS(w, h int, scale float64) {
 
 	p.updateScrub()
 
-	if !p.wrapperInRoot || p.boundEntry != selected || p.boundInst != global.SelectedInstance {
+	currentObjectCount := len(collectSceneObjects())
+	if !p.wrapperInRoot || p.boundEntry != selected || p.boundInst != global.SelectedInstance || currentObjectCount != p.lastObjectCount {
 		p.rebuild(selected, global.SelectedInstance)
 		p.boundEntry = selected
 		p.boundInst = global.SelectedInstance
+		p.lastObjectCount = currentObjectCount
 	} else if selected != nil {
 		p.syncInputs()
 	}
@@ -125,8 +134,16 @@ func (p *PropertyPanelEUI) UpdateECS(w, h int, scale float64) {
 	if p.scrub != nil && p.scrub.active {
 		global.UIFocus = true
 	}
+	if p.scriptEditor != nil && p.scriptEditor.Focused() {
+		global.UIFocus = true
+	}
 	if p.cursorOverPanel() {
 		global.UIHovered = true
+	}
+
+	// Update script editor input handling
+	if p.scriptEditor != nil {
+		p.scriptEditor.Update(p.scale)
 	}
 }
 
@@ -347,7 +364,7 @@ func (p *PropertyPanelEUI) rebuild(e *donburi.Entry, instIndex int) {
 		if len(fields) == 0 {
 			return
 		}
-		section, body := newPropSection(title, st)
+		section, body := newPropSection(title, st, p.sectionCollapsed)
 		for _, field := range fields {
 			row, binding := buildPropFieldRow(st, field, onScrub)
 			body.AddChild(row)
@@ -359,13 +376,17 @@ func (p *PropertyPanelEUI) rebuild(e *donburi.Entry, instIndex int) {
 	// --- Always-visible sections ---
 
 	// Waymarker grid: 2×4 marker buttons inside the sidebar.
-	waymarkerSection, waymarkerBody := newPropSection("标点", st)
+	// Scene objects list: shows all current objects in the world.
+	objectsSection, _ := buildSceneObjectsSection(st, p.sectionCollapsed)
+	panel.AddChild(objectsSection)
+
+	waymarkerSection, waymarkerBody := newPropSection("标点", st, p.sectionCollapsed)
 	waymarkerBody.AddChild(buildWaymarkerGrid(st))
 	panel.AddChild(waymarkerSection)
 
 	// Display toggle: show target ring checkbox.
 	globalData := entry.GetGlobal(ecsInstance)
-	displaySection, displayBody := newPropSection("显示", st)
+	displaySection, displayBody := newPropSection("显示", st, p.sectionCollapsed)
 	checkboxRow := widget.NewContainer(
 		widget.ContainerOpts.Layout(widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
@@ -385,7 +406,7 @@ func (p *PropertyPanelEUI) rebuild(e *donburi.Entry, instIndex int) {
 		addSection("变换", transformFields)
 
 		if isPlayer {
-			section, body := newPropSection("玩家", st)
+			section, body := newPropSection("玩家", st, p.sectionCollapsed)
 			if status := component.Status.Get(e); status != nil {
 				nameRow, nameBinding := buildPropStringFieldRow(st, "名字", func() string {
 					return status.Name
@@ -406,11 +427,33 @@ func (p *PropertyPanelEUI) rebuild(e *donburi.Entry, instIndex int) {
 		addSection("状态", statusFields)
 
 		if p.buffManager != nil {
-			section, body := newPropSection("Buff", st)
+			section, body := newPropSection("Buff", st, p.sectionCollapsed)
 			body.AddChild(p.buffManager.Container())
 			panel.AddChild(section)
 		}
 	}
+
+	// Lua script editor: button to open the script editing window.
+	scriptSection, scriptBody := newPropSection("Lua 脚本", st, p.sectionCollapsed)
+	scriptBtnFace := newEUIFace(st.fontSize * 0.95)
+	openEditorBtn := widget.NewButton(
+		widget.ButtonOpts.Text("打开编辑器", &scriptBtnFace, &widget.ButtonTextColor{
+			Idle:  color.NRGBA{180, 200, 255, 255},
+			Hover: color.NRGBA{220, 235, 255, 255},
+		}),
+		widget.ButtonOpts.Image(propButtonImage()),
+		widget.ButtonOpts.TextPadding(widget.NewInsetsSimple(int(6 * st.scale))),
+		widget.ButtonOpts.WidgetOpts(
+			widget.WidgetOpts.LayoutData(widget.RowLayoutData{Stretch: true}),
+		),
+		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+			if p.scriptEditor != nil {
+				p.scriptEditor.Toggle()
+			}
+		}),
+	)
+	scriptBody.AddChild(openEditorBtn)
+	panel.AddChild(scriptSection)
 
 	titleFace := newEUIFace(st.fontSize)
 	titleBar := widget.NewContainer(
@@ -457,6 +500,9 @@ func (p *PropertyPanelEUI) rebuild(e *donburi.Entry, instIndex int) {
 		widget.ContainerOpts.Layout(widget.NewRowLayout(
 			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
 		)),
+		widget.ContainerOpts.WidgetOpts(
+			widget.WidgetOpts.LayoutData(widget.RowLayoutData{Stretch: true}),
+		),
 	)
 	contentOuter.AddChild(titleBar)
 	contentOuter.AddChild(scrollContainer)
@@ -472,6 +518,7 @@ func (p *PropertyPanelEUI) rebuild(e *donburi.Entry, instIndex int) {
 				widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
 					HorizontalPosition: widget.AnchorLayoutPositionEnd,
 					VerticalPosition:   widget.AnchorLayoutPositionStart,
+					StretchVertical:    true,
 				}),
 			),
 		)
