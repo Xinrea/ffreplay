@@ -1,6 +1,6 @@
 module github.com/Xinrea/ffreplay
 
-go 1.24.1
+go 1.25.0
 
 replace github.com/yohamta/furex/v2 => github.com/Xinrea/furex/v2 v2.5.1
 
@@ -11,8 +11,8 @@ require (
 	github.com/hajimehoshi/ebiten/v2 v2.9.7
 	github.com/yohamta/donburi v1.15.5
 	github.com/yohamta/furex/v2 v2.4.6
-	golang.org/x/image v0.31.0
-	golang.org/x/text v0.32.0
+	golang.org/x/image v0.38.0
+	golang.org/x/text v0.35.0
 )
 
 require github.com/rivo/uniseg v0.4.7 // indirect
@@ -55,7 +55,7 @@ require (
 	golang.org/x/exp/shiny v0.0.0-20250103183323-7d7fa50e5329 // indirect
 	golang.org/x/mobile v0.0.0-20231127183840-76ac6878050a // indirect
 	golang.org/x/net v0.48.0 // indirect
-	golang.org/x/sync v0.19.0 // indirect
+	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/sys v0.39.0 // indirect
 	google.golang.org/protobuf v1.36.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
