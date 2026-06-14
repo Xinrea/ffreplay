@@ -19,17 +19,12 @@ func (s *System) ControlUpdate(ecs *ecs.ECS) {
 		return
 	}
 
-	if global.UIFocus {
-		return
-	}
-
-	if inpututil.IsKeyJustPressed(ebiten.KeyBackquote) {
+	if inpututil.IsKeyJustPressed(ebiten.KeyBackquote) && !global.UIFocus {
 		global.Debug = !global.Debug
 	}
 
 	_, dy := ebiten.Wheel()
-
-	if dy != 0 {
+	if dy != 0 && !global.UIFocus && !global.UIHovered {
 		if dy > 0 {
 			camera.ZoomFactor += ZoomStep
 		} else {
@@ -37,9 +32,16 @@ func (s *System) ControlUpdate(ecs *ecs.ECS) {
 		}
 	}
 
+	if global.UIFocus {
+		return
+	}
+
 	if global.ReplayMode || global.TargetPlayer == nil {
 		s.replayModeControl(ecs)
 	} else {
 		s.playgroundControl(ecs)
 	}
+
+	// Mouse-driven selection / drag / grab-pan (playground only).
+	s.PlaygroundInteractionUpdate(ecs)
 }

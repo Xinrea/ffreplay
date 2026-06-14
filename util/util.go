@@ -75,6 +75,17 @@ func MSToTick(ms int64) int64 {
 	return int64(float64(ms) / 1000 * ebiten.DefaultTPS)
 }
 
+// QuantizeTickToSecond snaps a tick value to the start of its second bucket.
+// Buff remain displays use this so every icon in a list updates on the same pulse.
+func QuantizeTickToSecond(ticks int64) int64 {
+	step := MSToTick(1000)
+	if step <= 0 {
+		return ticks
+	}
+
+	return (ticks / step) * step
+}
+
 func ScaleFrame(frame image.Rectangle) image.Rectangle {
 	s := ebiten.Monitor().DeviceScaleFactor()
 

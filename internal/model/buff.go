@@ -44,15 +44,30 @@ func NewBuffList() *BuffList {
 }
 
 func (bl *BuffList) Update(now int64) {
+	if bl == nil {
+		return
+	}
+
 	for _, b := range bl.buffs {
+		if b == nil {
+			continue
+		}
 		b.UpdateRemain(now)
 	}
 }
 
 func (bl *BuffList) SetBuffs(buffs []*Buff) {
+	if bl == nil {
+		return
+	}
+
 	filtered := []*Buff{}
 
 	for _, b := range buffs {
+		if b == nil {
+			continue
+		}
+
 		if BuffFilter[b.ID] {
 			continue
 		}
@@ -64,6 +79,10 @@ func (bl *BuffList) SetBuffs(buffs []*Buff) {
 }
 
 func (bl *BuffList) Buffs() []*Buff {
+	if bl == nil {
+		return nil
+	}
+
 	// order buffs by type, debuff first
 	sort.Slice(bl.buffs, func(i, j int) bool {
 		return bl.buffs[i].Type > bl.buffs[j].Type
@@ -73,7 +92,15 @@ func (bl *BuffList) Buffs() []*Buff {
 }
 
 func (bl *BuffList) DeBuffs() (ret []*Buff) {
+	if bl == nil {
+		return nil
+	}
+
 	for _, b := range bl.buffs {
+		if b == nil {
+			continue
+		}
+
 		if b.Type == Debuff {
 			ret = append(ret, b)
 		}
@@ -83,6 +110,10 @@ func (bl *BuffList) DeBuffs() (ret []*Buff) {
 }
 
 func (bl *BuffList) Add(buff *Buff) {
+	if bl == nil || buff == nil {
+		return
+	}
+
 	if BuffFilter[buff.ID] {
 		return
 	}
@@ -90,6 +121,10 @@ func (bl *BuffList) Add(buff *Buff) {
 	index := -1
 
 	for i, b := range bl.buffs {
+		if b == nil {
+			continue
+		}
+
 		if b.ID == buff.ID {
 			index = i
 
@@ -105,7 +140,15 @@ func (bl *BuffList) Add(buff *Buff) {
 }
 
 func (bl *BuffList) UpdateStack(id int64, stack int) {
+	if bl == nil {
+		return
+	}
+
 	for i := range bl.buffs {
+		if bl.buffs[i] == nil {
+			continue
+		}
+
 		if bl.buffs[i].ID == id {
 			bl.buffs[i].Stacks = stack
 
@@ -115,9 +158,17 @@ func (bl *BuffList) UpdateStack(id int64, stack int) {
 }
 
 func (bl *BuffList) Refresh(buff *Buff) {
+	if bl == nil || buff == nil {
+		return
+	}
+
 	index := -1
 
 	for i, b := range bl.buffs {
+		if b == nil {
+			continue
+		}
+
 		if b.ID == buff.ID {
 			index = i
 
@@ -131,9 +182,17 @@ func (bl *BuffList) Refresh(buff *Buff) {
 }
 
 func (bl *BuffList) Remove(buff *Buff) {
+	if bl == nil || buff == nil {
+		return
+	}
+
 	index := -1
 
 	for i, b := range bl.buffs {
+		if b == nil {
+			continue
+		}
+
 		if b.ID == buff.ID {
 			index = i
 
@@ -148,9 +207,17 @@ func (bl *BuffList) Remove(buff *Buff) {
 }
 
 func (bl *BuffList) UpdateExpire(now int64) {
+	if bl == nil {
+		return
+	}
+
 	toRemove := make([]*Buff, 0)
 
 	for _, b := range bl.buffs {
+		if b == nil {
+			continue
+		}
+
 		if b.Expired(now) {
 			toRemove = append(toRemove, b)
 		}
@@ -162,7 +229,15 @@ func (bl *BuffList) UpdateExpire(now int64) {
 }
 
 func (bl *BuffList) ProcessDamage(damage *Damage) {
+	if bl == nil {
+		return
+	}
+
 	for _, b := range bl.buffs {
+		if b == nil {
+			continue
+		}
+
 		if b.ProcessDamage != nil {
 			b.ProcessDamage(damage)
 		}
@@ -170,7 +245,15 @@ func (bl *BuffList) ProcessDamage(damage *Damage) {
 }
 
 func (bl *BuffList) ProcessHeal(heal *Heal) {
+	if bl == nil {
+		return
+	}
+
 	for _, b := range bl.buffs {
+		if b == nil {
+			continue
+		}
+
 		if b.ProcessHeal != nil {
 			b.ProcessHeal(heal)
 		}
@@ -178,6 +261,10 @@ func (bl *BuffList) ProcessHeal(heal *Heal) {
 }
 
 func (bl *BuffList) Clear() {
+	if bl == nil {
+		return
+	}
+
 	bl.buffs = bl.buffs[:0]
 }
 

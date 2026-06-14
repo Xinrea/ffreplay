@@ -10,7 +10,6 @@ import (
 	"github.com/Xinrea/ffreplay/internal/ui"
 	"github.com/Xinrea/ffreplay/pkg/texture"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/yohamta/furex/v2"
 )
 
 const (
@@ -81,7 +80,7 @@ func RenderCasting(debug bool, canvas *ebiten.Image, tick int64, cast *model.Ski
 		name = fmt.Sprintf("[%d]%s", cast.ID, cast.Name)
 	}
 
-	ui.DrawText(canvas, name, textSize, x, y+yOffset, color.White, furex.AlignItemCenter, textShdowOpt)
+	ui.DrawText(canvas, name, textSize, x, y+yOffset, color.White, ui.AlignCenter, textShdowOpt)
 }
 
 func (g GCDPeriod) Render(debug bool, canvas *ebiten.Image, x, y float64, tick int64) {

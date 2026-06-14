@@ -51,12 +51,14 @@ func (c *CommandHandler) playerAdd(cmds []string) {
 		initialPos = f64.Vec2{current.Offset.X * 25, current.Offset.Y * 25}
 	}
 
-	p := entry.NewPlayer(ecsInstance, r, initialPos, &fflogs.PlayerDetail{
+	entry.NewPlayer(ecsInstance, r, initialPos, &fflogs.PlayerDetail{
 		ID:     c.player.idcnt,
 		Name:   fmt.Sprintf("[%d]%s", c.player.idcnt, cmds[1]),
 		Server: "ffreplay",
 	})
-	root.FilterByTagName("PartyList")[0].AddChild(NewPlayerItem(p))
+
+	// The ebitenui party list reads current player entries every frame, so no
+	// view tree mutation is required when commands create players.
 	c.AddResult("Player " + cmds[1] + " added")
 	c.player.idcnt += 1
 }
@@ -68,14 +70,6 @@ func (c *CommandHandler) playerRemove(cmds []string) {
 		c.AddError("Invalid player remove command")
 
 		return
-	}
-
-	for _, v := range root.FilterByTagName("PartyList") {
-		for _, p := range v.GetChildren() {
-			if p.Attrs.ID == cmds[1] {
-				v.RemoveChild(p)
-			}
-		}
 	}
 
 	for p := range tag.Player.Iter(ecsInstance.World) {

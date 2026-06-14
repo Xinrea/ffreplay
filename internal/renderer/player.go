@@ -5,9 +5,9 @@ import (
 	"math"
 
 	"github.com/Xinrea/ffreplay/internal/component"
-	"github.com/Xinrea/ffreplay/internal/entry"
 	"github.com/Xinrea/ffreplay/internal/model"
 	"github.com/Xinrea/ffreplay/internal/tag"
+	"github.com/Xinrea/ffreplay/internal/ui"
 	"github.com/Xinrea/ffreplay/pkg/texture"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/colorm"
@@ -24,7 +24,6 @@ func (r *Renderer) PlayerRender(ecs *ecs.ECS, screen *ebiten.Image) {
 }
 
 func (r *Renderer) renderPlayer(ecs *ecs.ECS, camera *model.CameraData, screen *ebiten.Image, player *donburi.Entry) {
-	tick := entry.GetTick(ecs)
 	global := component.Global.Get(component.Global.MustFirst(ecs.World))
 
 	sprite := component.Sprite.Get(player)
@@ -94,7 +93,7 @@ func (r *Renderer) renderPlayer(ecs *ecs.ECS, camera *model.CameraData, screen *
 
 	// render debuffs on side of player
 	screenX, screenY := camera.WorldToScreen(pos[0], pos[1])
-	RenderBuffList(screen, tick, status.BuffList.DeBuffs(), screenX+30/math.Pow(1.01, float64(camera.ZoomFactor)), screenY)
+	RenderBuffList(screen, ui.UIDebuffsFor(status.BuffList), screenX+30/math.Pow(1.01, float64(camera.ZoomFactor)), screenY)
 
 	// render marker on player
 	if status.Marker > 0 {

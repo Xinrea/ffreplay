@@ -40,7 +40,9 @@ func (s *System) replayModeControl(ecs *ecs.ECS) {
 func (s *System) handleSpeedControl() {
 	global := entry.GetGlobal(s.ecs)
 
-	if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
+	// In the playground, Space is reserved for grab-panning the view, so it
+	// must not toggle pause there.
+	if global.ReplayMode && inpututil.IsKeyJustPressed(ebiten.KeySpace) {
 		s.Pause = !s.Pause
 		global.Speed = 10
 	}

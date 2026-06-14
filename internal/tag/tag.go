@@ -18,4 +18,5 @@ var (
 	Enemy       = donburi.NewTag().SetName("Enemy")
 	Buffable    = donburi.NewTag().SetName("Buffable")
 	Global      = donburi.NewTag().SetName("Global")
+	Telegraph   = donburi.NewTag().SetName("Telegraph")
 )

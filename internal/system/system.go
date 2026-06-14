@@ -27,6 +27,11 @@ type System struct {
 	EntryMap          map[int64]*donburi.Entry
 	reset             bool
 	Pause             bool
+
+	// playground interaction state
+	dragMode   dragMode
+	lastMouseX int
+	lastMouseY int
 }
 
 type EventLine struct {
@@ -150,11 +155,20 @@ func (s *System) Update(ecs *ecs.ECS) {
 	s.BuffUpdate(ecs, globalData.Tick/10)
 	s.SkillUpdate(ecs)
 	s.WorldMarkerUpdate(ecs)
+	s.TelegraphUpdate(ecs)
+	s.WalkUpdate(ecs)
 	s.BackgroundUpdate()
 
-	if globalData.Loaded.Load() && !s.Pause && util.MSToTick(globalData.FightDuration.Load())*10 > globalData.Tick {
-		globalData.Tick += globalData.Speed
-		globalData.Tick = min(globalData.Tick, util.MSToTick(globalData.FightDuration.Load())*10)
+	if globalData.Loaded.Load() && !s.Pause {
+		if globalData.ReplayMode {
+			maxTick := util.MSToTick(globalData.FightDuration.Load()) * 10
+			if maxTick > globalData.Tick {
+				globalData.Tick += globalData.Speed
+				globalData.Tick = min(globalData.Tick, maxTick)
+			}
+		} else {
+			globalData.Tick += globalData.Speed
+		}
 	}
 }
 

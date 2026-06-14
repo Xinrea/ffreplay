@@ -15,7 +15,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/colorm"
 	"github.com/yohamta/donburi"
 	"github.com/yohamta/donburi/ecs"
-	"github.com/yohamta/furex/v2"
 )
 
 func (r *Renderer) EnemyRender(ecs *ecs.ECS, screen *ebiten.Image) {
@@ -79,10 +78,26 @@ func (r *Renderer) renderEnemy(ecs *ecs.ECS, screen *ebiten.Image, enemy *donbur
 
 			colorm.DrawImage(screen, tex, c, op)
 		}
+
+		if status.Role == role.Boss {
+			tex := texture.NewTextureFromFile("asset/role/NPC.png")
+			geoM := texture.CenterGeoM(tex)
+			geoM.Scale(0.75, 0.75)
+			geoM.Rotate(camera.Rotation)
+			geoM.Translate(pos[0], pos[1])
+			geoM.Concat(wordM)
+
+			op := &colorm.DrawImageOptions{}
+			op.GeoM = geoM
+
+			colorm.DrawImage(screen, tex, c, op)
+		}
 	}
 
 	for _, instance := range sprite.Instances {
-		if !instance.IsActive(tick) && instance.GetCast() == nil {
+		// In playground mode every entity is always active, so the
+		// tick-based lifespan check only applies during replay.
+		if global.ReplayMode && !instance.IsActive(tick) && instance.GetCast() == nil {
 			continue
 		}
 
@@ -100,7 +115,7 @@ func (r *Renderer) renderEnemy(ecs *ecs.ECS, screen *ebiten.Image, enemy *donbur
 					px,
 					py,
 					color.White,
-					furex.AlignItemCenter,
+					ui.AlignCenter,
 					nil,
 				)
 			}

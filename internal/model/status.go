@@ -22,18 +22,28 @@ type StatusData struct {
 	MaxMana  int
 	BuffList *BuffList
 	Marker   int
-	death    bool
+	// HeadMarker is the head marker type (0 = none, 1-3 = marker types)
+	HeadMarker int
+	death      bool
+}
+
+func (r *StatusData) EnsureBuffList() *BuffList {
+	if r.BuffList == nil {
+		r.BuffList = NewBuffList()
+	}
+
+	return r.BuffList
 }
 
 func (r *StatusData) Reset() {
 	r.HP = r.MaxHP
 	r.Mana = r.MaxMana
 	r.death = false
-	r.BuffList.Clear()
+	r.EnsureBuffList().Clear()
 }
 
 func (r *StatusData) TakeDamage(d Damage) {
-	r.BuffList.ProcessDamage(&d)
+	r.EnsureBuffList().ProcessDamage(&d)
 	r.HP -= d.Amount
 
 	if r.HP <= 0 {
@@ -50,7 +60,7 @@ func (r *StatusData) IsDead() bool {
 }
 
 func (r *StatusData) TakeHeal(h Heal) {
-	r.BuffList.ProcessHeal(&h)
+	r.EnsureBuffList().ProcessHeal(&h)
 
 	if r.IsDead() {
 		return

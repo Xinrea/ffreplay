@@ -87,6 +87,7 @@ func main() {
 	flag.StringVar(&report, "r", "", "FFLogs report code")
 	flag.IntVar(&fight, "f", 0, "FFlogs report fight code. Report may contains multiple fights")
 	flag.StringVar(&code, "c", "", "FFLogs OAuth code")
+	scriptPath := flag.String("script", "", "Lua script file to run on startup (playground mode)")
 	flag.Parse()
 
 	log.Println(os.Args)
@@ -105,7 +106,7 @@ func main() {
 	credentials := strings.Split(credential, ":")
 
 	if len(credentials) != 2 || report == "" {
-		startPlayground()
+		startPlayground(*scriptPath)
 	} else {
 		startReplay(code, credentials[0], credentials[1], report, fight)
 	}
@@ -141,10 +142,17 @@ func parseFightURL(reportUrl *string) (string, int) {
 	return report, fight
 }
 
-func startPlayground() {
+func startPlayground(scriptPath string) {
 	ebiten.SetWindowTitle("FFReplay Playground")
 
-	if err := ebiten.RunGame(NewGame(nil)); err != nil {
+	var opt *scenes.FFLogsOpt
+	if scriptPath != "" {
+		opt = &scenes.FFLogsOpt{
+			ScriptPath: scriptPath,
+		}
+	}
+
+	if err := ebiten.RunGame(NewGame(opt)); err != nil {
 		log.Panic(err)
 	}
 }

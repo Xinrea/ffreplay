@@ -2,9 +2,9 @@ package ui
 
 import (
 	"fmt"
+	"image"
 	"image/color"
 	"strconv"
-	"strings"
 
 	"github.com/Xinrea/ffreplay/internal/component"
 	"github.com/Xinrea/ffreplay/internal/entry"
@@ -12,154 +12,253 @@ import (
 	"github.com/Xinrea/ffreplay/internal/model/role"
 	"github.com/Xinrea/ffreplay/internal/tag"
 	"github.com/Xinrea/ffreplay/util"
+	"github.com/ebitenui/ebitenui/widget"
+	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/yohamta/donburi"
-	"github.com/yohamta/furex/v2"
 )
 
-func EnemyBarsView() *furex.View {
-	return furex.NewView(
-		furex.MarginRight(UIPadding),
-		furex.MarginTop(UIPadding),
-		furex.Direction(furex.Column),
-		furex.Handler(furex.ViewHandler{
-			Update: func(v *furex.View) {
-				v.RemoveAll()
-				cnt := 0
-				for e := range tag.Enemy.Iter(ecsInstance.World) {
-					sprite := component.Sprite.Get(e)
-					if !sprite.Initialized {
-						continue
-					}
-					enemy := component.Status.Get(e)
-					if (enemy.Role != role.Boss && enemy.Role != role.Special) ||
-						!sprite.Instances[0].IsActive(entry.GetTick(ecsInstance)) {
-						continue
-					}
-					v.AddChild(CreateEnemyBarView(cnt, e))
-					cnt++
-				}
-				v.Layout()
-			},
-		}))
-}
+const (
+	EnemyBarWidth        = 500
+	EnemyHeaderHeight    = 18
+	EnemyHPBarHeight     = 10
+	EnemyRowSpacing      = 5
+	EnemyNameTextSize    = 13
+	EnemyPercentTextSize = 13
+	EnemyCastBarHeight   = 12
+)
 
-func CreateEnemyBarView(i int, enemy *donburi.Entry) *furex.View {
-	sprite := component.Sprite.Get(enemy)
-	status := component.Status.Get(enemy)
+var enemyNameColor = color.NRGBA{252, 183, 190, 255}
 
-	view := furex.NewView(
-		furex.Direction(furex.Column),
-		furex.AlignItems(furex.AlignItemStart),
-	)
-	nameView := furex.NewView(furex.Height(13), furex.Handler(&Text{
-		Content:      status.Name,
-		Color:        color.NRGBA{252, 183, 190, 255},
-		Align:        furex.AlignItemStart,
-		Shadow:       true,
-		ShadowOffset: 2,
-		ShadowColor:  color.NRGBA{0, 0, 0, 128},
-	}))
+func EUIEnemyBarsView(scale float64) *widget.Container {
+	if scale <= 0 {
+		scale = 1
+	}
 
-	nameCast := furex.NewView(
-		furex.Width(500),
-		furex.Direction(furex.Row),
-		furex.Justify(furex.JustifySpaceBetween),
-		furex.AlignItems(furex.AlignItemEnd),
-	)
-	nameCast.AddChild(nameView)
-	nameCast.AddChild(createEnemyCastingView(sprite))
-	view.AddChild(nameCast)
-
-	view.AddChild(
-		furex.NewView(
-			furex.ID("bar"),
-			furex.Width(500),
-			furex.Height(10),
-			furex.MarginTop(5),
-			furex.Handler(&Bar{
-				Progress: float64(status.HP) / float64(status.MaxHP),
-				FG:       barAtlas.GetNineSlice("red_bar_fg.png"),
-				BG:       barAtlas.GetNineSlice("red_bar_bg.png"),
+	pad := int(float64(UIPadding) * scale)
+	view := widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+			widget.RowLayoutOpts.Padding(&widget.Insets{
+				Top:   pad,
+				Right: pad,
 			}),
-		))
+		)),
+		widget.ContainerOpts.WidgetOpts(
+			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+				HorizontalPosition: widget.AnchorLayoutPositionEnd,
+				VerticalPosition:   widget.AnchorLayoutPositionStart,
+			}),
+		),
+	)
 
-	view.AddChild(createEnemyHPTextView(status))
-
-	bufflist := BuffListView(status.BuffList.Buffs())
-	bufflist.Attrs.MarginTop = 5
-
-	view.AddChild(bufflist)
+	view.GetWidget().OnUpdate = func(w widget.HasWidget) {
+		view.RemoveChildren()
+		for e := range tag.Enemy.Iter(ecsInstance.World) {
+			sprite := component.Sprite.Get(e)
+			if !sprite.Initialized {
+				continue
+			}
+			enemy := component.Status.Get(e)
+			if (enemy.Role != role.Boss && enemy.Role != role.Special) ||
+				!sprite.Instances[0].IsActive(entry.GetTick(ecsInstance)) {
+				continue
+			}
+			view.AddChild(newEUIEnemyBar(e, scale))
+		}
+	}
 
 	return view
 }
 
-func createEnemyCastingView(sprite *model.SpriteData) *furex.View {
-	castView := furex.NewView(furex.Height(24), furex.Direction(furex.Column), furex.AlignItems(furex.AlignItemEnd))
-
-	if sprite.Instances[0].GetCast() != nil {
-		cast := sprite.Instances[0].GetCast()
-		castView.AddChild(furex.NewView(furex.Width(210), furex.Height(12), furex.Handler(&Bar{
-			Progress: float64(util.TickToMS(entry.GetTick(ecsInstance)-cast.StartTick)) / float64(cast.Cast),
-			BG:       castAtlas.GetNineSlice("casting_frame.png"),
-			FG:       castAtlas.GetNineSlice("casting_fg.png"),
-		})))
-		castView.AddChild(furex.NewView(furex.Height(12), furex.MarginTop(-5), furex.Handler(&Text{
-			Align:        furex.AlignItemEnd,
-			Content:      cast.Name,
-			Color:        color.White,
-			Shadow:       true,
-			ShadowOffset: 1,
-			ShadowColor:  color.NRGBA{240, 152, 0, 128},
-		})))
-	}
-
-	return castView
+type euiEnemyBar struct {
+	widget *widget.Widget
+	enemy  *donburi.Entry
+	scale  float64
 }
 
-func createEnemyHPTextView(status *model.StatusData) *furex.View {
-	hpView := furex.NewView(furex.Width(500), furex.Direction(furex.Row), furex.Justify(furex.JustifySpaceBetween))
-	hpView.AddChild(furex.NewView(furex.MarginTop(5), furex.Height(13), furex.Handler(&Text{
-		Content:      formatInt(status.HP) + " / " + formatInt(status.MaxHP),
-		Color:        color.NRGBA{252, 183, 190, 255},
-		Align:        furex.AlignItemStart,
-		Shadow:       true,
-		ShadowOffset: 2,
-		ShadowColor:  color.NRGBA{0, 0, 0, 128},
-	}),
-	))
-	hpView.AddChild(furex.NewView(furex.MarginTop(5), furex.Height(13), furex.Handler(&Text{
-		Content:      fmt.Sprintf("%.2f%%", float64(status.HP)/float64(status.MaxHP)*100),
-		Color:        color.NRGBA{252, 183, 190, 255},
-		Align:        furex.AlignItemEnd,
-		Shadow:       true,
-		ShadowOffset: 2,
-		ShadowColor:  color.NRGBA{0, 0, 0, 128},
-	})))
+func newEUIEnemyBar(enemy *donburi.Entry, scale float64) *euiEnemyBar {
+	if scale <= 0 {
+		scale = 1
+	}
 
-	return hpView
+	b := &euiEnemyBar{
+		enemy: enemy,
+		scale: scale,
+	}
+	b.widget = widget.NewWidget(
+		widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+			Position: widget.RowLayoutPositionEnd,
+		}),
+	)
+	return b
 }
 
-func formatInt(n int) string {
-	// 将 int64 转换为字符串
-	str := strconv.FormatInt(int64(n), 10)
+func (b *euiEnemyBar) GetWidget() *widget.Widget {
+	return b.widget
+}
 
-	// 计算整数的长度
-	length := len(str)
-	if length <= 3 {
-		return str // 如果长度小于等于3，直接返回
+func (b *euiEnemyBar) PreferredSize() (int, int) {
+	s := b.scale
+	header := float64(EnemyHeaderHeight) * s
+	hp := float64(EnemyHPBarHeight) * s
+	spacing := float64(EnemyRowSpacing) * s
+	buffH := float64(BuffHeight+BuffRemainFontSize+BuffRemainTop) * s
+	if buffH < float64(BuffHeight)*s {
+		buffH = float64(BuffHeight) * s
 	}
 
-	// 使用 strings.Builder 来构建结果字符串
-	var builder strings.Builder
+	return int(float64(EnemyBarWidth) * s),
+		int(header + spacing + hp + spacing + buffH)
+}
 
-	for i, digit := range str {
-		// 每三位添加一个逗号
-		if i != 0 && (length-i)%3 == 0 {
-			builder.WriteRune(',')
-		}
+func (b *euiEnemyBar) SetLocation(rect image.Rectangle) {
+	b.widget.Rect = rect
+}
 
-		builder.WriteRune(digit)
+func (b *euiEnemyBar) Validate() {}
+
+func (b *euiEnemyBar) Update(updObj *widget.UpdateObject) {
+	b.widget.Update(updObj)
+}
+
+func (b *euiEnemyBar) Render(screen *ebiten.Image) {
+	b.widget.Render(screen)
+
+	status := component.Status.Get(b.enemy)
+	sprite := component.Sprite.Get(b.enemy)
+	frame := b.widget.Rect
+	x := float64(frame.Min.X)
+	y := float64(frame.Min.Y)
+	s := b.scale
+	barW := float64(EnemyBarWidth) * s
+
+	cast := sprite.Instances[0].GetCast()
+	b.drawHeader(screen, status, cast, x, y, barW)
+
+	hpY := y + float64(EnemyHeaderHeight+EnemyRowSpacing)*s
+	hpProgress := 0.0
+	if status.MaxHP > 0 {
+		hpProgress = float64(status.HP) / float64(status.MaxHP)
+	}
+	drawNineSliceBar(
+		screen,
+		image.Rect(int(x), int(hpY), int(x+barW), int(hpY+float64(EnemyHPBarHeight)*s)),
+		barAtlas.GetNineSlice("red_bar_bg.png"),
+		barAtlas.GetNineSlice("red_bar_fg.png"),
+		hpProgress,
+		nil,
+	)
+
+	buffX := x
+	buffY := hpY + float64(EnemyHPBarHeight+EnemyRowSpacing)*s
+	for i, buff := range UIBuffsFor(status.BuffList) {
+		b.drawBuff(screen, buff, buffX+float64(i*BuffWidth)*s, buffY)
+	}
+}
+
+func (b *euiEnemyBar) drawHeader(screen *ebiten.Image, status *model.StatusData, cast *model.Skill, x, y, barW float64) {
+	s := b.scale
+	headerH := float64(EnemyHeaderHeight) * s
+	percent := 0.0
+	if status.MaxHP > 0 {
+		percent = float64(status.HP) / float64(status.MaxHP) * 100
+	}
+	percentText := fmt.Sprintf("%.1f%%", percent)
+	percentW, _ := measureText(percentText, EnemyPercentTextSize*s)
+	percentPad := 4 * s
+
+	if cast != nil {
+		b.drawCastBar(screen, cast, x, y, barW, headerH)
+		return
 	}
 
-	return builder.String()
+	DrawText(
+		screen,
+		percentText,
+		EnemyPercentTextSize*s,
+		x,
+		y+headerH/2,
+		enemyNameColor,
+		AlignStart,
+		&ShadowOpt{Color: color.NRGBA{0, 0, 0, 128}, Offset: 1 * s},
+	)
+	DrawText(
+		screen,
+		status.Name,
+		EnemyNameTextSize*s,
+		x+percentW+percentPad,
+		y+headerH/2,
+		enemyNameColor,
+		AlignStart,
+		&ShadowOpt{Color: color.NRGBA{0, 0, 0, 128}, Offset: 1 * s},
+	)
+}
+
+func (b *euiEnemyBar) drawCastBar(screen *ebiten.Image, cast *model.Skill, x, y, barW, headerH float64) {
+	s := b.scale
+	barH := float64(EnemyCastBarHeight) * s
+	if barH > headerH {
+		barH = headerH
+	}
+	castY := y + (headerH-barH)/2
+	castProgress := 0.0
+	if cast.Cast > 0 {
+		castProgress = float64(util.TickToMS(entry.GetTick(ecsInstance)-cast.StartTick)) / float64(cast.Cast)
+	}
+
+	drawNineSliceBar(
+		screen,
+		image.Rect(int(x), int(castY), int(x+barW), int(castY+barH)),
+		castAtlas.GetNineSlice("casting_frame.png"),
+		castAtlas.GetNineSlice("casting_fg.png"),
+		castProgress,
+		nil,
+	)
+
+	DrawText(
+		screen,
+		cast.Name,
+		CastNameTextSize*s,
+		x+barW,
+		castY+barH/2,
+		color.White,
+		AlignEnd,
+		&ShadowOpt{Color: color.NRGBA{240, 152, 0, 128}, Offset: 1 * s},
+	)
+}
+
+func (b *euiEnemyBar) drawBuff(screen *ebiten.Image, buff *UIBuff, x, y float64) {
+	s := b.scale
+	TrackBuffTooltip(buff, BuffHitRect(x, y, s))
+	b.drawScaled(screen, buff.Texture(), x, y, BuffWidth*s, BuffHeight*s)
+	if buff.Stacks > 1 {
+		DrawText(
+			screen,
+			strconv.Itoa(buff.Stacks),
+			BuffStackFontSize*s,
+			x+float64(BuffStackLeft+BuffStackFontSize)*s,
+			y+float64(BuffStackTop)*s+BuffStackFontSize*s/2,
+			color.White,
+			AlignEnd,
+			&ShadowOpt{Color: color.NRGBA{0, 0, 0, 200}, Offset: EUIBuffStackShadow * s},
+		)
+	}
+	DrawText(
+		screen,
+		formatSeconds(buff.Remain),
+		BuffRemainFontSize*s,
+		x+BuffWidth*s/2,
+		y+float64(BuffHeight+BuffRemainTop)*s,
+		color.White,
+		AlignCenter,
+		&ShadowOpt{Color: color.NRGBA{0, 0, 0, 128}, Offset: 1 * s},
+	)
+}
+
+func (b *euiEnemyBar) drawScaled(screen *ebiten.Image, img *ebiten.Image, x, y, w, h float64) {
+	bounds := img.Bounds()
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Scale(w/float64(bounds.Dx()), h/float64(bounds.Dy()))
+	op.GeoM.Translate(x, y)
+	screen.DrawImage(img, op)
 }

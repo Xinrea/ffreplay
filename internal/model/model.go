@@ -6,4 +6,5 @@ func Init() {
 	initMarkerTextures()
 	initWorldMarkerTextures()
 	initActionPreset()
+	initHeadMarkerTextures()
 }

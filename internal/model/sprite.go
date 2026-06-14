@@ -3,6 +3,7 @@ package model
 import (
 	"github.com/Xinrea/ffreplay/pkg/object"
 	"github.com/Xinrea/ffreplay/pkg/texture"
+	"github.com/Xinrea/ffreplay/pkg/vector"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -22,6 +23,12 @@ type Instance struct {
 	castHistory        []*Skill
 	damageTakenHistory []DamageTaken
 	tethers            []*Instance
+
+	// Walk animation support
+	WalkTarget *object.PointObject // target position for walk animation
+	WalkStart  vector.Vector       // start position of walk
+	WalkTick   int64               // tick when walk started
+	WalkDuration int64             // total walk duration in ticks
 
 	// btick and etick should be set when preloading fflogs
 	// the first tick when game object is showed

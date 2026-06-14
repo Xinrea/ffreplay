@@ -12,7 +12,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/yohamta/donburi/ecs"
-	"github.com/yohamta/furex/v2"
 )
 
 var textShdowOpt = &ui.ShadowOpt{Offset: 2, Color: color.NRGBA{0, 0, 0, 255}}
@@ -53,7 +52,7 @@ func (r *Renderer) UIRender(ecs *ecs.ECS, screen *ebiten.Image) {
 			w/2*s,
 			h/2*s,
 			color.White,
-			furex.AlignItemCenter,
+			ui.AlignCenter,
 			textShdowOpt)
 
 		return
