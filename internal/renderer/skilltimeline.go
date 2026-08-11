@@ -54,6 +54,17 @@ func RenderCasting(debug bool, canvas *ebiten.Image, tick int64, cast *model.Ski
 	yOffset := 30.0 * s
 
 	iconTexture := cast.Texture()
+	if iconTexture == nil {
+		log.Printf(
+			"Ability texture is nil, using fallback texture: id=%d name=%q icon=%q start_tick=%d render_tick=%d",
+			cast.ID,
+			cast.Name,
+			cast.Icon,
+			cast.StartTick,
+			tick,
+		)
+		iconTexture = texture.NewAbilityTexture("")
+	}
 	geoM := texture.CenterGeoM(iconTexture)
 	geoM.Scale(s, s)
 

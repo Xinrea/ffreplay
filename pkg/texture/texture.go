@@ -172,7 +172,13 @@ func NewAbilityTexture(iconName string) *ebiten.Image {
 	}
 
 	if strings.Contains(iconName, "warcraft") {
-		return nil
+		cacheKey := abilityIconFileName(iconName)
+		log.Printf("Unsupported ability icon, using fallback texture: icon=%q", iconName)
+
+		img := missingAbilityTexture()
+		textureCache.Store(cacheKey, img)
+
+		return img
 	}
 
 	cacheKey := abilityIconFileName(iconName)
@@ -181,7 +187,12 @@ func NewAbilityTexture(iconName string) *ebiten.Image {
 			return value
 		}
 
-		return nil
+		log.Printf("Invalid cached ability texture, using fallback texture: icon=%q cache_key=%q type=%T", iconName, cacheKey, texture)
+
+		img := missingAbilityTexture()
+		textureCache.Store(cacheKey, img)
+
+		return img
 	}
 
 	store := func(img *ebiten.Image) *ebiten.Image {
