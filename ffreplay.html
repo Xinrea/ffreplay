@@ -2,6 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FFReplay - @Xinrea</title>
     <script src="wasm_exec.js"></script>
     <style>
@@ -9,6 +10,27 @@
         background-color: #1e1e1e;
         color: #c7c7c7;
         font-family: Arial, sans-serif;
+      }
+
+      #loading {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: min(420px, calc(100% - 48px));
+      }
+
+      #progress {
+        height: 8px;
+        overflow: hidden;
+        background-color: #333333;
+        border-radius: 4px;
+      }
+
+      #progress-bar {
+        width: 0;
+        height: 100%;
+        background-color: #1e90ff;
       }
 
       #progress-text {
@@ -19,32 +41,107 @@
         margin-top: 10px;
         font-size: 16px;
       }
+
+      #progress-text pre {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
     </style>
   </head>
 
   <body>
-    <div id="progress">
-      <div id="progress-bar"></div>
+    <div id="loading">
+      <div
+        id="progress"
+        role="progressbar"
+        aria-label="加载回放程序"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="0"
+      >
+        <div id="progress-bar"></div>
+      </div>
+      <div id="progress-text" role="status">正在下载回放程序：0%</div>
     </div>
-    <div id="progress-text"></div>
   </body>
 
   <script>
+    const loading = document.getElementById("loading");
+    const progress = document.getElementById("progress");
+    const progressBar = document.getElementById("progress-bar");
+    const progressText = document.getElementById("progress-text");
+
+    function showLoadingError(message) {
+      loading.hidden = false;
+      progress.hidden = true;
+      progressText.textContent = message;
+    }
+
     async function loadWasm() {
       const chunkCount = 10;
-      const progressText = document.getElementById("progress-text");
-      progressText.style.position = "absolute";
-      progressText.style.top = "50%";
-      progressText.style.left = "50%";
-      progressText.style.transform = "translate(-50%, -50%)";
+      // Inject the uncompressed size at build time so progress also works
+      // when the server compresses responses or omits Content-Length.
+      const wasmSize = Number("$WASM_SIZE");
+      const controller = new AbortController();
+      let downloadedBytes = 0;
+
+      function updateProgress(byteLength) {
+        if (controller.signal.aborted) return;
+        downloadedBytes += byteLength;
+        const percent = Math.min(
+          100,
+          Math.floor(downloadedBytes / wasmSize * 100)
+        );
+        progressBar.style.width = `${percent}%`;
+        progress.setAttribute("aria-valuenow", percent);
+        progressText.textContent = `正在下载回放程序：${percent}%`;
+      }
+
+      async function downloadChunk(index) {
+        const response = await fetch(`ffreplay-$WASM_RELEASE.wasm.chunk0${index}`, {
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          throw new Error(`下载失败（HTTP ${response.status}）`);
+        }
+        if (!response.body) {
+          const buffer = await response.arrayBuffer();
+          updateProgress(buffer.byteLength);
+          return new Uint8Array(buffer);
+        }
+
+        const reader = response.body.getReader();
+        const parts = [];
+        let size = 0;
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            parts.push(value);
+            size += value.byteLength;
+            updateProgress(value.byteLength);
+          }
+        } finally {
+          reader.releaseLock();
+        }
+
+        const chunk = new Uint8Array(size);
+        let offset = 0;
+        for (const part of parts) {
+          chunk.set(part, offset);
+          offset += part.byteLength;
+        }
+        return chunk;
+      }
 
       // 使用 Fetch API 加载 Wasm 模块
       const chunkPromises = Array.from({ length: chunkCount }, (_, i) =>
-        fetch(`ffreplay-$WASM_RELEASE.wasm.chunk0${i}`).then((res) =>
-          res.arrayBuffer()
-        )
+        downloadChunk(i)
       );
-      const chunks = await Promise.all(chunkPromises);
+      const chunks = await Promise.all(chunkPromises).catch((error) => {
+        controller.abort();
+        throw error;
+      });
       const totalSize = chunks.reduce(
         (sum, chunk) => sum + chunk.byteLength,
         0
@@ -55,6 +152,8 @@
         combined.set(new Uint8Array(chunk), offset);
         offset += chunk.byteLength;
       }
+
+      progressText.textContent = "下载完成，正在初始化回放程序…";
 
       const queryString = window.location.search;
       const urlParams = new URLSearchParams(queryString);
@@ -77,7 +176,7 @@
       if (state && code) {
         const reportinfo = localStorage.getItem(state);
         if (!reportinfo) {
-          progressText.innerText = "私人报告授权已失效，请重新授权";
+          showLoadingError("私人报告授权已失效，请重新授权");
           return;
         }
         // example: reportcode:fightid
@@ -94,21 +193,24 @@
           return;
         }
 
-        progressText.style.display = "flex";
+        loading.hidden = false;
+        progress.hidden = true;
         progressText.innerHTML =
           '<p>回放程序异常退出，请检查 URL、网络或者使用其他浏览器；如果未能解决问题，请复制以下信息提供给<a href="https://message.bilibili.com/?#/whisper/mid475210">开发者</a></p>' +
           "<pre>" +
           window.exitMessage +
           "</pre>";
 
-        document.body.removeChild(document.body.lastChild);
+        document.querySelector("canvas")?.remove();
       };
-      go.run(instance);
-
-      progressText.style.display = "none";
+      loading.hidden = true;
+      await go.run(instance);
     }
 
     // 调用加载函数
-    loadWasm().catch(console.error);
+    loadWasm().catch((error) => {
+      console.error(error);
+      showLoadingError(`回放程序加载失败，请检查网络后刷新重试。${error.message}`);
+    });
   </script>
 </html>

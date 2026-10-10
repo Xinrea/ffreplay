@@ -1,10 +1,18 @@
 #!/bin/bash
 
+set -eo pipefail
+
+if [[ -z "${CREDENTIAL:-}" ]]; then
+  echo "Error: CREDENTIAL is required. Set it to client_id:secret before building." >&2
+  exit 1
+fi
+
 # update_actions.sh
 sh update_actions.sh
 
-mkdir public
-rm -f public/*
+mkdir -p public
+# Clean generated files without removing asset directories.
+find public -maxdepth 1 -type f -delete
 
 # Get currrent commit hash
 COMMIT_HASH=$(git rev-parse --short HEAD)
@@ -12,13 +20,14 @@ COMMIT_HASH=$(git rev-parse --short HEAD)
 # Build ffreplay to wasm named public/ffreplay-$commithash.wasm
 # Build with credential that read from environment variable
 GOOS=js GOARCH=wasm go build -ldflags "-X main.credential=$CREDENTIAL" -o public/ffreplay-$COMMIT_HASH.wasm ./cmd/ffreplay/ffreplay.go
+WASM_SIZE=$(wc -c < public/ffreplay-$COMMIT_HASH.wasm | tr -d '[:space:]')
 
 # split the wasm file into 10 chunks
 split -n 10 -d public/ffreplay-$COMMIT_HASH.wasm public/ffreplay-$COMMIT_HASH.wasm.chunk
 # remove the original wasm file
 rm public/ffreplay-$COMMIT_HASH.wasm
 
-cp $(go env GOROOT)/lib/wasm/wasm_exec.js ./public
+cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" ./public
 
 cp index.html ./public/index.html
 cp ffreplay.html ./public/ffreplay.html
@@ -37,8 +46,9 @@ else
 fi
 
 ${SED_CMD} -i "s/\$WASM_RELEASE/$COMMIT_HASH/g" ./public/ffreplay.html
+${SED_CMD} -i "s/\$WASM_SIZE/$WASM_SIZE/g" ./public/ffreplay.html
 
 # get client_id from env CREDENTIAL, example: client_id:secret
 
-CLIENT_ID=$(echo $CREDENTIAL | cut -d: -f1)
+CLIENT_ID=$(printf '%s' "$CREDENTIAL" | cut -d: -f1)
 ${SED_CMD} -i "s/\$CLIENT_ID/$CLIENT_ID/g" ./public/index.html
