@@ -3,6 +3,7 @@ package texture
 import (
 	"encoding/xml"
 	"image"
+	"io/fs"
 	"log"
 
 	asset "github.com/Xinrea/ffreplay"
@@ -46,7 +47,7 @@ func NewTextureAtlasFromFile(file string) *TextureAtlas {
 		return atlas
 	}
 
-	bytes, err := asset.AssetFS.ReadFile(file)
+	bytes, err := fs.ReadFile(asset.AssetFS, file)
 	if err != nil {
 		panic(err)
 	}

@@ -204,7 +204,7 @@ func NewAbilityTexture(iconName string) *ebiten.Image {
 
 	// not using local buff icon files
 	if util.IsWasm() {
-		if img := store(loadFromFFreplay(iconName)); img != nil {
+		if img := store(loadFromAbilityAtlas(iconName)); img != nil {
 			return img
 		}
 		if img := store(loadFromRPGLogs(iconName)); img != nil {
