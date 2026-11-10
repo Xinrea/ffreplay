@@ -204,7 +204,7 @@ func NewAbilityTexture(iconName string) *ebiten.Image {
 
 	// not using local buff icon files
 	if util.IsWasm() {
-		if img := store(loadFromFFreplay(iconName)); img != nil {
+		if img := store(loadFromAbilityAtlas(iconName)); img != nil {
 			return img
 		}
 		if img := store(loadFromRPGLogs(iconName)); img != nil {
@@ -274,19 +274,35 @@ func NewTextureFromFile(filepath string) *ebiten.Image {
 		return nil
 	}
 
-	f, err := asset.AssetFS.Open(filepath)
+	img, err := loadTextureFile(filepath)
 	if err != nil {
-		log.Panic(err)
-	}
+		if !util.IsWasm() {
+			log.Panic(err)
+		}
 
-	img, _, err := ebitenutil.NewImageFromReader(f)
-	if err != nil {
-		log.Panic(err)
+		log.Printf("Load texture %s failed, using placeholder: %v", filepath, err)
+
+		img = missingAbilityTexture()
 	}
 
 	textureCache.Store(filepath, img)
 
 	return img
+}
+
+func loadTextureFile(filepath string) (*ebiten.Image, error) {
+	f, err := asset.AssetFS.Open(filepath)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	img, _, err := ebitenutil.NewImageFromReader(f)
+	if err != nil {
+		return nil, err
+	}
+
+	return img, nil
 }
 
 func CenterGeoM(t *ebiten.Image) ebiten.GeoM {

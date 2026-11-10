@@ -14,6 +14,7 @@ import (
 	"github.com/Xinrea/ffreplay/pkg/object"
 	"github.com/Xinrea/ffreplay/pkg/texture"
 	"github.com/Xinrea/ffreplay/pkg/vector"
+	"github.com/Xinrea/ffreplay/util"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -44,10 +45,14 @@ type ActionInfo struct {
 
 var actionEntries = []ActionInfo{}
 
+var actionPresetUnavailable bool
+
 func initActionPreset() {
 	f, err := asset.AssetFS.Open("asset/gamedata/Action.csv")
 	if err != nil {
-		log.Panic(err)
+		handleActionPresetError(err)
+
+		return
 	}
 	defer f.Close()
 
@@ -55,7 +60,9 @@ func initActionPreset() {
 
 	records, err := r.ReadAll()
 	if err != nil {
-		log.Panic(err)
+		handleActionPresetError(err)
+
+		return
 	}
 	// remove headers
 	records = records[3:]
@@ -67,6 +74,18 @@ func initActionPreset() {
 			IsGCD: record[4] == "2" || record[4] == "3",
 		})
 	}
+}
+
+func handleActionPresetError(err error) {
+	if util.IsWasm() {
+		log.Printf("Skip Action.csv preset: %v", err)
+
+		actionPresetUnavailable = true
+
+		return
+	}
+
+	log.Panic(err)
 }
 
 var additionalDB = sync.Map{}
@@ -92,6 +111,11 @@ func GetAction(id int64) *ActionInfo {
 
 		return nil
 	}
+
+	if actionPresetUnavailable {
+		return nil
+	}
+
 	// https://www.garlandtools.org/db/doc/action/en/2/25865.json
 	resp, err := http.Get(fmt.Sprintf("https://www.garlandtools.org/db/doc/action/en/2/%d.json", id))
 	if err != nil {

@@ -3,6 +3,7 @@ package renderer
 import (
 	"fmt"
 	"image/color"
+	"io/fs"
 	"log"
 
 	asset "github.com/Xinrea/ffreplay"
@@ -37,7 +38,7 @@ func initBackground() {
 	s := ebiten.Monitor().DeviceScaleFactor()
 	skillLayer = ebiten.NewImage(int(TIMELINE_WIDTH*s), int(TIMELINE_HEIGHT*s))
 
-	shaderSrc, _ := asset.AssetFS.ReadFile("asset/shader/easeinout.kage")
+	shaderSrc, _ := fs.ReadFile(asset.AssetFS, "asset/shader/easeinout.kage")
 
 	var err error
 

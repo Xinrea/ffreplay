@@ -142,6 +142,8 @@ func (ms *FFScene) loadFFLogsReport() {
 
 	ms.global.LoadTotal = len(events)
 
+	texture.PrefetchAbilityIcons()
+
 	// create players
 	ms.createPlayers(players, actors)
 
