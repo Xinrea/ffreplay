@@ -55,11 +55,33 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	if len(files) == 0 {
 		log.Fatalf("no PNG icons found in %s", *in)
 	}
+
 	sort.Strings(files)
 
+	icons, cellWidth, cellHeight := loadIcons(files)
+
+	columns := *maxPage / cellWidth
+	rows := *maxPage / cellHeight
+
+	if columns == 0 || rows == 0 {
+		log.Fatalf("icon size %dx%d does not fit in a %dx%d page", cellWidth, cellHeight, *maxPage, *maxPage)
+	}
+
+	manifest, blobs := buildAtlas(files, icons, columns, rows, cellWidth, cellHeight)
+
+	writeAtlas(*out, manifest, blobs)
+
+	log.Printf(
+		"packed %d icons into %s, cell %dx%d",
+		len(files), filepath.Join(*out, atlasFileName), cellWidth, cellHeight,
+	)
+}
+
+func loadIcons(files []string) ([]image.Image, int, int) {
 	icons := make([]image.Image, len(files))
 
 	var cellWidth, cellHeight int
@@ -71,18 +93,19 @@ func main() {
 		if bounds.Dx() > cellWidth {
 			cellWidth = bounds.Dx()
 		}
+
 		if bounds.Dy() > cellHeight {
 			cellHeight = bounds.Dy()
 		}
 	}
 
-	columns := *maxPage / cellWidth
-	rows := *maxPage / cellHeight
+	return icons, cellWidth, cellHeight
+}
 
-	if columns == 0 || rows == 0 {
-		log.Fatalf("icon size %dx%d does not fit in a %dx%d page", cellWidth, cellHeight, *maxPage, *maxPage)
-	}
-
+func buildAtlas(
+	files []string, icons []image.Image,
+	columns, rows, cellWidth, cellHeight int,
+) (atlasManifest, [][]byte) {
 	perPage := columns * rows
 	pageCount := (len(files) + perPage - 1) / perPage
 
@@ -90,50 +113,67 @@ func main() {
 		Format: atlasFormat,
 		Icons:  make(map[string]atlasRect, len(files)),
 	}
-	pageBlobs := make([][]byte, 0, pageCount)
+	blobs := make([][]byte, 0, pageCount)
 
 	for page := range pageCount {
 		start := page * perPage
 		end := min(start+perPage, len(files))
-		count := end - start
-		pageRows := (count + columns - 1) / columns
 
-		sheet := image.NewNRGBA(image.Rect(0, 0, columns*cellWidth, pageRows*cellHeight))
-
-		for i, icon := range icons[start:end] {
-			x := (i % columns) * cellWidth
-			y := (i / columns) * cellHeight
-			bounds := icon.Bounds()
-			draw.Draw(sheet, image.Rect(x, y, x+bounds.Dx(), y+bounds.Dy()), icon, bounds.Min, draw.Src)
-
-			manifest.Icons[filepath.Base(files[start+i])] = atlasRect{
-				Page: page,
-				X:    x,
-				Y:    y,
-				W:    bounds.Dx(),
-				H:    bounds.Dy(),
-			}
-		}
-
-		var blob bytes.Buffer
-
-		encoder := png.Encoder{CompressionLevel: png.DefaultCompression}
-		if err := encoder.Encode(&blob, sheet); err != nil {
-			log.Fatal(err)
-		}
-
-		manifest.Pages = append(manifest.Pages, atlasPage{
-			Width:  sheet.Bounds().Dx(),
-			Height: sheet.Bounds().Dy(),
-		})
-		pageBlobs = append(pageBlobs, blob.Bytes())
+		blobs = append(blobs, buildPage(&manifest, files, icons, start, end, page, columns, cellWidth, cellHeight))
 	}
 
+	return manifest, blobs
+}
+
+func buildPage(
+	manifest *atlasManifest, files []string, icons []image.Image,
+	start, end, page, columns, cellWidth, cellHeight int,
+) []byte {
+	count := end - start
+	pageRows := (count + columns - 1) / columns
+
+	sheet := image.NewNRGBA(image.Rect(0, 0, columns*cellWidth, pageRows*cellHeight))
+
+	for i, icon := range icons[start:end] {
+		x := (i % columns) * cellWidth
+		y := (i / columns) * cellHeight
+		bounds := icon.Bounds()
+
+		draw.Draw(sheet, image.Rect(x, y, x+bounds.Dx(), y+bounds.Dy()), icon, bounds.Min, draw.Src)
+
+		manifest.Icons[filepath.Base(files[start+i])] = atlasRect{
+			Page: page,
+			X:    x,
+			Y:    y,
+			W:    bounds.Dx(),
+			H:    bounds.Dy(),
+		}
+	}
+
+	var blob bytes.Buffer
+
+	encoder := png.Encoder{CompressionLevel: png.DefaultCompression}
+
+	err := encoder.Encode(&blob, sheet)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	manifest.Pages = append(manifest.Pages, atlasPage{
+		Width:  sheet.Bounds().Dx(),
+		Height: sheet.Bounds().Dy(),
+	})
+
+	return blob.Bytes()
+}
+
+func writeAtlas(out string, manifest atlasManifest, blobs [][]byte) {
 	offset := 0
+
 	for i := range manifest.Pages {
 		manifest.Pages[i].Offset = offset
-		manifest.Pages[i].Length = len(pageBlobs[i])
-		offset += len(pageBlobs[i])
+		manifest.Pages[i].Length = len(blobs[i])
+		offset += len(blobs[i])
 	}
 
 	header, err := json.Marshal(manifest)
@@ -145,30 +185,32 @@ func main() {
 
 	file.WriteString(atlasMagic)
 
-	if err := binary.Write(&file, binary.BigEndian, uint32(len(header))); err != nil {
+	err = binary.Write(&file, binary.BigEndian, uint32(len(header)))
+	if err != nil {
 		log.Fatal(err)
 	}
 
 	file.Write(header)
 
-	for _, blob := range pageBlobs {
+	for _, blob := range blobs {
 		file.Write(blob)
 	}
 
-	if err := os.MkdirAll(*out, 0o755); err != nil {
+	err = os.MkdirAll(out, 0o755)
+	if err != nil {
 		log.Fatal(err)
 	}
 
-	path := filepath.Join(*out, atlasFileName)
-	if err := os.WriteFile(path, file.Bytes(), 0o644); err != nil {
+	path := filepath.Join(out, atlasFileName)
+
+	err = os.WriteFile(path, file.Bytes(), 0o644)
+	if err != nil {
 		log.Fatal(err)
 	}
 
 	for i, page := range manifest.Pages {
 		log.Printf("page %d: %dx%d, %d bytes", i, page.Width, page.Height, page.Length)
 	}
-	log.Printf("packed %d icons into %s (%.1f KB), cell %dx%d",
-		len(files), path, float64(file.Len())/1024, cellWidth, cellHeight)
 }
 
 func decodePNG(file string) image.Image {

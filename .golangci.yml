@@ -1,8 +1,91 @@
+version: "2"
 linters:
-  enable-all: true
+  default: all
   disable:
+    - asasalint
+    - bodyclose
+    - canonicalheader
+    - containedctx
+    - contextcheck
     - depguard
+    - durationcheck
+    - err113
+    - errcheck
+    - errchkjson
+    - errname
+    - errorlint
+    - exhaustive
+    - exhaustruct
+    - exptostd
+    - fatcontext
+    - forbidigo
+    - forcetypeassert
+    - ginkgolinter
+    - gochecknoglobals
+    - gochecksumtype
+    - gocritic
     - godox
-    - mnd
     - gomoddirectives
-  fast: true
+    - gosec
+    - gosmopolitan
+    - govet
+    - iface
+    - importas
+    - intrange
+    - ireturn
+    - loggercheck
+    - makezero
+    - mirror
+    - mnd
+    - musttag
+    - nilerr
+    - nilnesserr
+    - nilnil
+    - noctx
+    - nonamedreturns
+    - paralleltest
+    - perfsprint
+    - protogetter
+    - reassign
+    - recvcheck
+    - revive
+    - rowserrcheck
+    - sloglint
+    - spancheck
+    - sqlclosecheck
+    - staticcheck
+    - tagliatelle
+    - testifylint
+    - thelper
+    - tparallel
+    - unconvert
+    - unparam
+    - unused
+    - usetesting
+    - varnamelen
+    - wastedassign
+    - wrapcheck
+    - zerologlint
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

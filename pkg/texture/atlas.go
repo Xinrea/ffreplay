@@ -72,6 +72,7 @@ func loadAbilityAtlas() (*abilityAtlasManifest, error) {
 		data, err := fs.ReadFile(asset.AssetFS, abilityAtlasPath)
 		if err != nil {
 			abilityAtlasErr = err
+
 			return
 		}
 
@@ -97,7 +98,8 @@ func splitAbilityAtlas(data []byte) (abilityAtlasManifest, []byte, error) {
 		return manifest, nil, fmt.Errorf("invalid ability atlas header length %d", headerLength)
 	}
 
-	if err := json.Unmarshal(data[8:8+headerLength], &manifest); err != nil {
+	err := json.Unmarshal(data[8:8+headerLength], &manifest)
+	if err != nil {
 		return manifest, nil, fmt.Errorf("parse ability atlas header: %w", err)
 	}
 
@@ -107,13 +109,22 @@ func splitAbilityAtlas(data []byte) (abilityAtlasManifest, []byte, error) {
 
 	blob := data[8+headerLength:]
 
-	for _, page := range manifest.Pages {
-		if page.Offset < 0 || page.Length <= 0 || page.Offset+page.Length > len(blob) {
-			return manifest, nil, errors.New("ability atlas page out of bounds")
-		}
+	err = validateAbilityAtlasPages(manifest.Pages, len(blob))
+	if err != nil {
+		return manifest, nil, err
 	}
 
 	return manifest, blob, nil
+}
+
+func validateAbilityAtlasPages(pages []abilityAtlasPage, blobLength int) error {
+	for _, page := range pages {
+		if page.Offset < 0 || page.Length <= 0 || page.Offset+page.Length > blobLength {
+			return errors.New("ability atlas page out of bounds")
+		}
+	}
+
+	return nil
 }
 
 func loadFromAbilityAtlas(iconName string) *ebiten.Image {

@@ -148,7 +148,7 @@ type webFileInfo struct {
 
 func (i webFileInfo) Name() string       { return i.name }
 func (i webFileInfo) Size() int64        { return i.size }
-func (i webFileInfo) Mode() fs.FileMode  { return 0444 }
+func (i webFileInfo) Mode() fs.FileMode  { return 0o444 }
 func (i webFileInfo) ModTime() time.Time { return time.Time{} }
 func (i webFileInfo) IsDir() bool        { return false }
 func (i webFileInfo) Sys() any           { return nil }
