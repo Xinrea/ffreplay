@@ -49,6 +49,7 @@ func main() {
 	in := flag.String("in", "asset/abilities", "directory containing ability icon PNGs")
 	out := flag.String("out", "public/asset/abilities", "directory for the generated atlas")
 	maxPage := flag.Int("max-page", 2048, "maximum atlas page width and height")
+
 	flag.Parse()
 
 	files, err := filepath.Glob(filepath.Join(*in, "*.png"))
