@@ -1,8 +1,8 @@
-#!/bin/bash
+#!/bin/sh
 
-set -eo pipefail
+set -e
 
-if [[ -z "${CREDENTIAL:-}" ]]; then
+if [ -z "${CREDENTIAL:-}" ]; then
   echo "Error: CREDENTIAL is required. Set it to client_id:secret before building." >&2
   exit 1
 fi
@@ -28,9 +28,9 @@ rm -rf public/asset/abilities
 go run ./cmd/abilityatlas -in asset/abilities -out public/asset/abilities
 
 if command -v sha256sum >/dev/null 2>&1; then
-  HASH_CMD=(sha256sum)
+  HASH_CMD="sha256sum"
 else
-  HASH_CMD=(shasum -a 256)
+  HASH_CMD="shasum -a 256"
 fi
 
 # Hash the published asset tree: the wasm appends this version to every asset
@@ -39,7 +39,7 @@ ASSET_VERSION=$(
   find public/asset -type f -print | LC_ALL=C sort | while IFS= read -r file; do
     printf '%s\n' "$file"
     cat "$file"
-  done | "${HASH_CMD[@]}" | cut -c1-12
+  done | $HASH_CMD | cut -c1-12
 )
 echo "Asset version: $ASSET_VERSION"
 
@@ -56,7 +56,7 @@ WASM_SIZE=$(wc -c < public/ffreplay-$COMMIT_HASH.wasm | tr -d '[:space:]')
 # Include the wasm content hash in the release name: builds from the same
 # commit with local changes then get new chunk URLs, so browsers and CDNs
 # never serve a stale wasm for a new release. Unchanged builds keep their URLs.
-WASM_DIGEST=$("${HASH_CMD[@]}" public/ffreplay-$COMMIT_HASH.wasm | cut -c1-12)
+WASM_DIGEST=$($HASH_CMD public/ffreplay-$COMMIT_HASH.wasm | cut -c1-12)
 WASM_RELEASE="$COMMIT_HASH-$WASM_DIGEST"
 echo "WASM release: $WASM_RELEASE ($WASM_SIZE bytes)"
 
@@ -71,17 +71,20 @@ cp index.html ./public/index.html
 cp ffreplay.html ./public/ffreplay.html
 
 # Replace $WASM_RELEASE in ffreplay.html with the commit + content hash
-if [[ "$OSTYPE" == "darwin"* ]]; then
-  # Require gnu-sed.
-  if ! [ -x "$(command -v gsed)" ]; then
-    echo "Error: 'gsed' is not istalled." >&2
-    echo "If you are using Homebrew, install with 'brew install gnu-sed'." >&2
-    exit 1
-  fi
-  SED_CMD=gsed
-else
-  SED_CMD=sed
-fi
+case "$(uname -s)" in
+  Darwin)
+    # Require gnu-sed.
+    if ! [ -x "$(command -v gsed)" ]; then
+      echo "Error: 'gsed' is not istalled." >&2
+      echo "If you are using Homebrew, install with 'brew install gnu-sed'." >&2
+      exit 1
+    fi
+    SED_CMD=gsed
+    ;;
+  *)
+    SED_CMD=sed
+    ;;
+esac
 
 ${SED_CMD} -i "s/\$WASM_RELEASE/$WASM_RELEASE/g" ./public/ffreplay.html
 ${SED_CMD} -i "s/\$WASM_SIZE/$WASM_SIZE/g" ./public/ffreplay.html
