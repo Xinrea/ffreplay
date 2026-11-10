@@ -27,22 +27,36 @@ find public/asset -type d -empty -delete
 rm -rf public/asset/abilities
 go run ./cmd/abilityatlas -in asset/abilities -out public/asset/abilities
 
+if command -v sha256sum >/dev/null 2>&1; then
+  HASH_CMD=(sha256sum)
+else
+  HASH_CMD=(shasum -a 256)
+fi
+
+# Hash the published asset tree: the wasm appends this version to every asset
+# URL, so long-lived caches are invalidated exactly when the files change.
+ASSET_VERSION=$(
+  find public/asset -type f -print | LC_ALL=C sort | while IFS= read -r file; do
+    printf '%s\n' "$file"
+    cat "$file"
+  done | "${HASH_CMD[@]}" | cut -c1-12
+)
+echo "Asset version: $ASSET_VERSION"
+
 # Get currrent commit hash
 COMMIT_HASH=$(git rev-parse --short HEAD)
 
 # Build ffreplay to wasm named public/ffreplay-$commithash.wasm
 # Build with credential that read from environment variable
-GOOS=js GOARCH=wasm go build -ldflags "-X main.credential=$CREDENTIAL" -o public/ffreplay-$COMMIT_HASH.wasm ./cmd/ffreplay/ffreplay.go
+GOOS=js GOARCH=wasm go build \
+  -ldflags "-X main.credential=$CREDENTIAL -X github.com/Xinrea/ffreplay.assetVersion=$ASSET_VERSION" \
+  -o public/ffreplay-$COMMIT_HASH.wasm ./cmd/ffreplay/ffreplay.go
 WASM_SIZE=$(wc -c < public/ffreplay-$COMMIT_HASH.wasm | tr -d '[:space:]')
 
 # Include the wasm content hash in the release name: builds from the same
 # commit with local changes then get new chunk URLs, so browsers and CDNs
 # never serve a stale wasm for a new release. Unchanged builds keep their URLs.
-if command -v sha256sum >/dev/null 2>&1; then
-  WASM_DIGEST=$(sha256sum public/ffreplay-$COMMIT_HASH.wasm | cut -c1-12)
-else
-  WASM_DIGEST=$(shasum -a 256 public/ffreplay-$COMMIT_HASH.wasm | cut -c1-12)
-fi
+WASM_DIGEST=$("${HASH_CMD[@]}" public/ffreplay-$COMMIT_HASH.wasm | cut -c1-12)
 WASM_RELEASE="$COMMIT_HASH-$WASM_DIGEST"
 echo "WASM release: $WASM_RELEASE ($WASM_SIZE bytes)"
 

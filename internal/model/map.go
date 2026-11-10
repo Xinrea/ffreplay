@@ -6,6 +6,7 @@ import (
 
 	asset "github.com/Xinrea/ffreplay"
 	"github.com/Xinrea/ffreplay/pkg/texture"
+	"github.com/Xinrea/ffreplay/util"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -80,7 +81,9 @@ var MapCache = map[int]MapPresetItem{}
 func initMapPreset() {
 	f, err := asset.AssetFS.Open("asset/floor/floor.json")
 	if err != nil {
-		log.Panic(err)
+		handleMapPresetError(err)
+
+		return
 	}
 	defer f.Close()
 
@@ -88,12 +91,24 @@ func initMapPreset() {
 
 	err = json.NewDecoder(f).Decode(&config)
 	if err != nil {
-		log.Panic(err)
+		handleMapPresetError(err)
+
+		return
 	}
 
 	for _, m := range config.Maps {
 		MapCache[m.ID] = m
 	}
+}
+
+func handleMapPresetError(err error) {
+	if util.IsWasm() {
+		log.Printf("Skip floor.json preset: %v", err)
+
+		return
+	}
+
+	log.Panic(err)
 }
 
 type MapBoundary struct {

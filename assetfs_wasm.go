@@ -80,6 +80,11 @@ func (w *webFS) ReadFile(name string) ([]byte, error) {
 
 	entry.once.Do(func() {
 		entry.data, entry.err = w.fetch(name)
+		if entry.err != nil {
+			// A transient failure must not poison the path for the rest of the
+			// session; drop the entry so a later call can try again.
+			w.entries.Delete(name)
+		}
 	})
 	if entry.err != nil {
 		return nil, entry.err
@@ -91,6 +96,12 @@ func (w *webFS) ReadFile(name string) ([]byte, error) {
 
 func (w *webFS) fetch(name string) ([]byte, error) {
 	u := w.base.ResolveReference(&url.URL{Path: name})
+
+	if assetVersion != "" {
+		query := u.Query()
+		query.Set("v", assetVersion)
+		u.RawQuery = query.Encode()
+	}
 
 	// Transient connection failures happen under load and on flaky networks;
 	// a texture that fails here would otherwise take the whole replay down.
