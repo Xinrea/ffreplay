@@ -38,14 +38,24 @@ func initBackground() {
 	s := ebiten.Monitor().DeviceScaleFactor()
 	skillLayer = ebiten.NewImage(int(TIMELINE_WIDTH*s), int(TIMELINE_HEIGHT*s))
 
-	shaderSrc, _ := fs.ReadFile(asset.AssetFS, "asset/shader/easeinout.kage")
-
-	var err error
-
-	shader, err = ebiten.NewShader(shaderSrc)
+	// The browser build fetches this file at startup. A non-200 used to reach
+	// NewShader as an empty source and panic, which exits the replay. The fade
+	// is decorative; draw the timeline directly when the shader is unavailable.
+	shaderSrc, err := fs.ReadFile(asset.AssetFS, "asset/shader/easeinout.kage")
 	if err != nil {
-		panic(err)
+		log.Printf("Timeline shader unavailable, drawing without easing: %v", err)
+
+		return
 	}
+
+	compiled, err := ebiten.NewShader(shaderSrc)
+	if err != nil {
+		log.Printf("Timeline shader failed to compile, drawing without easing: %v", err)
+
+		return
+	}
+
+	shader = compiled
 }
 
 func RenderCasting(debug bool, canvas *ebiten.Image, tick int64, cast *model.Skill, x, y float64) {
@@ -174,6 +184,14 @@ func (st SkillTimeline) Render(debug bool, canvas *ebiten.Image, x, y float64, t
 		px := -offset*s + TIMELINE_WIDTH*s
 		py := TIMELINE_HEIGHT*s/2.0 + 15*s
 		st.Periods[i].Render(debug, skillLayer, px, py, tick)
+	}
+
+	if shader == nil {
+		var op ebiten.DrawImageOptions
+		op.GeoM.Translate(x, y)
+		canvas.DrawImage(skillLayer, &op)
+
+		return
 	}
 
 	sop := &ebiten.DrawRectShaderOptions{}

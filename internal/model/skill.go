@@ -64,16 +64,39 @@ func initActionPreset() {
 
 		return
 	}
-	// remove headers
-	records = records[3:]
-	for _, record := range records {
+
+	entries, err := parseActionRecords(records)
+	if err != nil {
+		handleActionPresetError(err)
+
+		return
+	}
+
+	actionEntries = entries
+}
+
+// The sheet starts with three header rows. A short 200 (empty body or a
+// truncated upload) parses successfully; slicing it used to panic.
+func parseActionRecords(records [][]string) ([]ActionInfo, error) {
+	if len(records) < 3 {
+		return nil, fmt.Errorf("Action.csv has %d records", len(records))
+	}
+
+	entries := make([]ActionInfo, 0, len(records)-3)
+	for _, record := range records[3:] {
+		if len(record) < 5 {
+			return nil, fmt.Errorf("Action.csv row has %d columns", len(record))
+		}
+
 		id, _ := strconv.Atoi(record[0])
-		actionEntries = append(actionEntries, ActionInfo{
+		entries = append(entries, ActionInfo{
 			ID:    int64(id),
 			Name:  record[1],
 			IsGCD: record[4] == "2" || record[4] == "3",
 		})
 	}
+
+	return entries, nil
 }
 
 func handleActionPresetError(err error) {
