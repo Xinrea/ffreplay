@@ -1,29 +1,32 @@
-package model
+package model_test
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/Xinrea/ffreplay/internal/model"
+)
 
 func TestParseActionRecordsRejectsShortSheets(t *testing.T) {
-	if _, err := parseActionRecords(nil); err == nil {
+	_, err := model.ParseActionRecords(nil)
+	if err == nil {
 		t.Fatal("empty sheet parsed")
 	}
 
-	if _, err := parseActionRecords([][]string{{"key"}, {"type"}}); err == nil {
+	headers := [][]string{{"key"}, {"type"}, {"index"}}
+
+	_, err = model.ParseActionRecords(headers[:2])
+	if err == nil {
 		t.Fatal("short header parsed")
 	}
 
-	_, err := parseActionRecords([][]string{
-		{"key"},
-		{"type"},
-		{"index"},
-		{"1", "only-two"},
-	})
+	_, err = model.ParseActionRecords(append(headers, []string{"1", "only-two"}))
 	if err == nil {
 		t.Fatal("short row parsed")
 	}
 }
 
 func TestParseActionRecordsReadsGCDFlag(t *testing.T) {
-	entries, err := parseActionRecords([][]string{
+	entries, err := model.ParseActionRecords([][]string{
 		{"key"},
 		{"type"},
 		{"index"},

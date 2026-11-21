@@ -83,6 +83,7 @@ func parseActionRecords(records [][]string) ([]ActionInfo, error) {
 	}
 
 	entries := make([]ActionInfo, 0, len(records)-3)
+
 	for _, record := range records[3:] {
 		if len(record) < 5 {
 			return nil, fmt.Errorf("Action.csv row has %d columns", len(record))

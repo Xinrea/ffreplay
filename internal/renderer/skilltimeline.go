@@ -188,6 +188,7 @@ func (st SkillTimeline) Render(debug bool, canvas *ebiten.Image, x, y float64, t
 
 	if shader == nil {
 		var op ebiten.DrawImageOptions
+
 		op.GeoM.Translate(x, y)
 		canvas.DrawImage(skillLayer, &op)
 
