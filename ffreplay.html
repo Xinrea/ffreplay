@@ -171,6 +171,8 @@
 
       if (url) {
         go.argv = ["", "-u", url];
+      } else if (urlParams.has("sandbox")) {
+        go.argv = ["", "-sandbox"];
       }
 
       if (state && code) {
