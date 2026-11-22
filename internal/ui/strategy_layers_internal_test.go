@@ -21,6 +21,7 @@ func TestLayerDropMatchesVisibleInsertionLine(t *testing.T) {
 			t.Errorf("%+v: got gap %d target %d valid %v", tc, gap, to, ok)
 		}
 	}
+
 	for _, at := range []image.Point{p.top.Sub(image.Pt(1, 0)), p.top.Add(image.Pt(30, 3*layerPitch+4))} {
 		if _, _, ok := p.drop(at, 0); ok {
 			t.Errorf("accepted outside drop at %v", at)

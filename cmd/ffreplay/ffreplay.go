@@ -87,7 +87,11 @@ func main() {
 	flag.IntVar(&fight, "f", 0, "FFlogs report fight code. Report may contains multiple fights")
 	flag.StringVar(&code, "c", "", "FFLogs OAuth code")
 	scriptPath := flag.String("script", "", "Lua script file to run on startup (playground mode)")
-	sandbox := flag.Bool("sandbox", false, "Open the live command and Lua sandbox instead of the strategy board")
+	sandbox := flag.Bool(
+		"sandbox",
+		false,
+		"Open the live command and Lua sandbox instead of the strategy board",
+	)
 	flag.Parse()
 
 	log.Println(os.Args)
@@ -106,10 +110,13 @@ func main() {
 		} else {
 			ebiten.SetWindowSize(1280, 800)
 			ebiten.SetWindowTitle("FFReplay Playground · 战术板")
-			if err := ebiten.RunGame(ui.NewStrategyBoard()); err != nil {
+
+			err := ebiten.RunGame(ui.NewStrategyBoard())
+			if err != nil {
 				log.Panic(err)
 			}
 		}
+
 		return
 	}
 

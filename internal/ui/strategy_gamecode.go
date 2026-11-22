@@ -13,8 +13,10 @@ func (b *StrategyBoard) gameCodeButtons(x, y int) {
 		code, err := readGameCode()
 		if err != nil {
 			b.status = err.Error()
+
 			return
 		}
+
 		if code != "" {
 			b.importGame(code)
 		}
@@ -24,10 +26,13 @@ func (b *StrategyBoard) gameCodeButtons(x, y int) {
 		if err == nil {
 			err = writeGameCode(code)
 		}
+
 		if err != nil {
 			b.status = "未导出：" + err.Error()
+
 			return
 		}
+
 		b.status = "已生成当前步骤的游戏码；Buff、底图、自定义名称不随码传递，连线转为普通线段"
 	})
 }
@@ -39,11 +44,14 @@ func (b *StrategyBoard) importGame(text string) {
 			text = text[:j+1]
 		}
 	}
+
 	p, note, err := planner.ImportGame(text)
 	if err != nil {
 		b.status = "未导入：" + err.Error()
+
 		return
 	}
+
 	b.editor.Checkpoint()
 	b.editor.Plan, b.editor.Current = p, 0
 	b.resetSelection()

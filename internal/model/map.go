@@ -89,6 +89,7 @@ func ReadMapPreset() (MapPreset, error) {
 	var config MapPreset
 
 	err = json.NewDecoder(f).Decode(&config)
+
 	return config, err
 }
 

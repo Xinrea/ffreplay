@@ -12,8 +12,10 @@ import (
 	"github.com/Xinrea/ffreplay/internal/planner"
 )
 
-const boardKey = "ffreplay.planner.draft.v1"
-const boardPrefix = "#ffplan="
+const (
+	boardKey    = "ffreplay.planner.draft.v1"
+	boardPrefix = "#ffplan="
+)
 
 func readGameCode() (_ string, err error) {
 	defer catchBoardError(&err)
@@ -23,6 +25,7 @@ func readGameCode() (_ string, err error) {
 	}
 	return v.String(), nil
 }
+
 func writeGameCode(code string) (err error) {
 	defer catchBoardError(&err)
 	js.Global().Call("prompt", "复制当前步骤的游戏码。头顶 Buff 和自定义底图不包含在内，连线会变为普通线段。", code)
@@ -100,7 +103,12 @@ func shareBoard(data []byte) (_ string, err error) {
 		return "", errors.New("方案较大，请用「导出文件」分享")
 	}
 	g := js.Global()
-	link := g.Get("location").Get("pathname").String() + boardPrefix + base64.RawURLEncoding.EncodeToString(data)
+	link := g.Get("location").
+		Get("pathname").
+		String() +
+		boardPrefix + base64.RawURLEncoding.EncodeToString(
+		data,
+	)
 	g.Get("history").Call("replaceState", nil, "", link)
 	return "地址栏已生成分享链接，复制当前网址即可。链接包含整个方案。", nil
 }
