@@ -78,18 +78,22 @@ func (m MapPresetItem) Load() *MapConfig {
 
 var MapCache = map[int]MapPresetItem{}
 
-func initMapPreset() {
+// ReadMapPreset reads the catalogue without loading any floor textures.
+func ReadMapPreset() (MapPreset, error) {
 	f, err := asset.AssetFS.Open("asset/floor/floor.json")
 	if err != nil {
-		handleMapPresetError(err)
-
-		return
+		return MapPreset{}, err
 	}
 	defer f.Close()
 
 	var config MapPreset
 
 	err = json.NewDecoder(f).Decode(&config)
+	return config, err
+}
+
+func initMapPreset() {
+	config, err := ReadMapPreset()
 	if err != nil {
 		handleMapPresetError(err)
 
